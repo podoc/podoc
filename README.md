@@ -60,6 +60,13 @@ podoc can read and write in all of these formats.
 * Automatic documentation generation
 * Static website generation
 
+Examples can be found in the `examples` directory. Every example is in a subdirectory containing the following files:
+
+* `input.xxx`
+* `output.yyy`
+* `run.sh`: a podoc command that converts `input.xxx` into `output.yyy`
+
+All examples are automatically checked as part of podoc's testing suite.
 
 ## Advanced documentation
 
