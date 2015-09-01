@@ -39,7 +39,7 @@ The most common usage is the same as pandoc:
 podoc -f xxx_format -t yyy_format file.xxx -o file.yyy
 ```
 
-The list of currently support formats is:
+The list of currently supported formats is:
 
 * `markdown`
 * `notebook`
@@ -49,8 +49,16 @@ The list of currently support formats is:
 podoc can read and write in all of these formats.
 
 
-## Examples
+## Examples and applications
 
+* Conversion of Jupyter notebooks
+* Use the Jupyter frontend with non-`.ipynb` documents
+* Write slide shows in Markdown
+* Write technical documents or books in Markdown with LaTeX equations, and convert them to HTML, ODT, or PDF
+* Literate programming
+* Doc tests
+* Automatic documentation generation
+* Static website generation
 
 
 ## Advanced documentation
@@ -61,7 +69,7 @@ podoc can read and write in all of these formats.
 * Full Python API
 * Native support for Jupyter notebooks
 * Fully customizable transformation pipeline
-* Built-on set of preprocessors and postprocessors
+* Built-in set of preprocessors and postprocessors
 * Global and block metadata
 * Inline LaTeX equations
 * Templates
@@ -115,6 +123,12 @@ Every document is converted into a native representation called the AST (the sam
 * [List of Block elements](http://hackage.haskell.org/package/pandoc-types-1.12.4.5/docs/Text-Pandoc-Definition.html#t:Block)
 * [List of Inline elements](http://hackage.haskell.org/package/pandoc-types-1.12.4.5/docs/Text-Pandoc-Definition.html#t:Inline)
 
+When converted to JSON, each element has the following fields (this corresponds to pandoc's JSON format):
+
+* `t`: the name of the `Block` or `Inline` element
+* `c`: a string, or a list of `Inline` elements
+
+
 ### Preprocessors
 
 The included preprocessors are:
@@ -154,15 +168,10 @@ To create your own filter:
 ```python
 class MyFilter(Filter):
     def run(self, ast):
-        # ast is a Python dictionary.
+        # ast is a Python dictionary containing Block and Inline elements.
         # hack hack hack
         return ast
 ```
-
-The `ast` object is a Python dictionary. It is a tree of `Block` or `Inline` elements where each element is a dictionary with the following keys (this corresponds to pandoc's JSON format):
-
-* `t`: the name of the `Block` or `Inline` element
-* `c`: a string, or a list of `Inline` elements
 
 You can also choose to not override `run(ast)`, and implement `handle_code_block(element)` and similar instead. The default `run(ast)` method traverses the tree and calls the `handle_xxx(element)` methods if they exist.
 
