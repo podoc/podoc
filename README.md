@@ -4,9 +4,9 @@
 
 **This is a work in progress**
 
-**podoc** is a **minimalistic pure Python pandoc clone**, i.e. a markup document conversion library. Currently, it supports the Markdown, Jupyter notebook, OpenDocument, O'Reilly Atlas, Python formats. Support for ReST, LaTeX, HTML, AsciiDoc is planned.
+**podoc** is a **minimalistic pure Python pandoc clone**, i.e. a markup document conversion library. Currently, it supports Markdown, Jupyter notebook, OpenDocument, O'Reilly Atlas, Python + comments. Support for ReST, LaTeX, HTML, AsciiDoc is planned.
 
-podoc provides a Python API as well as a command-line tool. The architecture is modular and allows for the creation of custom formats, readers, writers, preprocessors, postprocessors, and filters.
+podoc provides a Python API as well as a command-line tool. The architecture is modular and allows for the creation of plugins, custom formats, readers, writers, preprocessors, postprocessors, and filters.
 
 podoc is heavily inspired by the awesome **pandoc** library: It tries to mimic the abstractions and API when possible, but it does not intend to reproduce the full set of features. podoc also borrows ideas and code from the **mistune** Markdown parser. An earlier version of the code lives in the ipymd repository.
 
@@ -38,8 +38,10 @@ pip install podoc
 The most common usage is the same as pandoc:
 
 ```
-podoc -f xxx_format -t yyy_format file.xxx -o file.yyy
+podoc -f foo -t bar file.xxx -o file.yyy
 ```
+
+The formats can also be inferred from the file extensions.
 
 The list of currently supported formats is:
 
@@ -66,7 +68,7 @@ Examples can be found in the `examples` directory. Every example is in a subdire
 
 * `input.xxx`
 * `output.yyy`
-* `run.sh`: a podoc command that converts `input.xxx` into `output.yyy`
+* `convert.sh`: a podoc command that converts `input.xxx` into `output.yyy`
 
 All examples are automatically checked as part of podoc's testing suite.
 
@@ -80,7 +82,7 @@ All examples are automatically checked as part of podoc's testing suite.
 * Fully customizable transformation pipeline
 * Built-in set of preprocessors and postprocessors
 * Global and block metadata
-* Inline LaTeX equations
+* LaTeX equations
 * Templates
 
 The following features (supported by pandoc) may or may not be considered in the future:
@@ -90,7 +92,7 @@ The following features (supported by pandoc) may or may not be considered in the
 * Markdown extensions
 * Slide shows
 
-### Architecture
+### Pipeline
 
 podoc uses the following pipeline to convert a document:
 
@@ -100,34 +102,79 @@ podoc uses the following pipeline to convert a document:
 * **Writer**: a writer transforms the filtered AST into an output document.
 * **Postprocessors** (optional): the output document can be processed after the conversion.
 
-To use custom processors or formats, put your code in a Python script (for example, `custom.py`), and add the following line:
+### Formats
+
+With podoc, there is no dedicated abstraction for a *format*. A format is just a plugin that implements a reader and/or a writer, with optional filters and pre- and postprocessors.
+
+### Podoc class
+
+The `Podoc` class represents a given conversion pipeline. Here are its trait attributes:
+
+* `output_dir`: output directory
+* `preprocessors`
+* `reader`
+* `filters`
+* `writer`
+* `postprocessors`
+
+Here are its main methods:
+
+* `convert_file(from_path, to_path=None)`
+* `convert_contents(contents, to_path=None)`
+* `add_preprocessor(func)`
+* `set_reader(func)`
+* `add_filter(func)`
+* `set_writer(func)`
+* `add_postprocessor(func)`
+
+### Configuration
+
+podoc uses the `traitlets` module for the configuration system (the same as in IPython).
+
+### Plugins
+
+The plugin architecture is inspired by this [blog post](http://eli.thegreenplace.net/2012/08/07/fundamental-concepts-of-plugin-infrastructures).
+
+To create a plugin, create a Python script in one of the plugin directories, and define a class deriving from `podoc.IPlugin`:
 
 ```python
-class MyPreprocessor(Preprocessor):
-    ...
+class MyPlugin(IPlugin):
+    format_name  # optional: if set, one can use this name as an alias
 
+    def preprocessor(self, contents):
+        return contents
+
+    def register(self):
+        self.podoc.add_preprocessor(self.preprocessor)
 ...
-
-from podoc import register
-register(preprocessors=[MyPreprocessor()],
-         reader='notebook',
-         filters=['some_builtin_filter', MyFilter()],
-         writer=MyWriter(),
-         postprocessors=[MyPostprocessor1(), MyPostprocessor2()],
-         )
-```
 
 Then, use the following command:
 
 ```bash
-podoc --script=custom.py myfile.xxx -o myfile.yyy
+podoc myfile.xxx -o myfile.yyy --plugins=MyPlugin
 ```
 
-You can override the processors defined in your script with the usual arguments `--filters`, `-t`, `-f`, and so on.
+This will use the preprocessor defined in `MyPlugin`.
+
+In the plugin, you have access to `self.podoc`, the `Podoc` instance.
+
+You can use override other methods:
+
+* `preprocessor(contents)`
+* `reader(contents)`
+* `filter(ast)`
+* `writer(ast)`
+* `postprocessor(contents)`
+
+There is a `podoc-contrib` repository with common user-contributed plugins.
+
+You can edit `default_plugins` in your `.podoc/config.py`.
+
+Every Python file in `.podoc/plugins/` will be automatically imported when using podoc. If plugins are defined there, they will be readily available in podoc.
 
 ### AST
 
-Every document is converted into a native representation called the AST (the same as in pandoc). This is a tree with a `Meta` block (containing metadata like title, authors, and date) and a list of `Block` elements. Each `Block` contains a `Meta` element and a list of `Inline` elements.
+Every document is converted into a native representation called the AST (the same as in pandoc). This is a tree with a `Meta` block (containing hierarchical metadata like title, authors, and date) and a list of `Block` elements. Each `Block` contains a `Meta` element and a list of `Inline` elements.
 
 * [List of Block elements](http://hackage.haskell.org/package/pandoc-types-1.12.4.5/docs/Text-Pandoc-Definition.html#t:Block)
 * [List of Inline elements](http://hackage.haskell.org/package/pandoc-types-1.12.4.5/docs/Text-Pandoc-Definition.html#t:Inline)
@@ -138,80 +185,8 @@ When converted to JSON, each element has the following fields (this corresponds 
 * `c`: a string, or a list of `Inline` elements
 
 
-### Preprocessors
+### Included plugins
 
-The included preprocessors are:
-
-* `CodeEval`: evaluates code enclosed in particular markup syntax (as provided by a regular expression). This allows for **literate programming**, using Python or any other language.
-
-To create your own preprocessor:
-
-```python
-class MyPreprocessor(Preprocessor):
-    def run(self, doc):
-        # hack hack hack
-        return doc
-```
-
-### Readers
-
-To create your own reader:
-
-```python
-class MyReader(Reader):
-    def run(self, doc):
-        # hack hack hack
-        return ast
-```
-
-You can also provide directly a block and inline grammar and define your own lexer.
-
-### Filters
-
-The included filters are:
-
-* `Atlas`: replace code blocks in a given language by executable `<pre>` HTML code blocks, and LaTeX equations by `<span>` HTML blocks.
-
-To create your own filter:
-
-```python
-class MyFilter(Filter):
-    def run(self, ast):
-        # ast is a Python dictionary containing Block and Inline elements.
-        # hack hack hack
-        return ast
-```
-
-You can also choose to not override `run(ast)`, and implement `handle_code_block(element)` and similar instead. The default `run(ast)` method traverses the tree and calls the `handle_xxx(element)` methods if they exist.
-
-### Writers
-
-To create your own writer:
-
-```python
-class MyWriter(Writer):
-    def create_output(self):
-        # You can override this (for example, create a new ODT document).
-        self.output = StringWriter()
-
-    def run(self, ast):
-        # hack hack hack
-        # You can use self.output.append().
-        return doc
-
-    @property
-    def contents(self):
-        # You can override this.
-        return self.output.contents
-```
-
-### Postprocessors
-
-To create your own postprocessor:
-
-```python
-class MyPostprocessor(Postprocessor):
-    def run(self, doc):
-        # hack hack hack
-        return doc
-```
+* `Atlas`: filter replacing code blocks in a given language by executable `<pre>` HTML code blocks, and LaTeX equations by `<span>` HTML blocks.
+* `CodeEval`: preprocessor evaluating code enclosed in particular markup syntax (as provided by a regular expression). This allows for **literate programming**, using Python or any other language.
+* `Macros`: macro preprocessor based on regular expressions. The macro substitutions can be listed in the `macros` metadata array in the document, or in `c.Macros.substitutions = [(regex, repl), ...]` in your `.podoc/config.py`.
