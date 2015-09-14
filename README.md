@@ -147,6 +147,7 @@ class MyPlugin(IPlugin):
     def register(self):
         self.podoc.add_preprocessor(self.preprocessor)
 ...
+```
 
 Then, use the following command:
 
