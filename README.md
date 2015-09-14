@@ -218,17 +218,12 @@ When converted to JSON, each element has the following fields (this corresponds 
 ## Code structure
 
 ```
-lib/
-    markdown.py
-    opendocument.py
-    parsing.py
-    python.py
 plugins/
     formats/
-        markdown.py
-        notebook.py
-        opendocument.py
-        python.py
+        markdown/
+        notebook/
+        opendocument/
+        python/
     macros.py
     atlas.py
     code_eval.py
