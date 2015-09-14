@@ -179,14 +179,36 @@ Every document is converted into a native representation called the AST (the sam
 * [List of Block elements](http://hackage.haskell.org/package/pandoc-types-1.12.4.5/docs/Text-Pandoc-Definition.html#t:Block)
 * [List of Inline elements](http://hackage.haskell.org/package/pandoc-types-1.12.4.5/docs/Text-Pandoc-Definition.html#t:Inline)
 
-When converted to JSON, each element has the following fields (this corresponds to pandoc's JSON format):
+The `AST` class derives from `dict` and provides the following interface:
+
+```python
+>>> ast.meta
+{...}
+>>> ast.blocks
+[<Block ...>, <Block ...>, ...]
+>>> block = ast.blocks[0]
+>>> block.meta
+{...}
+>>> block.inline
+["str", <Inline ...>, ...]
+>>> block.inline[1]
+["str", "str"]
+>>> ast.validate()  # check that this is a valid AST
+True
+```
+
+When converted to JSON, each element has the following fields (this corresponds to the pandoc JSON format):
 
 * `t`: the name of the `Block` or `Inline` element
 * `c`: a string, or a list of `Inline` elements
-
 
 ### Included plugins
 
 * `Atlas`: filter replacing code blocks in a given language by executable `<pre>` HTML code blocks, and LaTeX equations by `<span>` HTML blocks.
 * `CodeEval`: preprocessor evaluating code enclosed in particular markup syntax (as provided by a regular expression). This allows for **literate programming**, using Python or any other language.
 * `Macros`: macro preprocessor based on regular expressions. The macro substitutions can be listed in the `macros` metadata array in the document, or in `c.Macros.substitutions = [(regex, repl), ...]` in your `.podoc/config.py`.
+* `Prompt`: filter transforming a code block containing interactive input and output. There are several options:
+    * Transforming to a code block with different input/output formats
+    * Removing the output
+    * Evaluating the input and adding the output
+    * Put the output in a paragraph
