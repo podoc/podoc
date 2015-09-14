@@ -159,7 +159,7 @@ This will use the preprocessor defined in `MyPlugin`.
 
 In the plugin, you have access to `self.podoc`, the `Podoc` instance.
 
-You can use override other methods:
+You can also use other methods:
 
 * `preprocessor(contents)`
 * `reader(contents)`
@@ -213,3 +213,26 @@ When converted to JSON, each element has the following fields (this corresponds 
     * Removing the output
     * Evaluating the input and adding the output
     * Put the output in a paragraph
+
+
+## Code structure
+
+```
+lib/
+    markdown.py
+    opendocument.py
+    parsing.py
+    python.py
+plugins/
+    formats/
+        markdown.py
+        notebook.py
+        opendocument.py
+        python.py
+    macros.py
+    atlas.py
+    code_eval.py
+    prompt.py
+core.py
+logging.py
+```
