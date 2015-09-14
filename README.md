@@ -140,6 +140,7 @@ To create a plugin, create a Python script in one of the plugin directories, and
 ```python
 class MyPlugin(IPlugin):
     format_name  # optional: if set, one can use this name as an alias
+    file_extensions  # optional: list of supported file extensions
 
     def preprocessor(self, contents):
         return contents
@@ -218,16 +219,35 @@ When converted to JSON, each element has the following fields (this corresponds 
 ## Code structure
 
 ```
-plugins/
-    formats/
+docs/
+examples/
+podoc/
+    plugins/
         markdown/
+            examples/
+                hello_world/
+                    input.md
+                    output.json
+            tests/
         notebook/
+            examples/
+            tests/
         opendocument/
+            examples/
+            tests/
         python/
-    macros.py
-    atlas.py
-    code_eval.py
-    prompt.py
-core.py
-logging.py
+            examples/
+            tests/
+        macros.py
+        atlas.py
+        code_eval.py
+        prompt.py
+    tests/                      unit tests
+    __init__.py
+    core.py
+    logging.py
+    script.py                   CLI tool based on the click library
+tests/                          integration tests
+utils/
+    make_examples.py            build output files in examples, using pandoc
 ```
