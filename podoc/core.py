@@ -9,13 +9,23 @@
 #------------------------------------------------------------------------------
 
 import logging
-import os
-import os.path as op
+
+logger = logging.getLogger(__name__)
 
 
 #------------------------------------------------------------------------------
 # Main class
 #------------------------------------------------------------------------------
+
+def open_text(path):
+    with open(path, 'r') as f:
+        return f.read()
+
+
+def save_text(path, contents):
+    with open(path, 'w') as f:
+        return f.write(contents)
+
 
 class Podoc(object):
     """Conversion pipeline for markup documents.
@@ -35,10 +45,14 @@ class Podoc(object):
     # -------------------------------------------------------------------------
 
     def open(self, path):
+        if self.file_opener is not None:
+            self.file_opener = TextOpener()
         assert self.file_opener is not None
         return self.file_opener.open(path)
 
     def save(self, path, contents):
+        if self.file_saver is not None:
+            self.file_saver = TextSaver()
         assert self.file_saver is not None
         return self.file_saver.save(path, contents)
 
@@ -48,6 +62,9 @@ class Podoc(object):
         return contents
 
     def read(self, contents):
+        if self.reader is None:
+            logger.warn("No reader set")
+            return contents
         assert self.reader is not None
         ast = self.reader(contents)
         return ast
@@ -58,6 +75,9 @@ class Podoc(object):
         return ast
 
     def write(self, ast):
+        if self.writer is None:
+            logger.warn("No writer set")
+            return ast
         assert self.writer is not None
         converted = self.writer(ast)
         return converted
@@ -86,6 +106,9 @@ class Podoc(object):
     # Pipeline configuration
     # -------------------------------------------------------------------------
 
+    def set_file_opener(self, func):
+        self.file_opener = func
+
     def add_preprocessor(self, func):
         self.preprocessors.append(func)
 
@@ -100,3 +123,6 @@ class Podoc(object):
 
     def add_postprocessor(self, func):
         self.postprocessors.append(func)
+
+    def set_file_saver(self, func):
+        self.file_saver = func
