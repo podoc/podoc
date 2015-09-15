@@ -8,6 +8,7 @@
 # Imports
 #------------------------------------------------------------------------------
 
+import logging
 import os
 import os.path as op
 import subprocess
@@ -38,6 +39,11 @@ __author__ = 'Cyrille Rossant'
 __email__ = 'cyrille.rossant at gmail.com'
 __version__ = '0.1.0-dev'
 __version_git__ = __version__ + _git_version()
+
+
+# Set a null handler on the root logger
+logger = logging.getLogger()
+logger.addHandler(logging.NullHandler())
 
 
 def test():
