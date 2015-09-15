@@ -104,36 +104,42 @@ The following features (supported by pandoc) may or may not be considered in the
 
 podoc uses the following pipeline to convert a document:
 
+* **FileOpener**: open a `Document` from a file. Generally, a `Document` is just a string for text files, but other openers can be defined for binary file formats like OpenDocument.
 * **Preprocessors** (optional): the input document can be processed before the conversion.
 * **Reader**: the processed input document is parsed and transformed into an in-memory **Abstract Syntax Tree** (AST). The AST is fully JSON-serializable.
 * **Filters** (optional): filters can transform the AST.
 * **Writer**: a writer transforms the filtered AST into an output document.
 * **Postprocessors** (optional): the output document can be processed after the conversion.
+* **FileSaver**: save a `Document` into a file.
 
 ### Formats
 
-With podoc, there is no dedicated abstraction for a *format*. A format is just a plugin that implements a reader and/or a writer, with optional filters and pre- and postprocessors.
+With podoc, there is no dedicated abstraction for a *format*. A format is just a plugin that defines a file opener/file saver, a reader and/or a writer, optional filters, and optional pre- and postprocessors.
 
 ### Podoc class
 
 The `Podoc` class represents a given conversion pipeline. Here are its trait attributes:
 
 * `output_dir`: output directory
+* `file_opener`
 * `preprocessors`
 * `reader`
 * `filters`
 * `writer`
 * `postprocessors`
+* `file_saver`
 
 Here are its main methods:
 
 * `convert_file(from_path, to_path=None)`
 * `convert_contents(contents, to_path=None)`
+* `set_file_opener(func)`
 * `add_preprocessor(func)`
 * `set_reader(func)`
 * `add_filter(func)`
 * `set_writer(func)`
 * `add_postprocessor(func)`
+* `set_file_saver(func)`
 
 ### Configuration
 
