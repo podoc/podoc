@@ -118,7 +118,7 @@ With podoc, there is no dedicated abstraction for a *format*. A format is just a
 
 ### Podoc class
 
-The `Podoc` class represents a given conversion pipeline. Here are its trait attributes:
+The `Podoc` class represents a given conversion pipeline. Here are its attributes:
 
 * `output_dir`: output directory
 * `file_opener`
@@ -144,6 +144,36 @@ Here are its main methods:
 ### Configuration
 
 podoc uses the `traitlets` module for the configuration system (the same as in IPython).
+
+### AST
+
+Every document is converted into a native representation called the AST (the same as in pandoc). This is a tree with a `Meta` block (containing hierarchical metadata like title, authors, and date) and a list of `Block` elements. Each `Block` contains a `Meta` element and a list of `Inline` elements.
+
+* [List of Block elements](http://hackage.haskell.org/package/pandoc-types-1.12.4.5/docs/Text-Pandoc-Definition.html#t:Block)
+* [List of Inline elements](http://hackage.haskell.org/package/pandoc-types-1.12.4.5/docs/Text-Pandoc-Definition.html#t:Inline)
+
+The `AST` class derives from `dict` and provides the following interface:
+
+```python
+>>> ast.meta
+{...}
+>>> ast.blocks
+[<Block ...>, <Block ...>, ...]
+>>> block = ast.blocks[0]
+>>> block.meta
+{...}
+>>> block.inline
+["str", <Inline ...>, ...]
+>>> block.inline[1]
+["str", "str"]
+>>> ast.validate()  # check that this is a valid AST
+True
+```
+
+When converted to JSON, each element has the following fields (this corresponds to the pandoc JSON format):
+
+* `t`: the name of the `Block` or `Inline` element
+* `c`: a string, or a list of `Inline` elements
 
 ### Plugins
 
@@ -188,35 +218,7 @@ You can edit `default_plugins` in your `.podoc/config.py`.
 
 Every Python file in `.podoc/plugins/` will be automatically imported when using podoc. If plugins are defined there, they will be readily available in podoc.
 
-### AST
-
-Every document is converted into a native representation called the AST (the same as in pandoc). This is a tree with a `Meta` block (containing hierarchical metadata like title, authors, and date) and a list of `Block` elements. Each `Block` contains a `Meta` element and a list of `Inline` elements.
-
-* [List of Block elements](http://hackage.haskell.org/package/pandoc-types-1.12.4.5/docs/Text-Pandoc-Definition.html#t:Block)
-* [List of Inline elements](http://hackage.haskell.org/package/pandoc-types-1.12.4.5/docs/Text-Pandoc-Definition.html#t:Inline)
-
-The `AST` class derives from `dict` and provides the following interface:
-
-```python
->>> ast.meta
-{...}
->>> ast.blocks
-[<Block ...>, <Block ...>, ...]
->>> block = ast.blocks[0]
->>> block.meta
-{...}
->>> block.inline
-["str", <Inline ...>, ...]
->>> block.inline[1]
-["str", "str"]
->>> ast.validate()  # check that this is a valid AST
-True
-```
-
-When converted to JSON, each element has the following fields (this corresponds to the pandoc JSON format):
-
-* `t`: the name of the `Block` or `Inline` element
-* `c`: a string, or a list of `Inline` elements
+Ideally, every plugin should be in a dedicated subdirectory with a `README.md` documentation file.
 
 ### Included plugins
 
@@ -237,6 +239,9 @@ docs/
 examples/
 podoc/
     plugins/
+        atlas/
+        code_eval/
+        macros/
         markdown/
             examples/
                 hello_world/
@@ -249,13 +254,10 @@ podoc/
         opendocument/
             examples/
             tests/
+        prompt/
         python/
             examples/
             tests/
-        macros.py
-        atlas.py
-        code_eval.py
-        prompt.py
     tests/                      unit tests
     __init__.py
     core.py
