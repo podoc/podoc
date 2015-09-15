@@ -34,7 +34,8 @@ def test_ast():
                            ])
     block.add_metadata(kb='vb')
     inline = Inline(name='Emph')
-    inline.set_contents(['world'])
+    inline.set_contents([])
+    inline.add_contents('world')
     block.add_inline(inline)
     ast.add_block(block)
 

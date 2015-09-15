@@ -20,3 +20,4 @@ def test_bunch():
     assert obj.a == 1
     obj.b = 2
     assert obj['b'] == 2
+    assert obj.copy().a == 1
