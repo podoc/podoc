@@ -241,23 +241,21 @@ podoc/
     plugins/
         atlas/
         code_eval/
+        json/
+            examples/
+                ex_a.json
+                ex_b.json
+                ...
         macros/
         markdown/
             examples/
-                hello_world/
-                    input.md
-                    output.json
-            tests/
+                ex_a.md
+                ex_b.md
+                ...
         notebook/
-            examples/
-            tests/
         opendocument/
-            examples/
-            tests/
         prompt/
         python/
-            examples/
-            tests/
     tests/                      unit tests
     __init__.py
     core.py
