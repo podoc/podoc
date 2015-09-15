@@ -13,6 +13,9 @@ import os
 import os.path as op
 import subprocess
 
+from .core import Podoc
+from .plugin import IPlugin
+
 
 #------------------------------------------------------------------------------
 # Global variables and functions

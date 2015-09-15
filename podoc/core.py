@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# flake8: noqa
 
 """Core functionality."""
 
@@ -14,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 #------------------------------------------------------------------------------
-# Main class
+# Utility functions
 #------------------------------------------------------------------------------
 
 def open_text(path):
