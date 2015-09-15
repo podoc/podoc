@@ -24,8 +24,8 @@ class AST(Bunch):
         self.meta = {}
         self.blocks = []
 
-    def add_metadata(self, key, value):
-        self.meta[key] = value
+    def add_metadata(self, **kwargs):
+        self.meta.update(**kwargs)
 
     def add_block(self, block):
         assert isinstance(block, dict)
@@ -39,8 +39,8 @@ class Block(Bunch):
         self.meta = kwargs.pop('meta', {})
         self.inlines = kwargs.pop('inlines', [])
 
-    def add_metadata(self, key, value):
-        self.meta[key] = value
+    def add_metadata(self, **kwargs):
+        self.meta.update(**kwargs)
 
     def add_inline(self, inline):
         assert isinstance(inline, (dict, str))

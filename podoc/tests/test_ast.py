@@ -15,7 +15,7 @@ from ..ast import AST, Block, Inline, to_pandoc
 #------------------------------------------------------------------------------
 
 def test_ast():
-    pandoc_json = [{'unMeta': {}}, [
+    pandoc_json = [{'unMeta': {'k': 'v'}}, [
                    {'c': [{'c': 'hello', 't': 'Str'},
                           {'c': [], 't': 'Space'},
                           {'c': [{'c': 'world', 't': 'Str'}], 't': 'Emph'}],
@@ -25,13 +25,17 @@ def test_ast():
                    ]
 
     ast = AST()
+    ast.add_metadata(k='v')
 
     # First block
     block = Block(name='Para',
                   inlines=['hello',
                            Inline(name='Space'),
-                           Inline(name='Emph', contents=['world']),
                            ])
+    block.add_metadata(kb='vb')
+    inline = Inline(name='Emph')
+    inline.set_contents(['world'])
+    block.add_inline(inline)
     ast.add_block(block)
 
     # Second block
