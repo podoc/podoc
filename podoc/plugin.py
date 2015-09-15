@@ -31,7 +31,7 @@ class IPluginRegistry(type):
             IPluginRegistry.plugins.append(cls)
 
 
-class IPlugin(object):
+class IPlugin(object, metaclass=IPluginRegistry):
     format_name = None
     file_extensions = ()
 
