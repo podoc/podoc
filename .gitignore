@@ -1,0 +1,27 @@
+wiki
+.ipynb_checkpoints
+.*fuse*
+*.orig
+.eggs
+__pycache__
+
+*.py[cod]
+.coverage*
+*credentials
+
+# C extensions
+*.so
+
+# Packages
+*.egg
+*.egg-info
+build
+dist
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+lib
+lib64
