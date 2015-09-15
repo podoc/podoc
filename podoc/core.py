@@ -45,16 +45,16 @@ class Podoc(object):
     # -------------------------------------------------------------------------
 
     def open(self, path):
-        if self.file_opener is not None:
-            self.file_opener = TextOpener()
+        if self.file_opener is None:
+            self.file_opener = open_text
         assert self.file_opener is not None
-        return self.file_opener.open(path)
+        return self.file_opener(path)
 
     def save(self, path, contents):
-        if self.file_saver is not None:
-            self.file_saver = TextSaver()
+        if self.file_saver is None:
+            self.file_saver = save_text
         assert self.file_saver is not None
-        return self.file_saver.save(path, contents)
+        return self.file_saver(path, contents)
 
     def preprocess(self, contents):
         for p in self.preprocessors:
@@ -93,7 +93,7 @@ class Podoc(object):
     def convert_file(self, from_path, to_path):
         document = self.open(from_path)
         converted = self.convert_contents(document)
-        self.saver(to_path, converted)
+        self.save(to_path, converted)
 
     def convert_contents(self, contents):
         contents = self.preprocess(contents)

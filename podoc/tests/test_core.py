@@ -41,5 +41,11 @@ def test_open_save_text(tempdir, contents):
     assert open_text(path) == contents
 
 
-def test_podoc_trivial(podoc, contents):
+def test_podoc_trivial(tempdir, podoc, contents):
     assert podoc.convert_contents(contents) == contents
+
+    from_path = op.join(tempdir, 'test_from.txt')
+    to_path = op.join(tempdir, 'test_to.txt')
+    save_text(from_path, contents)
+    podoc.convert_file(from_path, to_path)
+    assert open_text(to_path) == contents
