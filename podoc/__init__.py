@@ -46,6 +46,30 @@ logger = logging.getLogger()
 logger.addHandler(logging.NullHandler())
 
 
+_logger_fmt = '%(asctime)s  [%(levelname)s]  %(caller)s %(message)s'
+_logger_date_fmt = '%Y-%m-%d %H:%M:%S'
+
+
+class _Formatter(logging.Formatter):
+    def format(self, record):
+        # Only keep the first character in the level name.
+        record.levelname = record.levelname[0]
+        filename = op.splitext(op.basename(record.pathname))[0]
+        record.caller = '{:s}:{:d}'.format(filename, record.lineno).ljust(16)
+        return super(_Formatter, self).format(record)
+
+
+def add_default_handler(level='INFO'):
+    handler = logging.StreamHandler()
+    handler.setLevel(level)
+
+    formatter = _Formatter(fmt=_logger_fmt,
+                           datefmt=_logger_date_fmt)
+    handler.setFormatter(formatter)
+
+    logger.addHandler(handler)
+
+
 def test():
     """Run the full testing suite of podoc."""
     import pytest
