@@ -133,3 +133,20 @@ class Podoc(object):
 
     def set_file_saver(self, func):
         self.file_saver = func
+
+    # Plugins
+    # -------------------------------------------------------------------------
+
+    def set_plugins(self, plugins=(), plugins_from=(), plugins_to=()):
+        plugins = [P() for P in plugins]
+        plugins_from = [P() for P in plugins_from]
+        plugins_to = [P() for P in plugins_to]
+
+        for p in plugins:
+            p.register(self)
+
+        for p in plugins_from:
+            p.register_from(self)
+
+        for p in plugins_to:
+            p.register_to(self)

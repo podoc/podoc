@@ -17,6 +17,10 @@ from ..plugin import IPluginRegistry, IPlugin, discover_plugins
 # Fixtures
 #------------------------------------------------------------------------------
 
+def setup():
+    IPluginRegistry.plugins = []
+
+
 def teardown():
     IPluginRegistry.plugins = []
 
