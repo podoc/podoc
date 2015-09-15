@@ -156,13 +156,21 @@ class MyPlugin(IPlugin):
     format_name  # optional: if set, one can use this name as an alias
     file_extensions  # optional: list of supported file extensions
 
-    def preprocessor(self, contents):
-        return contents
+    def register(self, podoc):
+        """Called when the plugin is activated with `--plugins`."""
+        pass
 
-    def register(self):
-        self.podoc.add_preprocessor(self.preprocessor)
+    def register_from(self, podoc):
+        """Called when the plugin is activated with `--from`."""
+        pass
+
+    def register_to(self, podoc):
+        """Called when the plugin is activated with `--to`."""
+        pass
 ...
 ```
+
+You can interact with the `Pandoc` instance in the `register*()` methods. This allows you to add preprocessors, postprocessors, filters, and set a reader and/or a writer.
 
 Then, use the following command:
 
@@ -170,17 +178,9 @@ Then, use the following command:
 podoc myfile.xxx -o myfile.yyy --plugins=MyPlugin
 ```
 
-This will use the preprocessor defined in `MyPlugin`.
+You can also use the `--from` and `--to` parameters to specify the plugins to use for the input and output.
 
-In the plugin, you have access to `self.podoc`, the `Podoc` instance.
-
-You can also use other methods:
-
-* `preprocessor(contents)`
-* `reader(contents)`
-* `filter(ast)`
-* `writer(ast)`
-* `postprocessor(contents)`
+If no input/output plugins are specified, podoc will look at the file extensions and activate the plugins that have registered themselves with these extensions. If 0 or 2 or more plugins are found for the input or the output, an error is raised.
 
 There is a `podoc-contrib` repository with common user-contributed plugins.
 
