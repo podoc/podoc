@@ -34,12 +34,20 @@ class Podoc(object):
 
     """
     file_opener = None
-    preprocessors = ()
+    preprocessors = None
     reader = None
-    filters = ()
+    filters = None
     writer = None
-    postprocessors = ()
+    postprocessors = None
     file_saver = None
+
+    def __init__(self):
+        if self.preprocessors is None:
+            self.preprocessors = []
+        if self.filters is None:
+            self.filters = []
+        if self.postprocessors is None:
+            self.postprocessors = []
 
     # Individual stages
     # -------------------------------------------------------------------------
@@ -93,7 +101,7 @@ class Podoc(object):
     def convert_file(self, from_path, to_path):
         document = self.open(from_path)
         converted = self.convert_contents(document)
-        self.save(to_path, converted)
+        return self.save(to_path, converted)
 
     def convert_contents(self, contents):
         contents = self.preprocess(contents)
