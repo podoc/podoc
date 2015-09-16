@@ -47,10 +47,5 @@ def hello_ast():
 
 
 @yield_fixture
-def hello_ast_path():
-    yield _test_file_path('hello_ast.py')
-
-
-@yield_fixture
 def hello_markdown():
     yield _load_test_file('hello.md')

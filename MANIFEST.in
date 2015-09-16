@@ -2,5 +2,7 @@ include LICENSE.md
 include README.md
 
 recursive-include tests *
+recursive-include podoc/test_files *.*
+recursive-include podoc/plugins/*/*.*
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]

@@ -7,6 +7,8 @@
 # Imports
 #------------------------------------------------------------------------------
 
+import os.path as op
+
 from ..json import JSON
 
 
@@ -21,8 +23,11 @@ def test_read_json(podoc, hello_pandoc_path, hello_ast):
     assert ast == hello_ast
 
 
-def test_write_json(podoc, hello_ast, hello_pandoc):
+def test_write_json(tempdir, podoc, hello_ast, hello_pandoc):
     """Test podoc AST => pandoc dict."""
     podoc.set_plugins(plugins_to=[JSON])
     json = podoc.convert_contents(hello_ast)
     assert json == hello_pandoc
+    path = op.join(tempdir, 'test.json')
+    with open(path, 'w') as f:
+        podoc.save(f, json)
