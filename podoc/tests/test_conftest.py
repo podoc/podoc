@@ -27,3 +27,7 @@ def test_hello_ast(hello_ast):
     assert hello_ast.blocks[0].name == 'Para'
     assert hello_ast.blocks[0].inlines[0] == 'hello'
     assert hello_ast.blocks[0].inlines[2].name == 'Emph'
+
+
+def test_hello_markdown(hello_markdown):
+    assert hello_markdown == 'hello *world*\n'
