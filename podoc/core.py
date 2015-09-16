@@ -114,24 +114,45 @@ class Podoc(object):
     # -------------------------------------------------------------------------
 
     def set_file_opener(self, func):
+        """A file opener is a function `str (path)` -> `str (or object)`.
+
+        The output may be a string or another type of object, like a file
+        handle, etc.
+
+        """
         self.file_opener = func
 
     def add_preprocessor(self, func):
         self.preprocessors.append(func)
 
     def set_reader(self, func):
+        """A reader is a function `str (or object)` -> `ast`.
+
+        The input corresponds to the output of the file opener.
+
+        """
         self.reader = func
 
     def add_filter(self, func):
         self.filters.append(func)
 
     def set_writer(self, func):
+        """A reader is a function `ast` -> `str (or object)`.
+
+        The output corresponds to the input of the file saver.
+
+        """
         self.writer = func
 
     def add_postprocessor(self, func):
         self.postprocessors.append(func)
 
     def set_file_saver(self, func):
+        """A file saver is a function `str (path), str (or object) -> None`.
+
+        The second input corresponds to the output of the writer.
+
+        """
         self.file_saver = func
 
     # Plugins

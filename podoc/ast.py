@@ -62,6 +62,10 @@ class Inline(Bunch):
         self.contents.append(contents)
 
 
+#------------------------------------------------------------------------------
+# Conversion to pandoc dict
+#------------------------------------------------------------------------------
+
 def _inline_to_pandoc(inline):
     if isinstance(inline, str):
         return {
