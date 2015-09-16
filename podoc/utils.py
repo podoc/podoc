@@ -7,8 +7,8 @@
 # Imports
 #------------------------------------------------------------------------------
 
-import os.path as op
 import json
+import os.path as op
 
 
 #------------------------------------------------------------------------------
@@ -25,8 +25,12 @@ class Bunch(dict):
         return Bunch(super(Bunch, self).copy())
 
 
+#------------------------------------------------------------------------------
+# Fixture utility functions
+#------------------------------------------------------------------------------
+
 def _test_file_path(filename):
-    curdir = op.realpath(op.dirname(__file__))
+    curdir = op.dirname(op.realpath(__file__))
     path = op.join(curdir, 'test_files/' + filename)
     return path
 
@@ -34,16 +38,17 @@ def _test_file_path(filename):
 def _load_test_file(filename):
     path = _test_file_path(filename)
     ext = op.splitext(filename)[1]
-    if ext == '.json':
-        with open(path, 'r') as f:
+    with open(path, 'r') as f:
+        if ext == '.json':
             return json.load(f)
-    elif ext == '.md':
-        with open(path, 'r') as f:
+        elif ext == '.md':
             return f.read()
-    elif ext == '.py':
-        assert op.splitext(filename)[0].endswith('_ast')
-        with open(path, 'r') as f:
+        if ext == '.py':
+            assert op.splitext(filename)[0].endswith('_ast')
             contents = f.read()
-        ns = {}
-        exec(contents, {}, ns)
-        return ns['ast']
+            ns = {}
+            exec(contents, {}, ns)
+            return ns['ast']
+        else:
+            raise ValueError("This file extension is unsupported in "
+                             "test_files.")
