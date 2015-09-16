@@ -121,9 +121,11 @@ class Podoc(object):
 
         """
         self.file_opener = func
+        return self
 
     def add_preprocessor(self, func):
         self.preprocessors.append(func)
+        return self
 
     def set_reader(self, func):
         """A reader is a function `str (or object)` -> `ast`.
@@ -132,9 +134,11 @@ class Podoc(object):
 
         """
         self.reader = func
+        return self
 
     def add_filter(self, func):
         self.filters.append(func)
+        return self
 
     def set_writer(self, func):
         """A reader is a function `ast` -> `str (or object)`.
@@ -143,9 +147,11 @@ class Podoc(object):
 
         """
         self.writer = func
+        return self
 
     def add_postprocessor(self, func):
         self.postprocessors.append(func)
+        return self
 
     def set_file_saver(self, func):
         """A file saver is a function `str (path), str (or object) -> None`.
@@ -154,6 +160,7 @@ class Podoc(object):
 
         """
         self.file_saver = func
+        return self
 
     # Plugins
     # -------------------------------------------------------------------------
@@ -171,3 +178,5 @@ class Podoc(object):
 
         for p in plugins_to:
             p.register_to(self)
+
+        return self
