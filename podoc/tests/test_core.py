@@ -9,25 +9,8 @@
 
 import os.path as op
 
-from pytest import yield_fixture
-
-from ..core import Podoc, open_text, save_text
+from ..core import open_text, save_text
 from ..plugin import IPlugin
-
-
-#------------------------------------------------------------------------------
-# Fixtures
-#------------------------------------------------------------------------------
-
-@yield_fixture
-def podoc():
-    yield Podoc()
-
-
-@yield_fixture
-def contents():
-    contents = 'hello *world*!'
-    yield contents
 
 
 #------------------------------------------------------------------------------

@@ -97,10 +97,10 @@ class Podoc(object):
     # Main methods
     # -------------------------------------------------------------------------
 
-    def convert_file(self, from_path, to_path):
+    def convert_file(self, from_path, to_path=None):
         document = self.open(from_path)
         converted = self.convert_contents(document)
-        return self.save(to_path, converted)
+        return self.save(to_path, converted) if to_path else converted
 
     def convert_contents(self, contents):
         contents = self.preprocess(contents)
