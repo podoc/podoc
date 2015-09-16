@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 class AST(Bunch):
     def __init__(self, *args, **kwargs):
         super(AST, self).__init__(*args, **kwargs)
-        self.meta = {}
-        self.blocks = []
+        self.meta = kwargs.pop('meta', {})
+        self.blocks = kwargs.pop('blocks', [])
 
     def add_metadata(self, **kwargs):
         self.meta.update(**kwargs)
@@ -63,7 +63,7 @@ class Inline(Bunch):
 
 
 #------------------------------------------------------------------------------
-# Conversion to pandoc dict
+# Conversion to pandoc
 #------------------------------------------------------------------------------
 
 def _inline_to_pandoc(inline):
@@ -87,5 +87,36 @@ def _block_to_pandoc(block):
 
 
 def to_pandoc(ast):
+    """Convert a podoc AST to a pandoc dict."""
     return [{'unMeta': ast.meta},
             [_block_to_pandoc(block) for block in ast.blocks]]
+
+
+#------------------------------------------------------------------------------
+# Conversion from pandoc
+#------------------------------------------------------------------------------
+
+def _from_pandoc_inline(inline):
+    name = inline['t']
+    contents = inline['c']
+    if name == 'Str':
+        return contents
+    else:
+        return Inline(name=name,
+                      contents=[_from_pandoc_inline(i) for i in contents])
+
+
+def _from_pandoc_block(block):
+    name = block['t']
+    inlines = block['c']
+    inlines = [_from_pandoc_inline(i) for i in inlines]
+    return Block(name=name, inlines=inlines)
+
+
+def from_pandoc(pandoc):
+    """Convert a pandoc dict to a podoc AST."""
+    assert len(pandoc) == 2
+    meta = pandoc[0]['unMeta']
+    blocks = pandoc[1]
+    blocks = [_from_pandoc_block(b) for b in blocks]
+    return AST(meta=meta, blocks=blocks)

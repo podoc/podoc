@@ -7,23 +7,30 @@
 # Imports
 #------------------------------------------------------------------------------
 
-from ..ast import AST, Block, Inline, to_pandoc
+from pytest import yield_fixture
+
+from ..ast import AST, Block, Inline, to_pandoc, from_pandoc
 
 
 #------------------------------------------------------------------------------
-# Tests
+# Fixtures
 #------------------------------------------------------------------------------
 
-def test_ast():
-    pandoc_json = [{'unMeta': {'k': 'v'}}, [
-                   {'c': [{'c': 'hello', 't': 'Str'},
-                          {'c': [], 't': 'Space'},
-                          {'c': [{'c': 'world', 't': 'Str'}], 't': 'Emph'}],
-                    't': 'Para'},
-                   {'c': [{'c': 'hi!', 't': 'Str'}],
-                    't': 'Para'}]
-                   ]
+@yield_fixture
+def pandoc():
+    pandoc = [{'unMeta': {'k': 'v'}}, [
+              {'c': [{'c': 'hello', 't': 'Str'},
+                     {'c': [], 't': 'Space'},
+                     {'c': [{'c': 'world', 't': 'Str'}], 't': 'Emph'}],
+               't': 'Para'},
+              {'c': [{'c': 'hi!', 't': 'Str'}],
+               't': 'Para'}]
+              ]
+    yield pandoc
 
+
+@yield_fixture
+def ast():
     ast = AST()
     ast.add_metadata(k='v')
 
@@ -43,5 +50,20 @@ def test_ast():
     block = Block(name='Para',
                   inlines=['hi!'])
     ast.add_block(block)
+    yield ast
 
-    assert to_pandoc(ast) == pandoc_json
+
+#------------------------------------------------------------------------------
+# Tests
+#------------------------------------------------------------------------------
+
+def test_to_pandoc(pandoc, ast):
+    pandoc_converted = to_pandoc(ast)
+    assert pandoc_converted == pandoc
+
+
+def test_from_pandoc(pandoc, ast):
+    ast_converted = from_pandoc(pandoc)
+    # NOTE: block metadata is lost by pandoc.
+    ast.blocks[0].meta = {}
+    assert ast_converted == ast
