@@ -81,7 +81,7 @@ def test_reader_plugins(test_file_tuple):
     _test_readers(*test_file_tuple)
 
 
-def _test_writer_plugins(test_file_tuple):
+def test_writer_plugins(test_file_tuple):
     """This test is called on all plugin test files.
 
     It tests the writers of all plugins.

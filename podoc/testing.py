@@ -79,7 +79,7 @@ def iter_test_files():
 
 def _test_readers(plugin_name, test_name, path):
     p = get_plugin(plugin_name)
-    logger.debug("Read test file %s.", path)
+    logger.debug("Test file %s: reader.", path)
     ast_read = Podoc().set_plugins(plugins_from=[p]).read_file(path)
     ast_expected = open_test_file('%s_ast.py' % test_name)
     assert ast_read == ast_expected
@@ -87,7 +87,7 @@ def _test_readers(plugin_name, test_name, path):
 
 def _test_writers(plugin_name, test_name, path):
     p = get_plugin(plugin_name)
-    logger.debug("Write test file %s.", path)
+    logger.debug("Test file %s: writer.", path)
     ast = open_test_file('%s_ast.py' % test_name)
     converted = Podoc().set_plugins(plugins_to=[p]).write_contents(ast)
     assert converted == open_file(path, plugin_name)

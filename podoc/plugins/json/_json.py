@@ -26,22 +26,18 @@ class JSON(IPlugin):
 
     def _open_json(self, path):
         logger.debug("Open JSON file `%s`.", path)
-        f = open(path, 'r')
-        return f
+        with open(path, 'r') as f:
+            return json.load(f)
 
-    def _read_json_file(self, f):
-        contents = json.load(f)
-        f.close()
-        logger.debug("Close JSON file `%s`.", f.name)
+    def _read_json_file(self, contents):
         return from_pandoc(contents)
 
     def _write_json(self, ast):
-        json = to_pandoc(ast)
-        return json
+        return to_pandoc(ast)
 
     def _save_json(self, path, contents):
-        json.dump(contents, path, sort_keys=True, indent=2)
         logger.debug("Save JSON file `%s`.", path)
+        json.dump(contents, path, sort_keys=True, indent=2)
         return contents
 
     def register_from(self, podoc):

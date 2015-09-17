@@ -121,7 +121,8 @@ def test_podoc_plugins(podoc):
 
 
 def test_open_file(hello_pandoc_path):
-    with open_file(hello_pandoc_path) as f:
-        assert f.name.endswith('.json')
-    with open_file(hello_pandoc_path, plugin_name='json') as f:
-        assert f.name.endswith('.json')
+    for d in (open_file(hello_pandoc_path),
+              open_file(hello_pandoc_path, plugin_name='json')):
+        assert len(d) == 2
+        assert 'unMeta' in d[0]
+        assert isinstance(d[1], list)
