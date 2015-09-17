@@ -77,8 +77,7 @@ def iter_test_files():
                            op.join(dir_path, file))
 
 
-@pytest.mark.skipif()
-def test_readers(plugin_name, test_name, path):
+def _test_readers(plugin_name, test_name, path):
     p = get_plugin(plugin_name)
     logger.debug("Read test file %s.", path)
     ast_read = Podoc().set_plugins(plugins_from=[p]).read_file(path)

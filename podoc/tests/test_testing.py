@@ -13,7 +13,7 @@ from pytest import raises
 
 from ..ast import AST
 from ..testing import (get_test_file_path, open_test_file,
-                       iter_test_files, test_names, test_readers)
+                       iter_test_files, test_names, _test_readers)
 
 
 #------------------------------------------------------------------------------
@@ -42,4 +42,4 @@ def test_iter_test_files():
 
 def test_test_readers():
     plugin_name, test_name, path = next(iter_test_files())
-    test_readers(plugin_name, test_name, path)
+    _test_readers(plugin_name, test_name, path)
