@@ -11,8 +11,7 @@ import os.path as op
 
 from ..core import save_text
 from ..plugin import (IPluginRegistry, IPlugin, discover_plugins, get_plugin,
-                      iter_plugins_dirs, iter_plugins_test_files,
-                      test_names)
+                      iter_plugins_dirs, _load_all_native_plugins)
 
 from pytest import yield_fixture, raises
 
@@ -68,11 +67,5 @@ def test_iter_plugins_dirs():
                       for plugin_dir in iter_plugins_dirs()]
 
 
-def test_test_names():
-    assert 'hello' in test_names()
-
-
-def test_iter_plugins_test_files():
-    tests = [(plugin_name, test_name)
-             for (plugin_name, test_name, _) in iter_plugins_test_files()]
-    assert ('json', 'hello') in tests
+def test_load_all_native_plugins(no_native_plugins):
+    _load_all_native_plugins()

@@ -12,9 +12,11 @@ import logging
 import os
 import os.path as op
 import subprocess
+import sys
 
 from .core import Podoc  # noqa
-from .plugin import IPlugin, discover_plugins, get_plugin  # noqa
+from .plugin import (IPlugin, discover_plugins, get_plugin,
+                     _load_all_native_plugins)  # noqa
 
 
 #------------------------------------------------------------------------------
@@ -74,17 +76,9 @@ def add_default_handler(level='INFO'):
     logger.addHandler(handler)
 
 
-def test():  # pragma: no cover
-    """Run the full testing suite of podoc."""
-    import pytest
-    pytest.main()
-
-
-def _load_all_native_plugins():
-    """Load all native plugins when importing the library."""
-    curdir = op.dirname(op.realpath(__file__))
-    plugins_dir = op.join(curdir, 'plugins')
-    discover_plugins([plugins_dir])
+if '--debug' in sys.argv:  # pragma: no cover
+    add_default_handler('DEBUG')
+    logger.info("Activate DEBUG level.")
 
 
 # Load all native plugins when importing the library.

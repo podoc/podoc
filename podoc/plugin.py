@@ -83,15 +83,19 @@ def discover_plugins(dirs):
     """
     # Scan all subdirectories recursively.
     for plugin_dir in dirs:
+        # logger.debug("Scanning %s", plugin_dir)
         plugin_dir = op.realpath(plugin_dir)
         for subdir, dirs, files in os.walk(plugin_dir):
             # Skip test folders.
-            if 'test' in op.basename(subdir):
+            base = op.basename(subdir)
+            if 'test' in base or '__' in base:
                 continue
+            logger.debug("Scanning %s.", subdir)
             for filename in files:
-                if (filename.startswith(('_', '.')) or
+                if (filename.startswith('__') or
                         not filename.endswith('.py')):
                     continue  # pragma: no cover
+                logger.debug("  Found %s.", filename)
                 path = os.path.join(subdir, filename)
                 modname, ext = op.splitext(filename)
                 file, path, descr = imp.find_module(modname, [subdir])
@@ -110,32 +114,12 @@ def iter_plugins_dirs():
     names = [name for name in sorted(os.listdir(plugins_dir))
              if not name.startswith(('.', '_')) and
              op.isdir(op.join(plugins_dir, name))]
-
     for name in names:
         yield op.join(plugins_dir, name)
 
 
-def test_names():
-    """Return the names of all test files."""
+def _load_all_native_plugins():
+    """Load all native plugins when importing the library."""
     curdir = op.dirname(op.realpath(__file__))
-    test_files_dir = op.join(curdir, 'test_files')
-    names = [f[:-7] for f in os.listdir(test_files_dir)
-             if f.endswith('_ast.py')]
-    return sorted(names)
-
-
-def iter_plugins_test_files():
-    """Iterate over all test files in all plugin directories.
-
-    Yield a tuple `(plugin_name, test_name, path)`.
-
-    """
-    names = test_names()
-    for plugin_dir in iter_plugins_dirs():
-        dir_path = op.join(plugin_dir, 'test_files')
-        # Files that match one of the test names.
-        for file in os.listdir(dir_path):
-            for name in names:
-                if file.startswith(name):
-                    yield (op.basename(plugin_dir), name,
-                           op.join(plugin_dir, file))
+    plugins_dir = op.join(curdir, 'plugins')
+    discover_plugins([plugins_dir])
