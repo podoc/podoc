@@ -29,7 +29,9 @@ class IPluginRegistry(type):
     def __init__(cls, name, bases, attrs):
         if name != 'IPlugin':
             logger.debug("Register plugin %s.", name)
-            IPluginRegistry.plugins.append((cls, cls.file_extensions))
+            plugin_tuple = (cls, cls.file_extensions)
+            if plugin_tuple not in IPluginRegistry.plugins:
+                IPluginRegistry.plugins.append(plugin_tuple)
 
 
 class IPlugin(object, metaclass=IPluginRegistry):
@@ -47,6 +49,15 @@ class IPlugin(object, metaclass=IPluginRegistry):
     def register_to(self, podoc):
         """Called when the plugin is activated with `--to`."""
         pass
+
+
+def get_plugin(name_or_ext):
+    """Get a plugin class from its name or file extension."""
+    name_or_ext = name_or_ext.lower()
+    for (plugin, file_extension) in IPluginRegistry.plugins:
+        if (name_or_ext in plugin.__name__.lower() or
+                name_or_ext in file_extension):
+            return plugin
 
 
 #------------------------------------------------------------------------------

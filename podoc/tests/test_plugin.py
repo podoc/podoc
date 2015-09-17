@@ -10,34 +10,48 @@
 import os.path as op
 
 from ..core import save_text
-from ..plugin import (IPluginRegistry, IPlugin, discover_plugins,
+from ..plugin import (IPluginRegistry, IPlugin, discover_plugins, get_plugin,
                       iter_plugins_dirs, iter_plugin_test_files)
+
+from pytest import yield_fixture
 
 
 #------------------------------------------------------------------------------
 # Fixtures
 #------------------------------------------------------------------------------
 
-def setup():
+@yield_fixture
+def no_native_plugins():
+    # Save the plugins.
+    plugins = IPluginRegistry.plugins
     IPluginRegistry.plugins = []
-
-
-def teardown():
-    IPluginRegistry.plugins = []
+    yield
+    IPluginRegistry.plugins = plugins
 
 
 #------------------------------------------------------------------------------
 # Tests
 #------------------------------------------------------------------------------
 
-def test_plugin_registration():
+def test_plugin_registration(no_native_plugins):
     class MyPlugin(IPlugin):
         pass
 
     assert IPluginRegistry.plugins == [(MyPlugin, ())]
 
 
-def test_discover_plugins(tempdir):
+def test_get_plugin():
+    assert get_plugin('jso').__name__ == 'JSON'
+    assert get_plugin('JSO').__name__ == 'JSON'
+    assert get_plugin('JSON').__name__ == 'JSON'
+    assert get_plugin('json').__name__ == 'JSON'
+    assert get_plugin('.json').__name__ == 'JSON'
+
+    assert get_plugin('.jso') is None
+    assert get_plugin('jsonn') is None
+
+
+def test_discover_plugins(tempdir, no_native_plugins):
     path = op.join(tempdir, 'my_plugin.py')
     contents = '''from podoc import IPlugin\nclass MyPlugin(IPlugin): pass'''
     save_text(path, contents)

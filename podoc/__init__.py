@@ -14,7 +14,7 @@ import os.path as op
 import subprocess
 
 from .core import Podoc
-from .plugin import IPlugin, discover_plugins
+from .plugin import IPlugin, discover_plugins, get_plugin
 
 
 #------------------------------------------------------------------------------
@@ -87,4 +87,5 @@ def _load_all_native_plugins():
     discover_plugins([plugins_dir])
 
 
+# Load all native plugins when importing the library.
 _load_all_native_plugins()
