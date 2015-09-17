@@ -115,10 +115,27 @@ def iter_plugins_dirs():
         yield op.join(plugins_dir, name)
 
 
-def iter_plugin_test_files(plugin_dir):
-    """Iterate over all test_file files in a plugin directory."""
-    test_files_path = op.join(plugin_dir, 'test_files')
-    test_files = (os.listdir(test_files_path)
-                  if op.exists(test_files_path) else [])
-    for filename in test_files:
-        yield filename
+def test_names():
+    """Return the names of all test files."""
+    curdir = op.dirname(op.realpath(__file__))
+    test_files_dir = op.join(curdir, 'test_files')
+    names = [f[:-7] for f in os.listdir(test_files_dir)
+             if f.endswith('_ast.py')]
+    return sorted(names)
+
+
+def iter_plugins_test_files():
+    """Iterate over all test files in all plugin directories.
+
+    Yield a tuple `(plugin_name, test_name, path)`.
+
+    """
+    names = test_names()
+    for plugin_dir in iter_plugins_dirs():
+        dir_path = op.join(plugin_dir, 'test_files')
+        # Files that match one of the test names.
+        for file in os.listdir(dir_path):
+            for name in names:
+                if file.startswith(name):
+                    yield (op.basename(plugin_dir), name,
+                           op.join(plugin_dir, file))
