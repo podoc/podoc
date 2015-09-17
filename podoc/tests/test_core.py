@@ -33,9 +33,18 @@ def test_podoc_complete(podoc):
     podoc.add_postprocessor(lambda x: x[:-1] + x[-1].upper())
     podoc.set_file_saver(lambda path, contents: (contents + ' in ' + path))
 
-    contents = 'abc'
-    assert podoc.convert_contents(contents) == 'Abc filteR'
-    assert podoc.convert_file(contents, 'path') == 'Abc open filteR in path'
+    path = 'abc'
+    contents = path + ' open'
+    ast = ['Abc', 'open']
+
+    assert podoc.convert_file(path, 'path') == 'Abc open filteR in path'
+    assert podoc.convert_contents(contents) == 'Abc open filteR'
+
+    assert podoc.read_file(path) == ast
+    assert podoc.read_contents(contents) == ast
+
+    assert podoc.write_contents(ast) == 'Abc opeN'
+    assert podoc.write_file('path', ast) == 'Abc opeN in path'
 
 
 def test_podoc_plugins(podoc):

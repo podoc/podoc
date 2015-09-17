@@ -59,23 +59,27 @@ class Podoc(object):
     # -------------------------------------------------------------------------
 
     def open(self, path):
+        """Open a file and return an object."""
         if self.file_opener is None:
             self.file_opener = open_text
         assert self.file_opener is not None
         return self.file_opener(path)
 
     def save(self, path, contents):
+        """Save contents to a file."""
         if self.file_saver is None:
             self.file_saver = save_text
         assert self.file_saver is not None
         return self.file_saver(path, contents)
 
     def preprocess(self, contents):
+        """Apply preprocessors to contents."""
         for p in self.preprocessors:
             contents = p(contents)
         return contents
 
     def read(self, contents):
+        """Read contents to an AST."""
         if self.reader is None:
             raise RuntimeError("No reader has been set.")
         assert self.reader is not None
@@ -83,11 +87,13 @@ class Podoc(object):
         return ast
 
     def filter(self, ast):
+        """Apply filters to an AST."""
         for f in self.filters:
             ast = f(ast)
         return ast
 
     def write(self, ast):
+        """Write an AST to contents."""
         if self.writer is None:
             raise RuntimeError("No writer has been set.")
         assert self.writer is not None
@@ -95,6 +101,7 @@ class Podoc(object):
         return converted
 
     def postprocess(self, contents):
+        """Apply postprocessors to contents."""
         for p in self.postprocessors:
             contents = p(contents)
         return contents
@@ -103,24 +110,40 @@ class Podoc(object):
     # -------------------------------------------------------------------------
 
     def read_contents(self, contents):
-        """Read contents and return an AST."""
+        """Read contents and return an AST.
+
+        Preprocessors -> Reader.
+
+        """
         contents = self.preprocess(contents)
         ast = self.read(contents)
         return ast
 
     def read_file(self, from_path):
-        """Read a file and return an AST."""
+        """Read a file and return an AST.
+
+        FileOpener -> Preprocessors -> Reader.
+
+        """
         contents = self.open(from_path)
         return self.read_contents(contents)
 
     def write_contents(self, ast):
-        """Write an AST to contents."""
+        """Write an AST to contents.
+
+        Writer -> Postprocessors.
+
+        """
         converted = self.write(ast)
         converted = self.postprocess(converted)
         return converted
 
     def write_file(self, to_path, ast):
-        """Write an AST to a file."""
+        """Write an AST to a file.
+
+        Writer -> Postprocessors -> FileSaver.
+
+        """
         converted = self.write_contents(ast)
         return self.save(to_path, converted) if to_path else converted
 
