@@ -91,7 +91,7 @@ def discover_plugins(dirs):
             for filename in files:
                 if (filename.startswith(('_', '.')) or
                         not filename.endswith('.py')):
-                    continue
+                    continue  # pragma: no cover
                 path = os.path.join(subdir, filename)
                 modname, ext = op.splitext(filename)
                 file, path, descr = imp.find_module(modname, [subdir])
