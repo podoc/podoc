@@ -8,6 +8,9 @@
 #------------------------------------------------------------------------------
 
 import logging
+import os.path as op
+
+from .plugin import get_plugin
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +28,10 @@ def save_text(path, contents):
     with open(path, 'w') as f:
         return f.write(contents)
 
+
+#------------------------------------------------------------------------------
+# Main class
+#------------------------------------------------------------------------------
 
 class Podoc(object):
     """Conversion pipeline for markup documents.
@@ -180,3 +187,23 @@ class Podoc(object):
             p.register_to(self)
 
         return self
+
+
+#------------------------------------------------------------------------------
+# Misc functions
+#------------------------------------------------------------------------------
+
+def open_file(path, plugin_name=None):
+    """Open a file using a given plugin.
+
+    If no plugin is specified, the file extension is used to find the
+    appropriate plugin.
+
+    """
+    if plugin_name is None:
+        search = op.splitext(path)[1]
+    else:
+        search = plugin_name
+    plugin = get_plugin(search)
+    assert plugin
+    return Podoc().set_plugins(plugins_from=[plugin]).open(path)

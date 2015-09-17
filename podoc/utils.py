@@ -37,6 +37,8 @@ def _test_file_path(filename):
 
 def _load_test_file(filename):
     path = _test_file_path(filename)
+    if not op.exists(path):
+        raise ValueError("The test file %s doesn't exist." % filename)
     ext = op.splitext(filename)[1]
     with open(path, 'r') as f:
         if ext == '.json':

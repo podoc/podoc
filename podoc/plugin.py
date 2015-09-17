@@ -58,6 +58,7 @@ def get_plugin(name_or_ext):
         if (name_or_ext in plugin.__name__.lower() or
                 name_or_ext in file_extension):
             return plugin
+    raise ValueError("The plugin %s cannot be found." % name_or_ext)
 
 
 #------------------------------------------------------------------------------

@@ -9,7 +9,7 @@
 
 import os.path as op
 
-from ..core import open_text, save_text
+from ..core import open_text, save_text, open_file
 from ..plugin import IPlugin
 
 
@@ -81,3 +81,10 @@ def test_podoc_plugins(podoc):
     contents = 'abc'
     assert podoc.convert_contents(contents) == 'Abc filteR'
     assert podoc.convert_file(contents, 'path') == 'Abc open filteR in path'
+
+
+def test_open_file(hello_pandoc_path):
+    with open_file(hello_pandoc_path) as f:
+        assert f.name.endswith('.json')
+    with open_file(hello_pandoc_path, plugin_name='json') as f:
+        assert f.name.endswith('.json')

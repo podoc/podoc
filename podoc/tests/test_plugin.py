@@ -13,7 +13,7 @@ from ..core import save_text
 from ..plugin import (IPluginRegistry, IPlugin, discover_plugins, get_plugin,
                       iter_plugins_dirs, iter_plugin_test_files)
 
-from pytest import yield_fixture
+from pytest import yield_fixture, raises
 
 
 #------------------------------------------------------------------------------
@@ -47,8 +47,10 @@ def test_get_plugin():
     assert get_plugin('json').__name__ == 'JSON'
     assert get_plugin('.json').__name__ == 'JSON'
 
-    assert get_plugin('.jso') is None
-    assert get_plugin('jsonn') is None
+    with raises(ValueError):
+        assert get_plugin('.jso') is None
+    with raises(ValueError):
+        assert get_plugin('jsonn') is None
 
 
 def test_discover_plugins(tempdir, no_native_plugins):
