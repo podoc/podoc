@@ -10,7 +10,8 @@
 import os.path as op
 
 from ..core import save_text
-from ..plugin import IPluginRegistry, IPlugin, discover_plugins
+from ..plugin import (IPluginRegistry, IPlugin, discover_plugins,
+                      iter_plugins_dirs)
 
 
 #------------------------------------------------------------------------------
@@ -43,3 +44,8 @@ def test_discover_plugins(tempdir):
     plugins = discover_plugins([tempdir])
     assert plugins
     assert plugins[0].__name__ == 'MyPlugin'
+
+
+def test_iter_plugins_dirs():
+    assert 'json' in [op.basename(plugin_dir)
+                      for plugin_dir in iter_plugins_dirs()]
