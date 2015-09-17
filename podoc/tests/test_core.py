@@ -54,6 +54,39 @@ def test_podoc_complete(podoc):
     assert podoc.write_file('path', ast) == 'Abc opeN in path'
 
 
+def test_podoc_incomplete_plugins(podoc):
+    class EmptyPlugin0(IPlugin):
+        pass
+
+    class EmptyPlugin1(IPlugin):
+        def register(self, podoc):
+            pass
+
+    class EmptyPluginFrom(IPlugin):
+        def register_from(self, podoc):
+            pass
+
+    class EmptyPluginTo(IPlugin):
+        def register_to(self, podoc):
+            pass
+
+    with raises(NotImplementedError):
+        podoc.set_plugins([EmptyPlugin0])
+    podoc.set_plugins([EmptyPlugin1])
+
+    with raises(NotImplementedError):
+        podoc.set_plugins(plugins_from=[EmptyPlugin1])
+    with raises(NotImplementedError):
+        podoc.set_plugins(plugins_from=[EmptyPluginTo])
+    podoc.set_plugins(plugins_from=[EmptyPluginFrom])
+
+    with raises(NotImplementedError):
+        podoc.set_plugins(plugins_to=[EmptyPlugin1])
+    with raises(NotImplementedError):
+        podoc.set_plugins(plugins_to=[EmptyPluginFrom])
+    podoc.set_plugins(plugins_to=[EmptyPluginTo])
+
+
 def test_podoc_plugins(podoc):
 
     class MyPlugin1(IPlugin):

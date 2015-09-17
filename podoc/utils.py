@@ -51,6 +51,6 @@ def _open_test_file(filename):
             ns = {}
             exec(contents, {}, ns)
             return ns['ast']
-        else:
+        else:  # pragma: no cover
             raise ValueError("This file extension is unsupported in "
                              "test_files.")

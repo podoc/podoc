@@ -13,8 +13,8 @@ import os
 import os.path as op
 import subprocess
 
-from .core import Podoc
-from .plugin import IPlugin, discover_plugins, get_plugin
+from .core import Podoc  # noqa
+from .plugin import IPlugin, discover_plugins, get_plugin  # noqa
 
 
 #------------------------------------------------------------------------------
@@ -32,7 +32,7 @@ def _git_version():
                     '--always', '--tags'],
                    stderr=fnull).strip().decode('ascii'))
         return version
-    except (OSError, subprocess.CalledProcessError):
+    except (OSError, subprocess.CalledProcessError):  # pragma: no cover
         return ""
     finally:
         os.chdir(curdir)
@@ -74,7 +74,7 @@ def add_default_handler(level='INFO'):
     logger.addHandler(handler)
 
 
-def test():
+def test():  # pragma: no cover
     """Run the full testing suite of podoc."""
     import pytest
     pytest.main()
