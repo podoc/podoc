@@ -28,6 +28,7 @@ class IPluginRegistry(type):
 
     def __init__(cls, name, bases, attrs):
         if name != 'IPlugin':
+            logger.debug("Register plugin %s.", name)
             IPluginRegistry.plugins.append(cls)
 
 
@@ -68,11 +69,20 @@ def discover_plugins(dirs):
         List of plugin classes.
 
     """
-    for dir in dirs:
-        for filename in os.listdir(dir):
-            modname, ext = op.splitext(filename)
-            if ext == '.py':
-                file, path, descr = imp.find_module(modname, [dir])
+    # Scan all subdirectories recursively.
+    for plugin_dir in dirs:
+        plugin_dir = op.realpath(plugin_dir)
+        for subdir, dirs, files in os.walk(plugin_dir):
+            # Skip test folders.
+            if 'test' in op.basename(subdir):
+                continue
+            for filename in files:
+                if (filename.startswith(('_', '.')) or
+                        not filename.endswith('.py')):
+                    continue
+                path = os.path.join(subdir, filename)
+                modname, ext = op.splitext(filename)
+                file, path, descr = imp.find_module(modname, [subdir])
                 if file:
                     # Loading the module registers the plugin in
                     # IPluginRegistry

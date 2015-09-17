@@ -14,7 +14,7 @@ import os.path as op
 import subprocess
 
 from .core import Podoc
-from .plugin import IPlugin
+from .plugin import IPlugin, discover_plugins
 
 
 #------------------------------------------------------------------------------
@@ -46,11 +46,12 @@ __version_git__ = __version__ + _git_version()
 
 # Set a null handler on the root logger
 logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.NullHandler())
 
 
 _logger_fmt = '%(asctime)s  [%(levelname)s]  %(caller)s %(message)s'
-_logger_date_fmt = '%Y-%m-%d %H:%M:%S'
+_logger_date_fmt = '%H:%M:%S'
 
 
 class _Formatter(logging.Formatter):
@@ -77,3 +78,13 @@ def test():
     """Run the full testing suite of podoc."""
     import pytest
     pytest.main()
+
+
+def _load_all_native_plugins():
+    """Load all native plugins when importing the library."""
+    curdir = op.dirname(op.realpath(__file__))
+    plugins_dir = op.join(curdir, 'plugins')
+    discover_plugins([plugins_dir])
+
+
+_load_all_native_plugins()
