@@ -34,7 +34,7 @@ def test_plugin_registration():
     class MyPlugin(IPlugin):
         pass
 
-    assert IPluginRegistry.plugins == [MyPlugin]
+    assert IPluginRegistry.plugins == [(MyPlugin, ())]
 
 
 def test_discover_plugins(tempdir):
@@ -43,7 +43,7 @@ def test_discover_plugins(tempdir):
     save_text(path, contents)
     plugins = discover_plugins([tempdir])
     assert plugins
-    assert plugins[0].__name__ == 'MyPlugin'
+    assert plugins[0][0].__name__ == 'MyPlugin'
 
 
 def test_iter_plugins_dirs():

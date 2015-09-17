@@ -29,7 +29,7 @@ class IPluginRegistry(type):
     def __init__(cls, name, bases, attrs):
         if name != 'IPlugin':
             logger.debug("Register plugin %s.", name)
-            IPluginRegistry.plugins.append(cls)
+            IPluginRegistry.plugins.append((cls, cls.file_extensions))
 
 
 class IPlugin(object, metaclass=IPluginRegistry):
