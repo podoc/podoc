@@ -24,18 +24,6 @@ def test_open_save_text(tempdir, hello_markdown):
     assert open_text(path) == hello_markdown
 
 
-def test_podoc_trivial(tempdir, podoc, hello_markdown):
-    # In-memory
-    assert podoc.convert_contents(hello_markdown) == hello_markdown
-
-    # Convert from file to file
-    from_path = op.join(tempdir, 'test_from.txt')
-    to_path = op.join(tempdir, 'test_to.txt')
-    save_text(from_path, hello_markdown)
-    podoc.convert_file(from_path, to_path)
-    assert open_text(to_path) == hello_markdown
-
-
 def test_podoc_complete(podoc):
     podoc.set_file_opener(lambda path: (path + ' open'))
     podoc.add_preprocessor(lambda x: x[0].upper() + x[1:])

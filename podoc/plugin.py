@@ -40,15 +40,15 @@ class IPlugin(object, metaclass=IPluginRegistry):
 
     def register(self, podoc):
         """Called when the plugin is activated with `--plugins`."""
-        pass
+        raise NotImplementedError()
 
     def register_from(self, podoc):
         """Called when the plugin is activated with `--from`."""
-        pass
+        raise NotImplementedError()
 
     def register_to(self, podoc):
         """Called when the plugin is activated with `--to`."""
-        pass
+        raise NotImplementedError()
 
 
 def get_plugin(name_or_ext):

@@ -77,8 +77,7 @@ class Podoc(object):
 
     def read(self, contents):
         if self.reader is None:
-            logger.warn("No reader set")
-            return contents
+            raise RuntimeError("No reader has been set.")
         assert self.reader is not None
         ast = self.reader(contents)
         return ast
@@ -90,8 +89,7 @@ class Podoc(object):
 
     def write(self, ast):
         if self.writer is None:
-            logger.warn("No writer set")
-            return ast
+            raise RuntimeError("No writer has been set.")
         assert self.writer is not None
         converted = self.writer(ast)
         return converted
@@ -101,20 +99,45 @@ class Podoc(object):
             contents = p(contents)
         return contents
 
-    # Main methods
+    # Partial conversion methods
+    # -------------------------------------------------------------------------
+
+    def read_contents(self, contents):
+        """Read contents and return an AST."""
+        contents = self.preprocess(contents)
+        ast = self.read(contents)
+        return ast
+
+    def read_file(self, from_path):
+        """Read a file and return an AST."""
+        contents = self.open(from_path)
+        return self.read_contents(contents)
+
+    def write_contents(self, ast):
+        """Write an AST to contents."""
+        converted = self.write(ast)
+        converted = self.postprocess(converted)
+        return converted
+
+    def write_file(self, to_path, ast):
+        """Write an AST to a file."""
+        converted = self.write_contents(ast)
+        return self.save(to_path, converted) if to_path else converted
+
+    # Complete conversion methods
     # -------------------------------------------------------------------------
 
     def convert_file(self, from_path, to_path=None):
-        document = self.open(from_path)
-        converted = self.convert_contents(document)
+        """Convert a file."""
+        contents = self.open(from_path)
+        converted = self.convert_contents(contents)
         return self.save(to_path, converted) if to_path else converted
 
     def convert_contents(self, contents):
-        contents = self.preprocess(contents)
-        ast = self.read(contents)
+        """Convert contents without writing files."""
+        ast = self.read_contents(contents)
         ast = self.filter(ast)
-        converted = self.write(ast)
-        converted = self.postprocess(converted)
+        converted = self.write_contents(ast)
         return converted
 
     # Pipeline configuration
