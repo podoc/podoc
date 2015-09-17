@@ -9,6 +9,8 @@
 
 import os.path as op
 
+from pytest import raises
+
 from ..core import open_text, save_text, open_file
 from ..plugin import IPlugin
 
@@ -25,6 +27,15 @@ def test_open_save_text(tempdir, hello_markdown):
 
 
 def test_podoc_complete(podoc):
+    path = 'abc'
+    contents = path + ' open'
+    ast = ['Abc', 'open']
+
+    with raises(RuntimeError):
+        podoc.read_contents(contents)
+    with raises(RuntimeError):
+        podoc.write_contents(ast)
+
     podoc.set_file_opener(lambda path: (path + ' open'))
     podoc.add_preprocessor(lambda x: x[0].upper() + x[1:])
     podoc.set_reader(lambda x: x.split(' '))
@@ -32,10 +43,6 @@ def test_podoc_complete(podoc):
     podoc.set_writer(lambda x: ' '.join(x))
     podoc.add_postprocessor(lambda x: x[:-1] + x[-1].upper())
     podoc.set_file_saver(lambda path, contents: (contents + ' in ' + path))
-
-    path = 'abc'
-    contents = path + ' open'
-    ast = ['Abc', 'open']
 
     assert podoc.convert_file(path, 'path') == 'Abc open filteR in path'
     assert podoc.convert_contents(contents) == 'Abc open filteR'
