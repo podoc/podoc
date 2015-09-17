@@ -14,7 +14,7 @@ import os.path as op
 
 import pytest
 
-from .core import Podoc
+from .core import Podoc, open_file
 from .plugin import iter_plugins_dirs, get_plugin
 
 logger = logging.getLogger(__name__)
@@ -83,6 +83,14 @@ def _test_readers(plugin_name, test_name, path):
     ast_read = Podoc().set_plugins(plugins_from=[p]).read_file(path)
     ast_expected = open_test_file('%s_ast.py' % test_name)
     assert ast_read == ast_expected
+
+
+def _test_writers(plugin_name, test_name, path):
+    p = get_plugin(plugin_name)
+    logger.debug("Write test file %s.", path)
+    ast = open_test_file('%s_ast.py' % test_name)
+    converted = Podoc().set_plugins(plugins_to=[p]).write_contents(ast)
+    assert converted == open_file(path, plugin_name)
 
 
 def test():  # pragma: no cover

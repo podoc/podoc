@@ -41,5 +41,6 @@ def test_iter_test_files():
 
 
 def test_test_readers():
+    """Test the test file reader on a single test file."""
     plugin_name, test_name, path = next(iter_test_files())
     _test_readers(plugin_name, test_name, path)

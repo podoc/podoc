@@ -12,6 +12,7 @@ import os.path as op
 from ..core import save_text
 from ..plugin import (IPluginRegistry, IPlugin, discover_plugins, get_plugin,
                       iter_plugins_dirs, _load_all_native_plugins)
+from ..testing import _test_readers, _test_writers
 
 from pytest import yield_fixture, raises
 
@@ -69,3 +70,21 @@ def test_iter_plugins_dirs():
 
 def test_load_all_native_plugins(no_native_plugins):
     _load_all_native_plugins()
+
+
+def test_reader_plugins(test_file_tuple):
+    """This test is called on all plugin test files.
+
+    It tests the readers of all plugins.
+
+    """
+    _test_readers(*test_file_tuple)
+
+
+def _test_writer_plugins(test_file_tuple):
+    """This test is called on all plugin test files.
+
+    It tests the writers of all plugins.
+
+    """
+    _test_writers(*test_file_tuple)
