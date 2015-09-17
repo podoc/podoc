@@ -8,4 +8,4 @@
 # Imports
 #------------------------------------------------------------------------------
 
-from .json import JSON
+from ._json import JSON
