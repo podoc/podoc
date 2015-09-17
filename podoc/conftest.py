@@ -12,7 +12,7 @@ from tempfile import TemporaryDirectory
 from pytest import yield_fixture
 
 from podoc import Podoc, add_default_handler
-from podoc.utils import _load_test_file, _test_file_path
+from podoc.utils import _open_test_file, _test_file_path
 
 
 #------------------------------------------------------------------------------
@@ -36,12 +36,12 @@ def podoc():
 
 @yield_fixture
 def hello_ast():
-    yield _load_test_file('hello_ast.py')
+    yield _open_test_file('hello_ast.py')
 
 
 @yield_fixture
 def hello_pandoc():
-    yield _load_test_file('hello.json')
+    yield _open_test_file('hello.json')
 
 
 @yield_fixture
@@ -51,4 +51,4 @@ def hello_pandoc_path():
 
 @yield_fixture
 def hello_markdown():
-    yield _load_test_file('hello.md')
+    yield _open_test_file('hello.md')

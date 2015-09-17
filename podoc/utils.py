@@ -35,7 +35,7 @@ def _test_file_path(filename):
     return path
 
 
-def _load_test_file(filename):
+def _open_test_file(filename):
     path = _test_file_path(filename)
     if not op.exists(path):
         raise ValueError("The test file %s doesn't exist." % filename)
