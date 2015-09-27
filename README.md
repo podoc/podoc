@@ -224,6 +224,7 @@ Ideally, every plugin should be in a dedicated subdirectory with a `README.md` d
 
 * `Atlas`: filter replacing code blocks in a given language by executable `<pre>` HTML code blocks, and LaTeX equations by `<span>` HTML blocks.
 * `CodeEval`: preprocessor evaluating code enclosed in particular markup syntax (as provided by a regular expression). This allows for **literate programming**, using Python or any other language.
+* `UrlChecker`: find all broken hypertext links.
 * `Macros`: macro preprocessor based on regular expressions. The macro substitutions can be listed in the `macros` metadata array in the document, or in `c.Macros.substitutions = [(regex, repl), ...]` in your `.podoc/config.py`.
 * `Prompt`: filter transforming a code block containing interactive input and output. There are several options:
     * Transforming to a code block with different input/output formats
