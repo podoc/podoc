@@ -39,15 +39,19 @@ class Podoc(object):
     This class implements the core conversion functionality of podoc.
 
     """
-    opener = open_text
+    opener = None
     preprocessors = None
     reader = None
     filters = None
     writer = None
     postprocessors = None
-    saver = save_text
+    saver = None
 
     def __init__(self):
+        if self.opener is None:
+            self.opener = open_text
+        if self.saver is None:
+            self.saver = save_text
         if self.preprocessors is None:
             self.preprocessors = []
         if self.filters is None:
