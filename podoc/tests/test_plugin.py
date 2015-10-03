@@ -14,7 +14,7 @@ from ..plugin import (IPluginRegistry, IPlugin, discover_plugins, get_plugin,
                       iter_plugins_dirs, _load_all_native_plugins)
 from ..testing import _test_readers, _test_writers
 
-from pytest import yield_fixture, raises
+from pytest import yield_fixture, raises, mark
 
 
 #------------------------------------------------------------------------------
@@ -72,6 +72,10 @@ def test_load_all_native_plugins(no_native_plugins):
     _load_all_native_plugins()
 
 
+#------------------------------------------------------------------------------
+# Test all plugins on all test files
+#------------------------------------------------------------------------------
+
 def test_reader_plugins(test_file_tuple):
     """This test is called on all plugin test files.
 
@@ -88,3 +92,15 @@ def test_writer_plugins(test_file_tuple):
 
     """
     _test_writers(*test_file_tuple)
+
+
+@mark.parametrize('plugin_path', iter_plugins_dirs())
+def test_saver_plugins(tempdir, podoc, hello_ast, plugin_path):
+    """For every plugin, save the hello AST to a file, read it, and compare
+    to the original AST."""
+    plugin_name = op.basename(plugin_path)
+    p = get_plugin(plugin_name)
+    output_path = op.join(tempdir, 'output')
+    podoc.attach(p, 'to').write_file(output_path, hello_ast)
+    ast = podoc.attach(p, 'from').read_file(output_path)
+    assert ast == hello_ast
