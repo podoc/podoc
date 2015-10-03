@@ -183,24 +183,21 @@ To create a plugin, create a Python script in one of the plugin directories, and
 
 ```python
 class MyPlugin(IPlugin):
-    format_name  # optional: if set, one can use this name as an alias
     file_extensions  # optional: list of supported file extensions
-
-    def register(self, podoc):
-        """Called when the plugin is activated with `--plugins`."""
-        pass
-
-    def register_from(self, podoc):
-        """Called when the plugin is activated with `--from`."""
-        pass
-
-    def register_to(self, podoc):
-        """Called when the plugin is activated with `--to`."""
-        pass
 ...
 ```
 
-You can interact with the `Pandoc` instance in the `register*()` methods. This allows you to add preprocessors, postprocessors, filters, and set a reader and/or a writer.
+You can implement the following methods:
+
+* `opener(path)`
+* `preprocessor(contents)`
+* `reader(contents)`
+* `filter(ast)`
+* `writer(ast)`
+* `postprocessor(contents)`
+* `saver(path, contents)`
+
+For more fine-grained capabilities, you can also implement `attach(podoc, steps)` and `attach_<step>(podoc)` for all steps. See the implementation of `IPlugin` for more details.
 
 Then, use the following command:
 
@@ -208,9 +205,9 @@ Then, use the following command:
 podoc myfile.xxx -o myfile.yyy --plugins=MyPlugin
 ```
 
-You can also use the `--from` and `--to` parameters to specify the plugins to use for the input and output.
+You can also use the `--from` and `--to` parameters to specify the plugins to use for the input and output documents.
 
-If no input/output plugins are specified, podoc will look at the file extensions and activate the plugins that have registered themselves with these extensions. If 0 or 2 or more plugins are found for the input or the output, an error is raised.
+If no input/output plugins are specified, podoc will look at the file extensions and activate the plugins that have registered themselves with these extensions. If several plugins try to register themselves for the reader or writer, an exception is raised (only one reader/writer is allowed).
 
 There is a `podoc-contrib` repository with common user-contributed plugins.
 
@@ -224,13 +221,13 @@ Ideally, every plugin should be in a dedicated subdirectory with a `README.md` d
 
 * `Atlas`: filter replacing code blocks in a given language by executable `<pre>` HTML code blocks, and LaTeX equations by `<span>` HTML blocks.
 * `CodeEval`: preprocessor evaluating code enclosed in particular markup syntax (as provided by a regular expression). This allows for **literate programming**, using Python or any other language.
-* `UrlChecker`: find all broken hypertext links.
 * `Macros`: macro preprocessor based on regular expressions. The macro substitutions can be listed in the `macros` metadata array in the document, or in `c.Macros.substitutions = [(regex, repl), ...]` in your `.podoc/config.py`.
 * `Prompt`: filter transforming a code block containing interactive input and output. There are several options:
     * Transforming to a code block with different input/output formats
     * Removing the output
     * Evaluating the input and adding the output
     * Put the output in a paragraph
+* `UrlChecker`: find all broken hypertext links.
 
 
 ## Code structure
