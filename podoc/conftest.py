@@ -57,4 +57,9 @@ def hello_markdown():
 def pytest_generate_tests(metafunc):
     """Generate the test_file_tuple fixture to test all plugin test files."""
     if 'test_file_tuple' in metafunc.fixturenames:
-        metafunc.parametrize('test_file_tuple', iter_test_files())
+
+        def _name(tuple):
+            """Name of the parameterized test: <plugin>_<example_file>."""
+            return '_'.join(tuple[:2])
+
+        metafunc.parametrize('test_file_tuple', iter_test_files(), ids=_name)
