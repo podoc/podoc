@@ -9,7 +9,7 @@
 
 from pytest import yield_fixture
 
-from ..ast import AST, Block, Inline, to_json, from_json
+from ..ast import AST, Block, Inline, to_json, from_json, _remove_json_meta
 
 
 #------------------------------------------------------------------------------
@@ -18,13 +18,17 @@ from ..ast import AST, Block, Inline, to_json, from_json
 
 @yield_fixture
 def json():
-    json = [{'unMeta': {'k': 'v'}}, [
+    json = [{'unMeta': {}}, [
             {'c': [{'c': 'hello', 't': 'Str'},
                    {'c': [], 't': 'Space'},
                    {'c': [{'c': 'world', 't': 'Str'}], 't': 'Emph'}],
-             't': 'Para'},
+             't': 'Para',
+             'm': {'zero': 0},
+             },
             {'c': [{'c': 'hi!', 't': 'Str'}],
-             't': 'Para'}]
+             't': 'Para',
+             'm': {},
+             }]
             ]
     yield json
 
@@ -32,14 +36,13 @@ def json():
 @yield_fixture
 def ast():
     ast = AST()
-    ast.add_metadata(k='v')
 
     # First block
     block = Block(name='Para',
                   inlines=['hello',
                            Inline(name='Space'),
                            ])
-    block.add_metadata(kb='vb')
+    block.add_metadata(zero=0)
     inline = Inline(name='Emph')
     inline.set_contents([])
     inline.add_contents('world')
@@ -57,6 +60,21 @@ def ast():
 # Tests
 #------------------------------------------------------------------------------
 
+def test_remove_json_meta(json):
+    json = _remove_json_meta(json)
+    expected = [{'unMeta': {}}, [
+                {'c': [{'c': 'hello', 't': 'Str'},
+                       {'c': [], 't': 'Space'},
+                       {'c': [{'c': 'world', 't': 'Str'}], 't': 'Emph'}],
+                 't': 'Para',
+                 },
+                {'c': [{'c': 'hi!', 't': 'Str'}],
+                 't': 'Para',
+                 }]
+                ]
+    assert json == expected
+
+
 def test_to_json(json, ast):
     json_converted = to_json(ast)
     assert json_converted == json
@@ -64,6 +82,4 @@ def test_to_json(json, ast):
 
 def test_from_json(json, ast):
     ast_converted = from_json(json)
-    # NOTE: block metadata is lost by json.
-    ast.blocks[0].meta = {}
     assert ast_converted == ast

@@ -12,13 +12,26 @@ import os.path as op
 from pytest import raises
 
 from ..ast import AST
-from ..testing import (get_test_file_path, open_test_file,
+from ..testing import (ae, get_test_file_path, open_test_file,
                        iter_test_files, test_names, _test_readers)
 
 
 #------------------------------------------------------------------------------
 # Tests
 #------------------------------------------------------------------------------
+
+def test_ae():
+    ae(1, 1)
+    ae(1., 1)
+
+    ae({'a': 1, 'm': {}}, {'a': 1})
+    with raises(AssertionError):
+        ae({'a': 1, 'b': {}}, {'a': 1})
+
+    ae('abc\n', 'abc\n')
+    with raises(AssertionError):
+        ae('abc\n', 'abc')
+
 
 def test_get_test_file_path():
     assert op.exists(get_test_file_path('hello_ast.py'))

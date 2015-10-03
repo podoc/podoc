@@ -14,6 +14,7 @@ import os.path as op
 
 import pytest
 
+from .ast import _remove_json_meta
 from .core import Podoc, open_file
 from .plugin import iter_plugins_dirs, get_plugin
 
@@ -23,6 +24,13 @@ logger = logging.getLogger(__name__)
 #------------------------------------------------------------------------------
 # Fixture utility functions
 #------------------------------------------------------------------------------
+
+def ae(a, b):
+    if isinstance(a, (list, dict)):
+        assert _remove_json_meta(a) == _remove_json_meta(b)
+    else:
+        assert a == b
+
 
 def get_test_file_path(filename):
     curdir = op.dirname(op.realpath(__file__))
@@ -90,7 +98,7 @@ def _test_writers(plugin_name, test_name, path):
     logger.debug("Test file %s: writer.", path)
     ast = open_test_file('%s_ast.py' % test_name)
     converted = Podoc().attach(p, 'to').write_contents(ast)
-    assert converted == open_file(path, plugin_name)
+    ae(converted, open_file(path, plugin_name))
 
 
 def test():  # pragma: no cover

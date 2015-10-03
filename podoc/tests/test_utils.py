@@ -11,6 +11,7 @@ import json
 import logging
 import os.path as op
 
+from ..testing import ae
 from ..utils import Bunch, pandoc
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ def test_pandoc(tempdir, hello_markdown, hello_json):
         return
 
     converted = json.loads(output)
-    assert converted == hello_json
+    ae(converted, hello_json)
 
 
 def test_pandoc_meta(tempdir, hello_markdown):
