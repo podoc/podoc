@@ -41,5 +41,6 @@ class JSON(IPlugin):
         """Save a JSON dict to a file."""
         # path, json_dict -> None
         logger.debug("Save JSON file `%s`.", path)
-        json.dump(contents, path, sort_keys=True, indent=2)
+        with open(path, 'w') as f:
+            json.dump(contents, f, sort_keys=True, indent=2)
         return contents
