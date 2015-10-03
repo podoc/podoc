@@ -11,10 +11,15 @@ import json
 import logging
 import os.path as op
 
-from ..testing import ae
+from pytest import mark
+
+from ..testing import ae, has_pandoc
 from ..utils import Bunch, pandoc
 
 logger = logging.getLogger(__name__)
+
+require_pandoc = mark.skipif(not(has_pandoc()),
+                             reason='pypandoc is not available')
 
 
 #------------------------------------------------------------------------------
@@ -34,23 +39,17 @@ def test_bunch():
 # Test pandoc wrapper
 #------------------------------------------------------------------------------
 
+@require_pandoc
 def test_pandoc(tempdir, hello_markdown, hello_json):
     from_path = op.join(tempdir, 'hello.md')
     with open(from_path, 'w') as f:
         f.write(hello_markdown)
-    try:
-        output = pandoc(from_path, 'json')
-    except ImportError:  # pragma: no cover
-        logger.warn("pypandoc is not installed.")
-        return
-    except FileNotFoundError:  # pragma: no cover
-        logger.warn("pandoc is not installed.")
-        return
-
+    output = pandoc(from_path, 'json')
     converted = json.loads(output)
     ae(converted, hello_json)
 
 
+@require_pandoc
 def test_pandoc_meta(tempdir, hello_markdown):
     pandoc_json = [{'unMeta': {}}, [
                    {'c': [{'c': 'hello', 't': 'Str'}],
