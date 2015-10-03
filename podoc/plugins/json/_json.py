@@ -24,7 +24,7 @@ class JSON(IPlugin):
     file_extensions = ('.json',)
 
     def opener(self, path):
-        """Open a file and return a file handle."""
+        """Open a file and return a JSON dict."""
         logger.debug("Open JSON file `%s`.", path)
         with open(path, 'r') as f:
             return json.load(f)

@@ -87,7 +87,7 @@ def _block_to_json(block):
 
 
 def to_json(ast):
-    """Convert a podoc AST to a json dict."""
+    """Convert a podoc AST to a pandoc-compatible JSON dict."""
     return [{'unMeta': ast.meta},
             [_block_to_json(block) for block in ast.blocks]]
 
@@ -114,7 +114,7 @@ def _from_json_block(block):
 
 
 def from_json(json):
-    """Convert a json dict to a podoc AST."""
+    """Convert a JSON pandoc-compatible dict to a podoc AST."""
     assert len(json) == 2
     meta = json[0]['unMeta']
     blocks = json[1]

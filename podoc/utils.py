@@ -15,3 +15,13 @@ class Bunch(dict):
 
     def copy(self):
         return Bunch(super(Bunch, self).copy())
+
+
+#------------------------------------------------------------------------------
+# pandoc wrapper
+#------------------------------------------------------------------------------
+
+def pandoc_convert(from_path, to_path, **kwargs):
+    """Convert a document with pandoc."""
+    import pypandoc
+    return pypandoc.convert(from_path, to_path, **kwargs)
