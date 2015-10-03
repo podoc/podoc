@@ -10,7 +10,7 @@
 import json
 import logging
 
-from podoc.ast import from_pandoc, to_pandoc
+from podoc.ast import from_json, to_json
 from podoc.plugin import IPlugin
 
 logger = logging.getLogger(__name__)
@@ -30,10 +30,10 @@ class JSON(IPlugin):
             return json.load(f)
 
     def _read_json_file(self, contents):
-        return from_pandoc(contents)
+        return from_json(contents)
 
     def _write_json(self, ast):
-        return to_pandoc(ast)
+        return to_json(ast)
 
     def _save_json(self, path, contents):
         logger.debug("Save JSON file `%s`.", path)
@@ -47,7 +47,7 @@ class JSON(IPlugin):
         podoc.set_reader(self._read_json_file)
 
     def register_to(self, podoc):
-        # AST -> pandoc dict
+        # AST -> json dict
         podoc.set_writer(self._write_json)
-        # path, pandoc_dict -> None
+        # path, json_dict -> None
         podoc.set_file_saver(self._save_json)

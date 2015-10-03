@@ -37,7 +37,7 @@ class PyTest(TestCommand):
     def run_tests(self):
         #import here, cause outside the eggs aren't loaded
         import pytest
-        pytest_string = '-s ' + self.pytest_args
+        pytest_string = self.pytest_args
         print("Running: py.test " + pytest_string)
         errno = pytest.main(pytest_string)
         sys.exit(errno)

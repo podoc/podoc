@@ -40,12 +40,12 @@ def hello_ast():
 
 
 @yield_fixture
-def hello_pandoc():
+def hello_json():
     yield open_test_file('hello.json')
 
 
 @yield_fixture
-def hello_pandoc_path():
+def hello_json_path():
     yield get_test_file_path('hello.json')
 
 

@@ -120,9 +120,9 @@ def test_podoc_plugins(podoc):
     assert podoc.convert_file(contents, 'path') == 'Abc open filteR in path'
 
 
-def test_open_file(hello_pandoc_path):
-    for d in (open_file(hello_pandoc_path),
-              open_file(hello_pandoc_path, plugin_name='json')):
+def test_open_file(hello_json_path):
+    for d in (open_file(hello_json_path),
+              open_file(hello_json_path, plugin_name='json')):
         assert len(d) == 2
         assert 'unMeta' in d[0]
         assert isinstance(d[1], list)

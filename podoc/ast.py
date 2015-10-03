@@ -63,10 +63,10 @@ class Inline(Bunch):
 
 
 #------------------------------------------------------------------------------
-# Conversion to pandoc
+# Conversion to json
 #------------------------------------------------------------------------------
 
-def _inline_to_pandoc(inline):
+def _inline_to_json(inline):
     if isinstance(inline, str):
         return {
             't': 'Str',
@@ -75,48 +75,48 @@ def _inline_to_pandoc(inline):
     else:
         return {
             't': inline.name,
-            'c': [_inline_to_pandoc(i) for i in inline.contents],
+            'c': [_inline_to_json(i) for i in inline.contents],
         }
 
 
-def _block_to_pandoc(block):
+def _block_to_json(block):
     return {
         't': block.name,
-        'c': [_inline_to_pandoc(inline) for inline in block.inlines],
+        'c': [_inline_to_json(inline) for inline in block.inlines],
     }
 
 
-def to_pandoc(ast):
-    """Convert a podoc AST to a pandoc dict."""
+def to_json(ast):
+    """Convert a podoc AST to a json dict."""
     return [{'unMeta': ast.meta},
-            [_block_to_pandoc(block) for block in ast.blocks]]
+            [_block_to_json(block) for block in ast.blocks]]
 
 
 #------------------------------------------------------------------------------
-# Conversion from pandoc
+# Conversion from json
 #------------------------------------------------------------------------------
 
-def _from_pandoc_inline(inline):
+def _from_json_inline(inline):
     name = inline['t']
     contents = inline['c']
     if name == 'Str':
         return contents
     else:
         return Inline(name=name,
-                      contents=[_from_pandoc_inline(i) for i in contents])
+                      contents=[_from_json_inline(i) for i in contents])
 
 
-def _from_pandoc_block(block):
+def _from_json_block(block):
     name = block['t']
     inlines = block['c']
-    inlines = [_from_pandoc_inline(i) for i in inlines]
+    inlines = [_from_json_inline(i) for i in inlines]
     return Block(name=name, inlines=inlines)
 
 
-def from_pandoc(pandoc):
-    """Convert a pandoc dict to a podoc AST."""
-    assert len(pandoc) == 2
-    meta = pandoc[0]['unMeta']
-    blocks = pandoc[1]
-    blocks = [_from_pandoc_block(b) for b in blocks]
+def from_json(json):
+    """Convert a json dict to a podoc AST."""
+    assert len(json) == 2
+    meta = json[0]['unMeta']
+    blocks = json[1]
+    blocks = [_from_json_block(b) for b in blocks]
     return AST(meta=meta, blocks=blocks)
