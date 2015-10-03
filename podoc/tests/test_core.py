@@ -36,13 +36,13 @@ def test_podoc_complete(podoc):
     with raises(RuntimeError):
         podoc.write_contents(ast)
 
-    podoc.set_file_opener(lambda path: (path + ' open'))
+    podoc.set_opener(lambda path: (path + ' open'))
     podoc.add_preprocessor(lambda x: x[0].upper() + x[1:])
     podoc.set_reader(lambda x: x.split(' '))
     podoc.add_filter(lambda x: (x + ['filter']))
     podoc.set_writer(lambda x: ' '.join(x))
     podoc.add_postprocessor(lambda x: x[:-1] + x[-1].upper())
-    podoc.set_file_saver(lambda path, contents: (contents + ' in ' + path))
+    podoc.set_saver(lambda path, contents: (contents + ' in ' + path))
 
     assert podoc.convert_file(path, 'path') == 'Abc open filteR in path'
     assert podoc.convert_contents(contents) == 'Abc open filteR'
@@ -91,15 +91,13 @@ def test_podoc_plugins(podoc):
 
     class MyPlugin1(IPlugin):
         def register(self, podoc):
-            podoc.set_file_opener(lambda path: (path + ' open'))
+            podoc.set_opener(lambda path: (path + ' open'))
             podoc.add_preprocessor(lambda x: x[0].upper() + x[1:])
 
     class MyPlugin2(IPlugin):
         def register(self, podoc):
             podoc.add_postprocessor(lambda x: x[:-1] + x[-1].upper())
-            podoc.set_file_saver(lambda path, contents: (contents +
-                                                         ' in ' +
-                                                         path))
+            podoc.set_saver(lambda path, contents: (contents + ' in ' + path))
 
     class MyPluginFrom(IPlugin):
         def register_from(self, podoc):

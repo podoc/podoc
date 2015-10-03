@@ -39,13 +39,13 @@ class Podoc(object):
     This class implements the core conversion functionality of podoc.
 
     """
-    file_opener = open_text
+    opener = open_text
     preprocessors = None
     reader = None
     filters = None
     writer = None
     postprocessors = None
-    file_saver = save_text
+    saver = save_text
 
     def __init__(self):
         if self.preprocessors is None:
@@ -60,13 +60,13 @@ class Podoc(object):
 
     def open(self, path):
         """Open a file and return an object."""
-        assert self.file_opener is not None
-        return self.file_opener(path)
+        assert self.opener is not None
+        return self.opener(path)
 
     def save(self, path, contents):
         """Save contents to a file."""
-        assert self.file_saver is not None
-        return self.file_saver(path, contents)
+        assert self.saver is not None
+        return self.saver(path, contents)
 
     def preprocess(self, contents):
         """Apply preprocessors to contents."""
@@ -118,7 +118,7 @@ class Podoc(object):
     def read_file(self, from_path):
         """Read a file and return an AST.
 
-        FileOpener -> Preprocessors -> Reader.
+        Opener -> Preprocessors -> Reader.
 
         """
         contents = self.open(from_path)
@@ -137,7 +137,7 @@ class Podoc(object):
     def write_file(self, to_path, ast):
         """Write an AST to a file.
 
-        Writer -> Postprocessors -> FileSaver.
+        Writer -> Postprocessors -> Saver.
 
         """
         converted = self.write_contents(ast)
@@ -162,14 +162,14 @@ class Podoc(object):
     # Pipeline configuration
     # -------------------------------------------------------------------------
 
-    def set_file_opener(self, func):
-        """A file opener is a function `str (path)` -> `str (or object)`.
+    def set_opener(self, func):
+        """An Opener is a function `str (path)` -> `str (or object)`.
 
         The output may be a string or another type of object, like a file
         handle, etc.
 
         """
-        self.file_opener = func
+        self.opener = func
         return self
 
     def add_preprocessor(self, func):
@@ -202,13 +202,13 @@ class Podoc(object):
         self.postprocessors.append(func)
         return self
 
-    def set_file_saver(self, func):
-        """A file saver is a function `str (path), str (or object) -> None`.
+    def set_saver(self, func):
+        """A Saver is a function `str (path), str (or object) -> None`.
 
         The second input corresponds to the output of the writer.
 
         """
-        self.file_saver = func
+        self.saver = func
         return self
 
     # Plugins

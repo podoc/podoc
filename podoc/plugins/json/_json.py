@@ -41,7 +41,7 @@ class JSON(IPlugin):
 
     def register_from(self, podoc):
         # path -> file_handle
-        podoc.set_file_opener(self._open_json)
+        podoc.set_opener(self._open_json)
         # file_handle -> AST
         podoc.set_reader(self._read_json_file)
 
@@ -49,4 +49,4 @@ class JSON(IPlugin):
         # AST -> json dict
         podoc.set_writer(self._write_json)
         # path, json_dict -> None
-        podoc.set_file_saver(self._save_json)
+        podoc.set_saver(self._save_json)
