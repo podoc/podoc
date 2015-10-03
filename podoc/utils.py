@@ -21,7 +21,7 @@ class Bunch(dict):
 # pandoc wrapper
 #------------------------------------------------------------------------------
 
-def pandoc_convert(from_path, to_path, **kwargs):
+def pandoc(from_path, to_path, **kwargs):
     """Convert a document with pandoc."""
     import pypandoc
     return pypandoc.convert(from_path, to_path, **kwargs)

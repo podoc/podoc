@@ -11,7 +11,7 @@ import json
 import logging
 import os.path as op
 
-from ..utils import Bunch, pandoc_convert
+from ..utils import Bunch, pandoc
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +33,12 @@ def test_bunch():
 # Test pandoc wrapper
 #------------------------------------------------------------------------------
 
-def test_pandoc_convert(tempdir, hello_markdown, hello_json):
+def test_pandoc(tempdir, hello_markdown, hello_json):
     from_path = op.join(tempdir, 'hello.md')
     with open(from_path, 'w') as f:
         f.write(hello_markdown)
     try:
-        output = pandoc_convert(from_path, 'json')
+        output = pandoc(from_path, 'json')
     except ImportError:  # pragma: no cover
         logger.warn("pypandoc is not installed.")
         return
@@ -48,3 +48,17 @@ def test_pandoc_convert(tempdir, hello_markdown, hello_json):
 
     converted = json.loads(output)
     assert converted == hello_json
+
+
+def test_pandoc_meta(tempdir, hello_markdown):
+    pandoc_json = [{'unMeta': {}}, [
+                   {'c': [{'c': 'hello', 't': 'Str'}],
+                    't': 'Para',
+                    'm': {'zero': 0},
+                    },
+                   ]]
+    path = op.join(tempdir, 'hello.json')
+    with open(path, 'w') as f:
+        json.dump(pandoc_json, f)
+    output = pandoc(path, 'markdown')
+    assert output == 'hello\n'
