@@ -6,7 +6,7 @@ wiki
 __pycache__
 
 *.py[cod]
-.coverage*
+.coverage
 *credentials
 
 # C extensions

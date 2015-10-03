@@ -1,0 +1,6 @@
+[run]
+
+[report]
+exclude_lines =
+    pragma: no cover
+    pass

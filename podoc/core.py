@@ -214,20 +214,34 @@ class Podoc(object):
     # Plugins
     # -------------------------------------------------------------------------
 
-    def set_plugins(self, plugins=(), plugins_from=(), plugins_to=()):
-        plugins = [P() for P in plugins]
-        plugins_from = [P() for P in plugins_from]
-        plugins_to = [P() for P in plugins_to]
+    _from_steps = ('opener', 'preprocessors', 'reader')
+    _to_steps = ('writer', 'postprocessors', 'saver')
+    _all_steps = _from_steps + _to_steps + ('filters',)
 
-        for p in plugins:
-            p.register(self)
+    def attach(self, plugin, steps=None):
+        """Attach a plugin with the specified steps.
 
-        for p in plugins_from:
-            p.register_from(self)
+        Parameters
+        ----------
 
-        for p in plugins_to:
-            p.register_to(self)
+        plugin : IPlugin class
+            The plugin to attach to the current pipeline.
+        steps : str or list
+            List of pipeline steps to set with the plugin. The list of
+            accepted steps is: `opener`, `preprocessors`, `reader`, `filters`,
+            `writer`, `postprocessors`, `saver`. There are also two aliases:
+            `from` refers to the first three steps, `to` to the last three.
 
+        """
+        # By default, attach all steps.
+        if steps is None:
+            steps = self._all_steps
+        if steps == 'from':
+            steps = self._from_steps
+        elif steps == 'to':
+            steps = self._to_steps
+        assert set(steps) <= set(self._all_steps)
+        plugin().attach(self, steps)
         return self
 
 
@@ -248,4 +262,4 @@ def open_file(path, plugin_name=None):
         search = plugin_name
     plugin = get_plugin(search)
     assert plugin
-    return Podoc().set_plugins(plugins_from=[plugin]).open(path)
+    return Podoc().attach(plugin, ['opener']).open(path)

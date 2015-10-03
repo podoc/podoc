@@ -54,64 +54,69 @@ def test_podoc_complete(podoc):
     assert podoc.write_file('path', ast) == 'Abc opeN in path'
 
 
-def test_podoc_incomplete_plugins(podoc):
+def test_podoc_errors(podoc):
     class EmptyPlugin0(IPlugin):
         pass
 
-    class EmptyPlugin1(IPlugin):
-        def register(self, podoc):
-            pass
+    class EmptyPluginFilter(IPlugin):
+        pass
 
     class EmptyPluginFrom(IPlugin):
-        def register_from(self, podoc):
+        def reader(self, contents):
             pass
 
     class EmptyPluginTo(IPlugin):
-        def register_to(self, podoc):
+        def writer(self, ast):
             pass
 
-    with raises(NotImplementedError):
-        podoc.set_plugins([EmptyPlugin0])
-    podoc.set_plugins([EmptyPlugin1])
+    podoc.attach(EmptyPlugin0)
 
-    with raises(NotImplementedError):
-        podoc.set_plugins(plugins_from=[EmptyPlugin1])
-    with raises(NotImplementedError):
-        podoc.set_plugins(plugins_from=[EmptyPluginTo])
-    podoc.set_plugins(plugins_from=[EmptyPluginFrom])
+    # Only one reader can be attached.
+    podoc.attach(EmptyPluginFrom)
+    with raises(RuntimeError):
+        podoc.attach(EmptyPluginFrom)
 
-    with raises(NotImplementedError):
-        podoc.set_plugins(plugins_to=[EmptyPlugin1])
-    with raises(NotImplementedError):
-        podoc.set_plugins(plugins_to=[EmptyPluginFrom])
-    podoc.set_plugins(plugins_to=[EmptyPluginTo])
+    # Only one writer can be attached.
+    podoc.attach(EmptyPluginTo)
+    with raises(RuntimeError):
+        podoc.attach(EmptyPluginTo)
+
+    # Several filters can be attached.
+    podoc.attach(EmptyPluginFilter)
+    podoc.attach(EmptyPluginFilter)
 
 
 def test_podoc_plugins(podoc):
 
     class MyPlugin1(IPlugin):
-        def register(self, podoc):
-            podoc.set_opener(lambda path: (path + ' open'))
-            podoc.add_preprocessor(lambda x: x[0].upper() + x[1:])
+        def opener(self, path):
+            return path + ' open'
+
+        def preprocessor(self, contents):
+            return contents[0].upper() + contents[1:]
 
     class MyPlugin2(IPlugin):
-        def register(self, podoc):
-            podoc.add_postprocessor(lambda x: x[:-1] + x[-1].upper())
-            podoc.set_saver(lambda path, contents: (contents + ' in ' + path))
+        def postprocessor(self, contents):
+            return contents[:-1] + contents[-1].upper()
+
+        def saver(self, path, contents):
+            return contents + ' in ' + path
 
     class MyPluginFrom(IPlugin):
-        def register_from(self, podoc):
-            podoc.set_reader(lambda x: x.split(' '))
-            podoc.add_filter(lambda x: (x + ['filter']))
+        def reader(self, contents):
+            return contents.split(' ')
+
+        def filter(self, ast):
+            return ast + ['filter']
 
     class MyPluginTo(IPlugin):
-        def register_to(self, podoc):
-            podoc.set_writer(lambda x: ' '.join(x))
+        def writer(self, ast):
+            return ' '.join(ast)
 
-    plugins = (MyPlugin1, MyPlugin2)
-    plugins_from = (MyPluginFrom,)
-    plugins_to = (MyPluginTo,)
-    podoc.set_plugins(plugins, plugins_from, plugins_to)
+    podoc.attach(MyPlugin1)
+    podoc.attach(MyPlugin2)
+    podoc.attach(MyPluginFrom)
+    podoc.attach(MyPluginTo)
 
     contents = 'abc'
     assert podoc.convert_contents(contents) == 'Abc filteR'

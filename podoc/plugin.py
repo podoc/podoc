@@ -37,17 +37,83 @@ class IPluginRegistry(type):
 class IPlugin(object, metaclass=IPluginRegistry):
     file_extensions = ()
 
-    def register(self, podoc):
-        """Called when the plugin is activated with `--plugins`."""
-        raise NotImplementedError()
+    def attach(self, podoc, steps):
+        """Attach the plugin to the podoc.
 
-    def register_from(self, podoc):
-        """Called when the plugin is activated with `--from`."""
-        raise NotImplementedError()
+        By default, call `self.attach_<step>(podoc)` for all specified steps.
 
-    def register_to(self, podoc):
-        """Called when the plugin is activated with `--to`."""
-        raise NotImplementedError()
+        May be overridden by the plugin.
+
+        """
+        for step in steps:
+            getattr(self, 'attach_' + step)(podoc)
+
+    def attach_opener(self, podoc):
+        """Attach `self.opener` to the podoc.
+
+        May be overridden by the plugin.
+
+        """
+        if hasattr(self, 'opener'):
+            podoc.set_opener(self.opener)
+
+    def attach_preprocessors(self, podoc):
+        """Attach `self.preprocessor` to the podoc.
+
+        May be overridden by the plugin.
+
+        """
+        if hasattr(self, 'preprocessor'):
+            podoc.add_preprocessor(self.preprocessor)
+
+    def attach_reader(self, podoc):
+        """Attach `self.reader` to the podoc.
+
+        May be overridden by the plugin.
+
+        """
+        if hasattr(self, 'reader'):
+            if podoc.reader:
+                raise RuntimeError("A reader has already been attached.")
+            podoc.set_reader(self.reader)
+
+    def attach_filters(self, podoc):
+        """Attach `self.filter` to the podoc.
+
+        May be overridden by the plugin.
+
+        """
+        if hasattr(self, 'filter'):
+            podoc.add_filter(self.filter)
+
+    def attach_writer(self, podoc):
+        """Attach `self.writer` to the podoc.
+
+        May be overridden by the plugin.
+
+        """
+        if hasattr(self, 'writer'):
+            if podoc.writer:
+                raise RuntimeError("A writer has already been attached.")
+            podoc.set_writer(self.writer)
+
+    def attach_postprocessors(self, podoc):
+        """Attach `self.postprocessor` to the podoc.
+
+        May be overridden by the plugin.
+
+        """
+        if hasattr(self, 'postprocessor'):
+            podoc.add_postprocessor(self.postprocessor)
+
+    def attach_saver(self, podoc):
+        """Attach `self.saver` to the podoc.
+
+        May be overridden by the plugin.
+
+        """
+        if hasattr(self, 'saver'):
+            podoc.set_saver(self.saver)
 
 
 def get_plugin(name_or_ext):
