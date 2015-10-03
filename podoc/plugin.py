@@ -35,7 +35,6 @@ class IPluginRegistry(type):
 
 
 class IPlugin(object, metaclass=IPluginRegistry):
-    format_name = None
     file_extensions = ()
 
     def register(self, podoc):

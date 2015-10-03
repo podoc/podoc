@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 #------------------------------------------------------------------------------
 
 class JSON(IPlugin):
-    format_name = 'json'
     file_extensions = ('.json',)
 
     def _open_json(self, path):
