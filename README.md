@@ -12,7 +12,7 @@
 
 **This is a work in progress**
 
-**podoc** is a **minimalistic pure Python pandoc clone**, i.e. a markup document conversion library. Currently, it supports Markdown, Jupyter notebook, OpenDocument, O'Reilly Atlas, Python + comments. Support for ReST, LaTeX, HTML, AsciiDoc is planned.
+**podoc** is a **minimalistic pure Python pandoc companion**, i.e. a markup document conversion library. Currently, it supports Markdown, Jupyter notebook, OpenDocument, O'Reilly Atlas, Python + comments. Support for ReST, LaTeX, HTML, AsciiDoc is planned.
 
 podoc provides a Python API as well as a command-line tool. The architecture is modular and allows for the creation of plugins, custom formats, readers, writers, preprocessors, postprocessors, and filters.
 
@@ -21,7 +21,7 @@ podoc is heavily inspired by the awesome **pandoc** library: It tries to mimic t
 podoc is released under the BSD license.
 
 
-## Why another pandoc clone?
+## Why?
 
 pandoc is written in Haskell. Python wrappers generally call pandoc through a system call, which is a bit limited in terms of functionality and performance. Also, the dependency to the pandoc executable is a barrier to some Python projects.
 
