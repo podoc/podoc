@@ -12,11 +12,13 @@
 
 **This is a work in progress**
 
-**podoc** is a **minimalistic pure Python pandoc companion**, i.e. a markup document conversion library. Currently, it supports Markdown, Jupyter notebook, OpenDocument, O'Reilly Atlas, Python + comments. Support for ReST, LaTeX, HTML, AsciiDoc is planned.
+**podoc** is a **minimalistic pure Python pandoc companion**, i.e. a markup document conversion library **compatible with pandoc**. The plan is for podoc to support Markdown, Jupyter Notebook, OpenDocument, O'Reilly Atlas, Python + comments. Support for ReST, LaTeX, HTML, AsciiDoc is planned.
 
 podoc provides a Python API as well as a command-line tool. The architecture is modular and allows for the creation of plugins, custom formats, readers, writers, preprocessors, postprocessors, and filters.
 
-podoc is heavily inspired by the awesome **pandoc** library: It tries to mimic the abstractions and API when possible, but it does not intend to reproduce the full set of features. podoc also borrows ideas and code from the **mistune** Markdown parser. An earlier version of the code lives in the ipymd repository.
+podoc is heavily inspired by the awesome **pandoc** library: It tries to use the same abstractions, API, and internal format, but it does not intend to reproduce the full set of features. Instead, **podoc uses the same internal AST than pandoc for compatibility**.
+
+podoc also borrows ideas and code from the **mistune** Markdown parser. An earlier version of podoc lives in the ipymd repository.
 
 podoc is released under the BSD license.
 
@@ -25,7 +27,7 @@ podoc is released under the BSD license.
 
 pandoc is written in Haskell. Python wrappers generally call pandoc through a system call, which is a bit limited in terms of functionality and performance. Also, the dependency to the pandoc executable is a barrier to some Python projects.
 
-podoc provides both a command-line tool and a complete and flexible Python API. It has no dependency, but it has far less features than pandoc and supports many less formats. However, podoc supports the Jupyter Notebook format natively and provides a Jupyter extension for on-the-fly document conversion in the Notebook. This means you can read and edit non-notebook documents in the Jupyter Notebook, including documents written in Markdown, OpenOffice, and any format supported by podoc. As such, podoc replaces the previous ipymd library.
+podoc provides both a command-line tool and a complete and flexible Python API. It has no dependency, but it has far less features than pandoc and supports many less formats. However, podoc supports the Jupyter Notebook format natively and provides a Jupyter extension for on-the-fly document conversion in the Notebook. This means you can read and edit non-notebook documents in the Jupyter Notebook, including documents written in Markdown, OpenOffice, and any format supported by podoc and pandoc. As such, podoc replaces the previous ipymd library.
 
 In the long run, podoc could also share code with Jupyter nbconvert.
 
@@ -228,38 +230,3 @@ Ideally, every plugin should be in a dedicated subdirectory with a `README.md` d
     * Evaluating the input and adding the output
     * Put the output in a paragraph
 * `UrlChecker`: find all broken hypertext links.
-
-
-## Code structure
-
-```
-docs/
-examples/
-podoc/
-    plugins/
-        atlas/
-        code_eval/
-        json/
-            examples/
-                ex_a.json
-                ex_b.json
-                ...
-        macros/
-        markdown/
-            examples/
-                ex_a.md
-                ex_b.md
-                ...
-        notebook/
-        opendocument/
-        prompt/
-        python/
-    tests/                      unit tests
-    __init__.py
-    core.py
-    logging.py
-    script.py                   CLI tool based on the click library
-tests/                          integration tests
-utils/
-    make_examples.py            build output files in examples, using pandoc
-```
