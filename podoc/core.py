@@ -64,11 +64,13 @@ class Podoc(object):
 
     def open(self, path):
         """Open a file and return an object."""
+        self.opener = self.opener or open_text
         assert self.opener is not None
         return self.opener(path)
 
     def save(self, path, contents):
         """Save contents to a file."""
+        self.saver = self.saver or save_text
         assert self.saver is not None
         return self.saver(path, contents)
 
