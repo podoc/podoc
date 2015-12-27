@@ -40,15 +40,36 @@ class IPlugin(object, metaclass=IPluginRegistry):
     def attach(self, podoc, steps):
         """Attach the plugin to the podoc.
 
-        By default, call `self.attach_<step>(podoc)` for all specified steps.
+        By default, call `self.set_<step>(podoc)` for all specified steps.
 
         May be overridden by the plugin.
 
         """
         for step in steps:
-            getattr(self, 'attach_' + step)(podoc)
+            getattr(self, 'set_' + step)(podoc)
 
-    def attach_opener(self, podoc):
+    def get_opener(self):
+        pass
+
+    def get_filters(self):
+        return []
+
+    def get_reader(self):
+        pass
+
+    def get_prefilters(self):
+        return []
+
+    def get_writer(self):
+        pass
+
+    def get_postfilters(self):
+        return []
+
+    def get_saver(self):
+        pass
+
+    def set_opener(self, podoc):
         """Attach `self.opener` to the podoc.
 
         May be overridden by the plugin.
@@ -57,7 +78,7 @@ class IPlugin(object, metaclass=IPluginRegistry):
         if hasattr(self, 'opener'):
             podoc.set_opener(self.opener)
 
-    def attach_prefilters(self, podoc):
+    def set_prefilters(self, podoc):
         """Attach `self.prefilter` to the podoc.
 
         May be overridden by the plugin.
@@ -66,7 +87,7 @@ class IPlugin(object, metaclass=IPluginRegistry):
         if hasattr(self, 'prefilter'):
             podoc.add_prefilter(self.prefilter)
 
-    def attach_reader(self, podoc):
+    def set_reader(self, podoc):
         """Attach `self.reader` to the podoc.
 
         May be overridden by the plugin.
@@ -77,7 +98,7 @@ class IPlugin(object, metaclass=IPluginRegistry):
                 raise RuntimeError("A reader has already been attached.")
             podoc.set_reader(self.reader)
 
-    def attach_filters(self, podoc):
+    def set_filters(self, podoc):
         """Attach `self.filter` to the podoc.
 
         May be overridden by the plugin.
@@ -86,7 +107,7 @@ class IPlugin(object, metaclass=IPluginRegistry):
         if hasattr(self, 'filter'):
             podoc.add_filter(self.filter)
 
-    def attach_writer(self, podoc):
+    def set_writer(self, podoc):
         """Attach `self.writer` to the podoc.
 
         May be overridden by the plugin.
@@ -97,7 +118,7 @@ class IPlugin(object, metaclass=IPluginRegistry):
                 raise RuntimeError("A writer has already been attached.")
             podoc.set_writer(self.writer)
 
-    def attach_postfilters(self, podoc):
+    def set_postfilters(self, podoc):
         """Attach `self.postfilter` to the podoc.
 
         May be overridden by the plugin.
@@ -106,7 +127,7 @@ class IPlugin(object, metaclass=IPluginRegistry):
         if hasattr(self, 'postfilter'):
             podoc.add_postfilter(self.postfilter)
 
-    def attach_saver(self, podoc):
+    def set_saver(self, podoc):
         """Attach `self.saver` to the podoc.
 
         May be overridden by the plugin.
@@ -124,6 +145,20 @@ def get_plugin(name_or_ext):
                 name_or_ext in file_extension):
             return plugin
     raise ValueError("The plugin %s cannot be found." % name_or_ext)
+
+
+def attach_plugin(plugin_name, podoc, steps):
+    plugin = get_plugin(plugin_name)
+    podoc.set_opener(plugin.get_opener())
+    for f in plugin.get_prefilters():
+        podoc.add_prefilter(f)
+    podoc.set_reader(plugin.get_reader())
+    for f in plugin.get_filters():
+        podoc.add_filter(f)
+    podoc.set_writer(plugin.get_writer())
+    for f in plugin.get_postfilters():
+        podoc.add_postfilter(f)
+    podoc.set_saver(plugin.get_saver())
 
 
 #------------------------------------------------------------------------------

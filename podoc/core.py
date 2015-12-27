@@ -215,39 +215,6 @@ class Podoc(object):
         self.saver = func
         return self
 
-    # Plugins
-    # -------------------------------------------------------------------------
-
-    _from_steps = ('opener', 'prefilters', 'reader')
-    _to_steps = ('writer', 'postfilters', 'saver')
-    _all_steps = _from_steps + _to_steps + ('filters',)
-
-    def attach(self, plugin, steps=None):
-        """Attach a plugin with the specified steps.
-
-        Parameters
-        ----------
-
-        plugin : IPlugin class
-            The plugin to attach to the current pipeline.
-        steps : str or list
-            List of pipeline steps to set with the plugin. The list of
-            accepted steps is: `opener`, `prefilters`, `reader`, `filters`,
-            `writer`, `postfilters`, `saver`. There are also two aliases:
-            `from` refers to the first three steps, `to` to the last three.
-
-        """
-        # By default, attach all steps.
-        if steps is None:
-            steps = self._all_steps
-        if steps == 'from':
-            steps = self._from_steps
-        elif steps == 'to':
-            steps = self._to_steps
-        assert set(steps) <= set(self._all_steps)
-        plugin().attach(self, steps)
-        return self
-
 
 #------------------------------------------------------------------------------
 # Misc functions

@@ -199,7 +199,7 @@ You can implement the following methods:
 * `postfilter(contents)`
 * `saver(path, contents)`
 
-For more fine-grained capabilities, you can also implement `attach(podoc, steps)` and `attach_<step>(podoc)` for all steps. See the implementation of `IPlugin` for more details.
+For more fine-grained capabilities, you can also implement `attach(podoc, steps)` and `set_<step>(podoc)` for all steps. See the implementation of `IPlugin` for more details.
 
 Then, use the following command:
 
