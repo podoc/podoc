@@ -99,8 +99,8 @@ def test_saver_plugins(tempdir, podoc, hello_ast, plugin_path):
     """For every plugin, save the hello AST to a file, read it, and compare
     to the original AST."""
     plugin_name = op.basename(plugin_path)
-    p = get_plugin(plugin_name)
+    p = get_plugin(plugin_name)()
     output_path = op.join(tempdir, 'output')
-    podoc.attach(p, 'to').write_file(output_path, hello_ast)
-    ast = podoc.attach(p, 'from').read_file(output_path)
+    p.attach_post(podoc).write_file(output_path, hello_ast)
+    ast = p.attach_pre(podoc).read_file(output_path)
     assert ast == hello_ast

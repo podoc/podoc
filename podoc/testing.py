@@ -98,18 +98,18 @@ def iter_test_files():
 
 
 def _test_readers(plugin_name, test_name, path):
-    p = get_plugin(plugin_name)
+    p = get_plugin(plugin_name)()
     logger.debug("Test file %s: reader.", path)
-    ast_read = Podoc().attach(p, 'from').read_file(path)
+    ast_read = p.attach_pre(Podoc()).read_file(path)
     ast_expected = open_test_file('%s_ast.py' % test_name)
     assert ast_read == ast_expected
 
 
 def _test_writers(plugin_name, test_name, path):
-    p = get_plugin(plugin_name)
+    p = get_plugin(plugin_name)()
     logger.debug("Test file %s: writer.", path)
     ast = open_test_file('%s_ast.py' % test_name)
-    converted = Podoc().attach(p, 'to').write_contents(ast)
+    converted = p.attach_post(Podoc()).write_contents(ast)
     ae(converted, open_file(path, plugin_name))
 
 

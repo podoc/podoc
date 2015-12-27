@@ -37,11 +37,11 @@ def test_podoc_complete(podoc):
         podoc.write_contents(ast)
 
     podoc.set_opener(lambda path: (path + ' open'))
-    podoc.add_prefilter(lambda x: x[0].upper() + x[1:])
+    podoc.add_prefilters([lambda x: x[0].upper() + x[1:]])
     podoc.set_reader(lambda x: x.split(' '))
-    podoc.add_filter(lambda x: (x + ['filter']))
+    podoc.add_filters([lambda x: (x + ['filter'])])
     podoc.set_writer(lambda x: ' '.join(x))
-    podoc.add_postfilter(lambda x: x[:-1] + x[-1].upper())
+    podoc.add_postfilters([lambda x: x[:-1] + x[-1].upper()])
     podoc.set_saver(lambda path, contents: (contents + ' in ' + path))
 
     assert podoc.convert_file(path, 'path') == 'Abc open filteR in path'
@@ -69,21 +69,21 @@ def test_podoc_errors(podoc):
         def writer(self, ast):
             pass
 
-    podoc.attach(EmptyPlugin0)
+    EmptyPlugin0().attach(podoc)
 
     # Only one reader can be attached.
-    podoc.attach(EmptyPluginFrom)
+    EmptyPluginFrom().attach(podoc)
     with raises(RuntimeError):
-        podoc.attach(EmptyPluginFrom)
+        EmptyPluginFrom().attach(podoc)
 
     # Only one writer can be attached.
-    podoc.attach(EmptyPluginTo)
+    EmptyPluginTo().attach(podoc)
     with raises(RuntimeError):
-        podoc.attach(EmptyPluginTo)
+        EmptyPluginTo().attach(podoc)
 
     # Several filters can be attached.
-    podoc.attach(EmptyPluginFilter)
-    podoc.attach(EmptyPluginFilter)
+    EmptyPluginFilter().attach(podoc)
+    EmptyPluginFilter().attach(podoc)
 
 
 def test_podoc_plugins(podoc):
@@ -113,10 +113,10 @@ def test_podoc_plugins(podoc):
         def writer(self, ast):
             return ' '.join(ast)
 
-    podoc.attach(MyPlugin1)
-    podoc.attach(MyPlugin2)
-    podoc.attach(MyPluginFrom)
-    podoc.attach(MyPluginTo)
+    MyPlugin1().attach(podoc)
+    MyPlugin2().attach(podoc)
+    MyPluginFrom().attach(podoc)
+    MyPluginTo().attach(podoc)
 
     contents = 'abc'
     assert podoc.convert_contents(contents) == 'Abc filteR'

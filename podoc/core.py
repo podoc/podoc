@@ -176,8 +176,8 @@ class Podoc(object):
         self.opener = func
         return self
 
-    def add_prefilter(self, func):
-        self.prefilters.append(func)
+    def add_prefilters(self, funcs):
+        self.prefilters.extend(funcs)
         return self
 
     def set_reader(self, func):
@@ -189,8 +189,8 @@ class Podoc(object):
         self.reader = func
         return self
 
-    def add_filter(self, func):
-        self.filters.append(func)
+    def add_filters(self, funcs):
+        self.filters.extend(funcs)
         return self
 
     def set_writer(self, func):
@@ -202,8 +202,8 @@ class Podoc(object):
         self.writer = func
         return self
 
-    def add_postfilter(self, func):
-        self.postfilters.append(func)
+    def add_postfilters(self, funcs):
+        self.postfilters.extend(funcs)
         return self
 
     def set_saver(self, func):
@@ -231,6 +231,6 @@ def open_file(path, plugin_name=None):
         search = op.splitext(path)[1]
     else:
         search = plugin_name
-    plugin = get_plugin(search)
+    plugin = get_plugin(search)()
     assert plugin
-    return Podoc().attach(plugin, ['opener']).open(path)
+    return plugin.attach_pre(Podoc()).open(path)
