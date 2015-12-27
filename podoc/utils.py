@@ -2,6 +2,10 @@
 
 """Utility functions."""
 
+import os.path as op
+
+from six import string_types
+
 
 #------------------------------------------------------------------------------
 # Bunch
@@ -15,6 +19,26 @@ class Bunch(dict):
 
     def copy(self):
         return Bunch(super(Bunch, self).copy())
+
+
+#------------------------------------------------------------------------------
+# Path
+#------------------------------------------------------------------------------
+
+def _normalize_path(path):
+    assert isinstance(path, string_types)
+    assert path
+    path = op.realpath(op.expanduser(path))
+    return path
+
+
+class Path(object):
+    def __init__(self, path):
+        self.path = _normalize_path(path)
+
+    def __repr__(self):
+        return '<Path `{}`>'.format(self.path)
+
 
 
 #------------------------------------------------------------------------------

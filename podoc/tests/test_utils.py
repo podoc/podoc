@@ -11,10 +11,10 @@ import json
 import logging
 import os.path as op
 
-from pytest import mark
+from pytest import mark, raises
 
 from ..testing import ae, has_pandoc
-from ..utils import Bunch, pandoc
+from ..utils import Bunch, pandoc, Path
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,10 @@ def test_bunch():
     obj.b = 2
     assert obj['b'] == 2
     assert obj.copy().a == 1
+
+
+def test_path():
+    print(Path(__file__))
 
 
 #------------------------------------------------------------------------------
