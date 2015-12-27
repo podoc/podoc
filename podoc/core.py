@@ -40,11 +40,11 @@ class Podoc(object):
 
     """
     opener = None
-    preprocessors = None
+    prefilters = None
     reader = None
     filters = None
     writer = None
-    postprocessors = None
+    postfilters = None
     saver = None
 
     def __init__(self):
@@ -52,12 +52,12 @@ class Podoc(object):
             self.opener = open_text
         if self.saver is None:
             self.saver = save_text
-        if self.preprocessors is None:
-            self.preprocessors = []
+        if self.prefilters is None:
+            self.prefilters = []
         if self.filters is None:
             self.filters = []
-        if self.postprocessors is None:
-            self.postprocessors = []
+        if self.postfilters is None:
+            self.postfilters = []
 
     # Individual stages
     # -------------------------------------------------------------------------
@@ -73,8 +73,8 @@ class Podoc(object):
         return self.saver(path, contents)
 
     def preprocess(self, contents):
-        """Apply preprocessors to contents."""
-        for p in self.preprocessors:
+        """Apply prefilters to contents."""
+        for p in self.prefilters:
             contents = p(contents)
         return contents
 
@@ -101,8 +101,8 @@ class Podoc(object):
         return converted
 
     def postprocess(self, contents):
-        """Apply postprocessors to contents."""
-        for p in self.postprocessors:
+        """Apply postfilters to contents."""
+        for p in self.postfilters:
             contents = p(contents)
         return contents
 
@@ -112,7 +112,7 @@ class Podoc(object):
     def read_contents(self, contents):
         """Read contents and return an AST.
 
-        Preprocessors -> Reader.
+        Prefilters -> Reader.
 
         """
         contents = self.preprocess(contents)
@@ -122,7 +122,7 @@ class Podoc(object):
     def read_file(self, from_path):
         """Read a file and return an AST.
 
-        Opener -> Preprocessors -> Reader.
+        Opener -> Prefilters -> Reader.
 
         """
         contents = self.open(from_path)
@@ -131,7 +131,7 @@ class Podoc(object):
     def write_contents(self, ast):
         """Write an AST to contents.
 
-        Writer -> Postprocessors.
+        Writer -> Postfilters.
 
         """
         converted = self.write(ast)
@@ -141,7 +141,7 @@ class Podoc(object):
     def write_file(self, to_path, ast):
         """Write an AST to a file.
 
-        Writer -> Postprocessors -> Saver.
+        Writer -> Postfilters -> Saver.
 
         """
         converted = self.write_contents(ast)
@@ -176,8 +176,8 @@ class Podoc(object):
         self.opener = func
         return self
 
-    def add_preprocessor(self, func):
-        self.preprocessors.append(func)
+    def add_prefilter(self, func):
+        self.prefilters.append(func)
         return self
 
     def set_reader(self, func):
@@ -202,8 +202,8 @@ class Podoc(object):
         self.writer = func
         return self
 
-    def add_postprocessor(self, func):
-        self.postprocessors.append(func)
+    def add_postfilter(self, func):
+        self.postfilters.append(func)
         return self
 
     def set_saver(self, func):
@@ -218,8 +218,8 @@ class Podoc(object):
     # Plugins
     # -------------------------------------------------------------------------
 
-    _from_steps = ('opener', 'preprocessors', 'reader')
-    _to_steps = ('writer', 'postprocessors', 'saver')
+    _from_steps = ('opener', 'prefilters', 'reader')
+    _to_steps = ('writer', 'postfilters', 'saver')
     _all_steps = _from_steps + _to_steps + ('filters',)
 
     def attach(self, plugin, steps=None):
@@ -232,8 +232,8 @@ class Podoc(object):
             The plugin to attach to the current pipeline.
         steps : str or list
             List of pipeline steps to set with the plugin. The list of
-            accepted steps is: `opener`, `preprocessors`, `reader`, `filters`,
-            `writer`, `postprocessors`, `saver`. There are also two aliases:
+            accepted steps is: `opener`, `prefilters`, `reader`, `filters`,
+            `writer`, `postfilters`, `saver`. There are also two aliases:
             `from` refers to the first three steps, `to` to the last three.
 
         """

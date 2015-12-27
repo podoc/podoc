@@ -37,11 +37,11 @@ def test_podoc_complete(podoc):
         podoc.write_contents(ast)
 
     podoc.set_opener(lambda path: (path + ' open'))
-    podoc.add_preprocessor(lambda x: x[0].upper() + x[1:])
+    podoc.add_prefilter(lambda x: x[0].upper() + x[1:])
     podoc.set_reader(lambda x: x.split(' '))
     podoc.add_filter(lambda x: (x + ['filter']))
     podoc.set_writer(lambda x: ' '.join(x))
-    podoc.add_postprocessor(lambda x: x[:-1] + x[-1].upper())
+    podoc.add_postfilter(lambda x: x[:-1] + x[-1].upper())
     podoc.set_saver(lambda path, contents: (contents + ' in ' + path))
 
     assert podoc.convert_file(path, 'path') == 'Abc open filteR in path'
@@ -92,11 +92,11 @@ def test_podoc_plugins(podoc):
         def opener(self, path):
             return path + ' open'
 
-        def preprocessor(self, contents):
+        def prefilter(self, contents):
             return contents[0].upper() + contents[1:]
 
     class MyPlugin2(IPlugin):
-        def postprocessor(self, contents):
+        def postfilter(self, contents):
             return contents[:-1] + contents[-1].upper()
 
         def saver(self, path, contents):

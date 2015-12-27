@@ -14,7 +14,7 @@
 
 **podoc** is a **minimalistic pure Python pandoc companion**, i.e. a markup document conversion library **compatible with pandoc**. The plan is for podoc to support Markdown, Jupyter Notebook, OpenDocument, O'Reilly Atlas, Python + comments. Support for ReST, LaTeX, HTML, AsciiDoc is planned.
 
-podoc provides a Python API as well as a command-line tool. The architecture is modular and allows for the creation of plugins, custom formats, readers, writers, preprocessors, postprocessors, and filters.
+podoc provides a Python API as well as a command-line tool. The architecture is modular and allows for the creation of plugins, custom formats, readers, writers, prefilters, postfilters, and filters.
 
 podoc is heavily inspired by the awesome **pandoc** library: It tries to use the same abstractions, API, and internal format, but it does not intend to reproduce the full set of features. Instead, **podoc uses the same internal AST than pandoc for compatibility**.
 
@@ -90,7 +90,7 @@ All examples are automatically checked as part of podoc's testing suite.
 * Full Python API
 * Native support for Jupyter notebooks
 * Fully customizable transformation pipeline
-* Built-in set of preprocessors and postprocessors
+* Built-in set of prefilters and postfilters
 * Global and block metadata
 * LaTeX equations
 * Templates
@@ -107,16 +107,16 @@ The following features (supported by pandoc) may or may not be considered in the
 podoc uses the following pipeline to convert a document:
 
 * **FileOpener**: open a `Document` from a file. Generally, a `Document` is just a string for text files, but other openers can be defined for binary file formats like OpenDocument.
-* **Preprocessors** (optional): the input document can be processed before the conversion.
+* **Prefilters** (optional): the input document can be processed before the conversion.
 * **Reader**: the processed input document is parsed and transformed into an in-memory **Abstract Syntax Tree** (AST). The AST is fully JSON-serializable.
 * **Filters** (optional): filters can transform the AST.
 * **Writer**: a writer transforms the filtered AST into an output document.
-* **Postprocessors** (optional): the output document can be processed after the conversion.
+* **Postfilters** (optional): the output document can be processed after the conversion.
 * **FileSaver**: save a `Document` into a file.
 
 ### Formats
 
-With podoc, there is no dedicated abstraction for a *format*. A format is just a plugin that defines a file opener/file saver, a reader and/or a writer, optional filters, and optional pre- and postprocessors.
+With podoc, there is no dedicated abstraction for a *format*. A format is just a plugin that defines a file opener/file saver, a reader and/or a writer, optional filters, and optional pre- and postfilters.
 
 ### Podoc class
 
@@ -124,11 +124,11 @@ The `Podoc` class represents a given conversion pipeline. Here are its attribute
 
 * `output_dir`: output directory
 * `file_opener`
-* `preprocessors`
+* `prefilters`
 * `reader`
 * `filters`
 * `writer`
-* `postprocessors`
+* `postfilters`
 * `file_saver`
 
 Here are its main methods:
@@ -136,11 +136,11 @@ Here are its main methods:
 * `convert_file(from_path, to_path=None)`
 * `convert_contents(contents, to_path=None)`
 * `set_file_opener(func)`
-* `add_preprocessor(func)`
+* `add_prefilter(func)`
 * `set_reader(func)`
 * `add_filter(func)`
 * `set_writer(func)`
-* `add_postprocessor(func)`
+* `add_postfilter(func)`
 * `set_file_saver(func)`
 
 ### Configuration
@@ -192,11 +192,11 @@ class MyPlugin(IPlugin):
 You can implement the following methods:
 
 * `opener(path)`
-* `preprocessor(contents)`
+* `prefilter(contents)`
 * `reader(contents)`
 * `filter(ast)`
 * `writer(ast)`
-* `postprocessor(contents)`
+* `postfilter(contents)`
 * `saver(path, contents)`
 
 For more fine-grained capabilities, you can also implement `attach(podoc, steps)` and `attach_<step>(podoc)` for all steps. See the implementation of `IPlugin` for more details.
@@ -222,8 +222,8 @@ Ideally, every plugin should be in a dedicated subdirectory with a `README.md` d
 ### Included plugins
 
 * `Atlas`: filter replacing code blocks in a given language by executable `<pre>` HTML code blocks, and LaTeX equations by `<span>` HTML blocks.
-* `CodeEval`: preprocessor evaluating code enclosed in particular markup syntax (as provided by a regular expression). This allows for **literate programming**, using Python or any other language.
-* `Macros`: macro preprocessor based on regular expressions. The macro substitutions can be listed in the `macros` metadata array in the document, or in `c.Macros.substitutions = [(regex, repl), ...]` in your `.podoc/config.py`.
+* `CodeEval`: prefilter evaluating code enclosed in particular markup syntax (as provided by a regular expression). This allows for **literate programming**, using Python or any other language.
+* `Macros`: macro prefilter based on regular expressions. The macro substitutions can be listed in the `macros` metadata array in the document, or in `c.Macros.substitutions = [(regex, repl), ...]` in your `.podoc/config.py`.
 * `Prompt`: filter transforming a code block containing interactive input and output. There are several options:
     * Transforming to a code block with different input/output formats
     * Removing the output

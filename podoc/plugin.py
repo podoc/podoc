@@ -57,14 +57,14 @@ class IPlugin(object, metaclass=IPluginRegistry):
         if hasattr(self, 'opener'):
             podoc.set_opener(self.opener)
 
-    def attach_preprocessors(self, podoc):
-        """Attach `self.preprocessor` to the podoc.
+    def attach_prefilters(self, podoc):
+        """Attach `self.prefilter` to the podoc.
 
         May be overridden by the plugin.
 
         """
-        if hasattr(self, 'preprocessor'):
-            podoc.add_preprocessor(self.preprocessor)
+        if hasattr(self, 'prefilter'):
+            podoc.add_prefilter(self.prefilter)
 
     def attach_reader(self, podoc):
         """Attach `self.reader` to the podoc.
@@ -97,14 +97,14 @@ class IPlugin(object, metaclass=IPluginRegistry):
                 raise RuntimeError("A writer has already been attached.")
             podoc.set_writer(self.writer)
 
-    def attach_postprocessors(self, podoc):
-        """Attach `self.postprocessor` to the podoc.
+    def attach_postfilters(self, podoc):
+        """Attach `self.postfilter` to the podoc.
 
         May be overridden by the plugin.
 
         """
-        if hasattr(self, 'postprocessor'):
-            podoc.add_postprocessor(self.postprocessor)
+        if hasattr(self, 'postfilter'):
+            podoc.add_postfilter(self.postfilter)
 
     def attach_saver(self, podoc):
         """Attach `self.saver` to the podoc.
