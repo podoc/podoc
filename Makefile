@@ -15,7 +15,7 @@ lint:
 	flake8 podoc
 
 test: lint
-	python setup.py test
+	py.test podoc
 
 coverage:
 	coverage --html

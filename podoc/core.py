@@ -72,7 +72,7 @@ class Podoc(object):
         assert self.saver is not None
         return self.saver(path, contents)
 
-    def preprocess(self, contents):
+    def prefilter(self, contents):
         """Apply prefilters to contents."""
         for p in self.prefilters:
             contents = p(contents)
@@ -100,7 +100,7 @@ class Podoc(object):
         converted = self.writer(ast)
         return converted
 
-    def postprocess(self, contents):
+    def postfilter(self, contents):
         """Apply postfilters to contents."""
         for p in self.postfilters:
             contents = p(contents)
@@ -115,7 +115,7 @@ class Podoc(object):
         Prefilters -> Reader.
 
         """
-        contents = self.preprocess(contents)
+        contents = self.prefilter(contents)
         ast = self.read(contents)
         return ast
 
@@ -135,7 +135,7 @@ class Podoc(object):
 
         """
         converted = self.write(ast)
-        converted = self.postprocess(converted)
+        converted = self.postfilter(converted)
         return converted
 
     def write_file(self, to_path, ast):

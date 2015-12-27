@@ -107,11 +107,11 @@ The following features (supported by pandoc) may or may not be considered in the
 podoc uses the following pipeline to convert a document:
 
 * **FileOpener**: open a `Document` from a file. Generally, a `Document` is just a string for text files, but other openers can be defined for binary file formats like OpenDocument.
-* **Prefilters** (optional): the input document can be processed before the conversion.
-* **Reader**: the processed input document is parsed and transformed into an in-memory **Abstract Syntax Tree** (AST). The AST is fully JSON-serializable.
+* **Prefilters** (optional): the input document can be filtered before the conversion.
+* **Reader**: the filtered input document is parsed and transformed into an in-memory **Abstract Syntax Tree** (AST). The AST is fully JSON-serializable.
 * **Filters** (optional): filters can transform the AST.
 * **Writer**: a writer transforms the filtered AST into an output document.
-* **Postfilters** (optional): the output document can be processed after the conversion.
+* **Postfilters** (optional): the output document can be filtered after the conversion.
 * **FileSaver**: save a `Document` into a file.
 
 ### Formats
