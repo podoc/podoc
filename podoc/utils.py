@@ -22,6 +22,21 @@ class Bunch(dict):
 
 
 #------------------------------------------------------------------------------
+# File I/O
+#------------------------------------------------------------------------------
+
+def open_text(path):
+    assert op.exists(path)
+    with open(path, 'r') as f:
+        return f.read()
+
+
+def save_text(path, contents):
+    with open(path, 'w') as f:
+        return f.write(contents)
+
+
+#------------------------------------------------------------------------------
 # Path
 #------------------------------------------------------------------------------
 
@@ -39,6 +54,8 @@ class Path(object):
     def __repr__(self):
         return '<Path `{}`>'.format(self.path)
 
+    def exists(self):
+        return op.exists(self.path)
 
 
 #------------------------------------------------------------------------------

@@ -11,10 +11,10 @@ import json
 import logging
 import os.path as op
 
-from pytest import mark, raises
+from pytest import mark
 
 from ..testing import ae, has_pandoc
-from ..utils import Bunch, pandoc, Path
+from ..utils import Bunch, pandoc, Path, open_text, save_text
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,17 @@ def test_bunch():
 
 def test_path():
     print(Path(__file__))
+    assert Path(__file__).exists()
+
+
+#------------------------------------------------------------------------------
+# Test file I/O
+#------------------------------------------------------------------------------
+
+def test_open_save_text(tempdir, hello_markdown):
+    path = op.join(tempdir, 'test.txt')
+    save_text(path, hello_markdown)
+    assert open_text(path) == hello_markdown
 
 
 #------------------------------------------------------------------------------

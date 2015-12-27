@@ -7,31 +7,46 @@
 # Imports
 #------------------------------------------------------------------------------
 
+from functools import wraps
+import inspect
 import logging
-import os.path as op
 
-from .plugin import get_plugin
+from six import string_types
 
 logger = logging.getLogger(__name__)
 
 
 #------------------------------------------------------------------------------
-# Utility functions
-#------------------------------------------------------------------------------
-
-def open_text(path):
-    with open(path, 'r') as f:
-        return f.read()
-
-
-def save_text(path, contents):
-    with open(path, 'w') as f:
-        return f.write(contents)
-
-
-#------------------------------------------------------------------------------
 # Main class
 #------------------------------------------------------------------------------
+
+def _get_annotation(func, name):
+    return getattr(func, '__annotations__', {}).get(name, None)
+
+
+def _find_path(edges, source, target):
+    """Find a path from source to target in a graph specified as a list
+    of edges."""
+    out = None
+    if (source, target) in edges:
+        # Direct conversion exists.
+        out = [source, target]
+    else:
+        # Find an intermediate format.
+        inter0 = [t1 for t0, t1 in edges if t0 == source]
+        inter1 = [t0 for t0, t1 in edges if t1 == target]
+        inter = sorted(set(inter0).intersection(inter1))
+        if inter:
+            out = [source, inter[0], target]
+    return out
+
+
+def _type_name(t):
+    if isinstance(t, string_types):
+        return t
+    elif inspect.isclass(t):
+        return t.__name__
+
 
 class Podoc(object):
     """Conversion pipeline for markup documents.
@@ -39,200 +54,71 @@ class Podoc(object):
     This class implements the core conversion functionality of podoc.
 
     """
-    opener = None
-    prefilters = None
-    reader = None
-    filters = None
-    writer = None
-    postfilters = None
-    saver = None
-
     def __init__(self):
-        if self.opener is None:
-            self.opener = open_text
-        if self.saver is None:
-            self.saver = save_text
-        if self.prefilters is None:
-            self.prefilters = []
-        if self.filters is None:
-            self.filters = []
-        if self.postfilters is None:
-            self.postfilters = []
+        self._funcs = {}
 
-    # Individual stages
-    # -------------------------------------------------------------------------
+    @property
+    def types(self):
+        """List of all types that appear in the registered functions."""
+        if not self._funcs:
+            return []
+        t0, t1 = zip(*self._funcs.keys())
+        return list(set(t0).union(t1))
 
-    def open(self, path):
-        """Open a file and return an object."""
-        self.opener = self.opener or open_text
-        assert self.opener is not None
-        return self.opener(path)
+    @property
+    def conversion_pairs(self):
+        """List of registered conversion pairs."""
+        return list(self._funcs.keys())
 
-    def save(self, path, contents):
-        """Save contents to a file."""
-        self.saver = self.saver or save_text
-        assert self.saver is not None
-        return self.saver(path, contents)
+    def get_func(self, t0, t1):
+        """Get the function registered for a pair of types."""
+        t0 = self._get_type(t0)
+        t1 = self._get_type(t1)
+        return self._funcs.get((t0, t1), None)
 
-    def prefilter(self, contents):
-        """Apply prefilters to contents."""
-        for p in self.prefilters:
-            contents = p(contents)
-        return contents
+    def _get_type(self, name):
+        """Get a type from its name."""
+        if isinstance(name, string_types):
+            name = name.lower()
+            for t in self.types:
+                if _type_name(t).lower() == name:
+                    return t
+        else:
+            assert name in self.types
+            return name
 
-    def read(self, contents):
-        """Read contents to an AST."""
-        if self.reader is None:
-            raise RuntimeError("No reader has been set.")
-        assert self.reader is not None
-        ast = self.reader(contents)
-        return ast
+    def register(self, func=None, source=None, target=None):
+        """Register a conversion function between two types."""
+        if func is None:
+            return lambda _: self.register(_, source=source, target=target)
+        assert func
+        source = source or _get_annotation(func, 'source')
+        target = target or _get_annotation(func, 'target')
+        assert source
+        assert target
 
-    def filter(self, ast):
-        """Apply filters to an AST."""
-        for f in self.filters:
-            ast = f(ast)
-        return ast
+        # Check the type of the source and target.
+        @wraps(func)
+        def wrapped(obj, **kwargs):
+            if inspect.isclass(source):
+                assert isinstance(obj, source)
+            out = func(obj)
+            if inspect.isclass(target):
+                assert isinstance(out, target)
+            return out
 
-    def write(self, ast):
-        """Write an AST to contents."""
-        if self.writer is None:
-            raise RuntimeError("No writer has been set.")
-        assert self.writer is not None
-        converted = self.writer(ast)
-        return converted
+        self._funcs[(source, target)] = wrapped
 
-    def postfilter(self, contents):
-        """Apply postfilters to contents."""
-        for p in self.postfilters:
-            contents = p(contents)
-        return contents
-
-    # Partial conversion methods
-    # -------------------------------------------------------------------------
-
-    def read_contents(self, contents):
-        """Read contents and return an AST.
-
-        Prefilters -> Reader.
-
-        """
-        contents = self.prefilter(contents)
-        ast = self.read(contents)
-        return ast
-
-    def read_file(self, from_path):
-        """Read a file and return an AST.
-
-        Opener -> Prefilters -> Reader.
-
-        """
-        contents = self.open(from_path)
-        return self.read_contents(contents)
-
-    def write_contents(self, ast):
-        """Write an AST to contents.
-
-        Writer -> Postfilters.
-
-        """
-        converted = self.write(ast)
-        converted = self.postfilter(converted)
-        return converted
-
-    def write_file(self, to_path, ast):
-        """Write an AST to a file.
-
-        Writer -> Postfilters -> Saver.
-
-        """
-        converted = self.write_contents(ast)
-        return self.save(to_path, converted) if to_path else converted
-
-    # Complete conversion methods
-    # -------------------------------------------------------------------------
-
-    def convert_file(self, from_path, to_path=None):
-        """Convert a file."""
-        contents = self.open(from_path)
-        converted = self.convert_contents(contents)
-        return self.save(to_path, converted) if to_path else converted
-
-    def convert_contents(self, contents):
-        """Convert contents without writing files."""
-        ast = self.read_contents(contents)
-        ast = self.filter(ast)
-        converted = self.write_contents(ast)
-        return converted
-
-    # Pipeline configuration
-    # -------------------------------------------------------------------------
-
-    def set_opener(self, func):
-        """An Opener is a function `str (path)` -> `str (or object)`.
-
-        The output may be a string or another type of object, like a file
-        handle, etc.
-
-        """
-        self.opener = func
-        return self
-
-    def add_prefilters(self, funcs):
-        self.prefilters.extend(funcs)
-        return self
-
-    def set_reader(self, func):
-        """A reader is a function `str (or object)` -> `ast`.
-
-        The input corresponds to the output of the file opener.
-
-        """
-        self.reader = func
-        return self
-
-    def add_filters(self, funcs):
-        self.filters.extend(funcs)
-        return self
-
-    def set_writer(self, func):
-        """A reader is a function `ast` -> `str (or object)`.
-
-        The output corresponds to the input of the file saver.
-
-        """
-        self.writer = func
-        return self
-
-    def add_postfilters(self, funcs):
-        self.postfilters.extend(funcs)
-        return self
-
-    def set_saver(self, func):
-        """A Saver is a function `str (path), str (or object) -> None`.
-
-        The second input corresponds to the output of the writer.
-
-        """
-        self.saver = func
-        return self
-
-
-#------------------------------------------------------------------------------
-# Misc functions
-#------------------------------------------------------------------------------
-
-def open_file(path, plugin_name=None):
-    """Open a file using a given plugin.
-
-    If no plugin is specified, the file extension is used to find the
-    appropriate plugin.
-
-    """
-    if plugin_name is None:
-        search = op.splitext(path)[1]
-    else:
-        search = plugin_name
-    plugin = get_plugin(search)()
-    assert plugin
-    return plugin.attach_pre(Podoc()).open(path)
+    def convert(self, obj, types):
+        """Convert an object by passing it through a chain of functions."""
+        assert isinstance(types, (tuple, list))
+        # Iterate over all successive pairs.
+        for t0, t1 in zip(types, types[1:]):
+            # Get the function registered for t0, t1.
+            f = self.get_func(t0, t1)
+            if not f:
+                raise ValueError("No function registered for `{}` => `{}`.".
+                                 format(_type_name(t0), _type_name(t1)))
+            # Perform the conversion.
+            obj = f(obj)
+        return obj

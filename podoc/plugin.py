@@ -35,48 +35,8 @@ class IPluginRegistry(type):
 
 
 class IPlugin(object, metaclass=IPluginRegistry):
-    file_extensions = ()
-    opener = None
-    reader = None
-    writer = None
-    saver = None
-
     def attach(self, podoc):
-        podoc.add_filters(self.get_filters())
-        return podoc
-
-    def attach_pre(self, podoc):
-        podoc.set_opener(self.get_opener())
-        podoc.add_prefilters(self.get_prefilters())
-        podoc.set_reader(self.get_reader())
-        return podoc
-
-    def attach_post(self, podoc):
-        podoc.set_writer(self.get_writer())
-        podoc.add_postfilters(self.get_postfilters())
-        podoc.set_saver(self.get_saver())
-        return podoc
-
-    def get_opener(self):
-        return self.opener
-
-    def get_prefilters(self):
-        return []
-
-    def get_reader(self):
-        return self.reader
-
-    def get_filters(self):
-        return []
-
-    def get_writer(self):
-        return self.writer
-
-    def get_postfilters(self):
-        return []
-
-    def get_saver(self):
-        return self.saver
+        pass
 
 
 def get_plugin(name_or_ext):

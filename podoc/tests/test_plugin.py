@@ -9,10 +9,10 @@
 
 import os.path as op
 
-from ..core import save_text
 from ..plugin import (IPluginRegistry, IPlugin, discover_plugins, get_plugin,
                       iter_plugins_dirs, _load_all_native_plugins)
 from ..testing import _test_readers, _test_writers
+from ..utils import save_text
 
 from pytest import yield_fixture, raises, mark
 
