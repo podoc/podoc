@@ -95,5 +95,9 @@ def discover_plugins(dirs):
 def _load_all_native_plugins():
     """Load all native plugins when importing the library."""
     curdir = op.dirname(op.realpath(__file__))
-    plugins_dir = op.join(curdir, 'plugins')
-    discover_plugins([plugins_dir])
+    # The default plugins are subfolders within podoc/podoc.
+    # List of subdirs that do not start with _.
+    subdirs = [d for d in os.listdir(curdir) if op.isdir(op.join(curdir, d))]
+    dirs = [op.join(curdir, subdir) for subdir in subdirs
+            if not subdir.startswith('_')]
+    discover_plugins(dirs)
