@@ -103,7 +103,7 @@ class Podoc(object):
     @property
     def conversion_pairs(self):
         """List of registered conversion pairs."""
-        return list(self._funcs.keys())
+        return sorted(self._funcs.keys())
 
     # File-related methods
     # -------------------------------------------------------------------------

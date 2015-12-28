@@ -75,7 +75,9 @@ def test_podoc_file(tempdir):
 
     with raises(AssertionError):
         p.get_files_in_dir('')
-    assert p.get_files_in_dir(tempdir, lang='a') == [fn]
+    files = p.get_files_in_dir(tempdir, lang='a')
+    assert len(files) == 1
+    assert fn in files[0]
 
 
 def test_podoc_open_save(tempdir):
