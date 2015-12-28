@@ -7,9 +7,10 @@
 # Imports
 #------------------------------------------------------------------------------
 
-from pytest import yield_fixture
+from pytest import yield_fixture, raises
 
-from ..ast import AST, Block, Inline, to_json, from_json, _remove_json_meta
+from .._ast import (AST, Block, Inline, to_json, from_json,
+                    _remove_json_meta, ae,)
 
 
 #------------------------------------------------------------------------------
@@ -59,6 +60,19 @@ def ast():
 #------------------------------------------------------------------------------
 # Tests
 #------------------------------------------------------------------------------
+
+def test_ae():
+    ae(1, 1)
+    ae(1., 1)
+
+    ae({'a': 1, 'm': {}}, {'a': 1})
+    with raises(AssertionError):
+        ae({'a': 1, 'b': {}}, {'a': 1})
+
+    ae('abc\n', 'abc\n')
+    with raises(AssertionError):
+        ae('abc\n', 'abc')
+
 
 def test_remove_json_meta(json):
     json = _remove_json_meta(json)

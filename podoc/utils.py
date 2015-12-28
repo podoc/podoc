@@ -2,9 +2,12 @@
 
 """Utility functions."""
 
+import logging
 import os.path as op
 
 from six import string_types
+
+logger = logging.getLogger(__name__)
 
 
 #------------------------------------------------------------------------------
@@ -66,3 +69,15 @@ def pandoc(filename, to, **kwargs):
     """Convert a document with pandoc."""
     import pypandoc
     return pypandoc.convert(filename, to, **kwargs)
+
+
+def has_pandoc():  # pragma: no cover
+    try:
+        import pypandoc
+        pypandoc.get_pandoc_version()
+        return True
+    except ImportError:
+        logger.debug("pypandoc is not installed.")
+    except FileNotFoundError:
+        logger.debug("pandoc is not installed.")
+    return False

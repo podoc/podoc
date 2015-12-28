@@ -13,8 +13,7 @@ import os.path as op
 
 from pytest import mark
 
-from ..testing import has_pandoc
-from ..utils import Bunch, Path, open_text, save_text, pandoc
+from ..utils import Bunch, Path, open_text, save_text, pandoc, has_pandoc
 
 logger = logging.getLogger(__name__)
 
