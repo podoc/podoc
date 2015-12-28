@@ -29,9 +29,8 @@ class IPluginRegistry(type):
     def __init__(cls, name, bases, attrs):
         if name != 'IPlugin':
             logger.debug("Register plugin %s.", name)
-            plugin_tuple = (cls, cls.file_extensions)
-            if plugin_tuple not in IPluginRegistry.plugins:
-                IPluginRegistry.plugins.append(plugin_tuple)
+            if cls not in IPluginRegistry.plugins:
+                IPluginRegistry.plugins.append(cls)
 
 
 class IPlugin(object, metaclass=IPluginRegistry):
@@ -39,14 +38,13 @@ class IPlugin(object, metaclass=IPluginRegistry):
         pass
 
 
-def get_plugin(name_or_ext):
-    """Get a plugin class from its name or file extension."""
-    name_or_ext = name_or_ext.lower()
-    for (plugin, file_extension) in IPluginRegistry.plugins:
-        if (name_or_ext in plugin.__name__.lower() or
-                name_or_ext in file_extension):
+def get_plugin(name):
+    """Get a plugin class from its name."""
+    name = name.lower()
+    for plugin in IPluginRegistry.plugins:
+        if name in plugin.__name__.lower():
             return plugin
-    raise ValueError("The plugin %s cannot be found." % name_or_ext)
+    raise ValueError("The plugin %s cannot be found." % name)
 
 
 #------------------------------------------------------------------------------
@@ -92,18 +90,6 @@ def discover_plugins(dirs):
                     # IPluginRegistry
                     mod = imp.load_module(modname, file, path, descr)  # noqa
     return IPluginRegistry.plugins
-
-
-def iter_plugins_dirs():
-    """Iterate over all plugin directories."""
-    curdir = op.dirname(op.realpath(__file__))
-    plugins_dir = op.join(curdir, 'plugins')
-    # TODO: add other plugin directories (user plugins etc.)
-    names = [name for name in sorted(os.listdir(plugins_dir))
-             if not name.startswith(('.', '_')) and
-             op.isdir(op.join(plugins_dir, name))]
-    for name in names:
-        yield op.join(plugins_dir, name)
 
 
 def _load_all_native_plugins():
