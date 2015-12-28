@@ -7,6 +7,8 @@
 # Imports
 #------------------------------------------------------------------------------
 
+import os.path as op
+
 from pytest import raises
 
 from ..core import Podoc, _find_path, _get_annotation
@@ -39,35 +41,50 @@ def test_podoc_fail():
 def test_podoc_1():
     p = Podoc()
 
-    @p.register(source='lower', target='upper')
+    p.register_lang('lower')
+    p.register_lang('upper')
+
+    @p.register_func(source='lower', target='upper')
     def toupper(text):
         return text.upper()
 
     assert p.conversion_pairs == [('lower', 'upper')]
-    assert p.get_func('lower', 'upper')
     assert p.convert('hello', ['lower', 'upper']) == 'HELLO'
 
-    @p.register(source='upper', target='lower')
+
+def test_podoc_2():
+    p = Podoc()
+
+    p.register_lang('lower')
+    p.register_lang('upper')
+
+    @p.register_func(source='lower', target='upper')
+    def toupper(text):
+        return text.upper()
+
+    @p.register_func(source='upper', target='lower')
     def tolower(text):
         return text.lower()
 
     assert p.convert('Hello', ['lower', 'upper', 'lower']) == 'hello'
 
 
-def test_podoc_2():
+def test_podoc_3(tempdir):
     p = Podoc()
 
-    class A(object):
-        pass
+    p.register_lang('a', file_ext='.a',
+                    open_func=lambda path: 'a',
+                    save_func=lambda path, contents: None,
+                    )
+    assert p.languages == ['a']
 
-    class B(object):
-        def __init__(self, obj):
-            self.obj = obj
+    assert p.get_lang_for_file_ext('.a') == 'a'
+    assert p.get_lang_for_file_ext('.b') is None
 
-    @p.register(source=A, target=B)
-    def a2b(obj):
-        return B(obj)
+    fn = op.join(tempdir, 'aa.a')
+    open(fn, 'w').close()
+    open(op.join(tempdir, 'bb.b'), 'w').close()
 
-    a = A()
-    assert isinstance(p.convert(a, [A, B]), B)
-    assert isinstance(p.convert(a, ['a', 'b']), B)
+    with raises(AssertionError):
+        p.get_files_in_dir('')
+    assert p.get_files_in_dir(tempdir, lang='a') == [fn]
