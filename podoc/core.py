@@ -70,10 +70,7 @@ class Podoc(object):
         source = source or _get_annotation(func, 'source')
         target = target or _get_annotation(func, 'target')
         assert source
-        # The languages must have been registered before.
-        assert source in self._langs
         assert target
-        assert target in self._langs
         self._funcs[(source, target)] = func
 
     def register_lang(self, name, file_ext=None,

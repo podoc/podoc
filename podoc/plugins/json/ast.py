@@ -7,9 +7,11 @@
 # Imports
 #------------------------------------------------------------------------------
 
+import json
 import logging
 
-from .utils import Bunch
+from podoc.plugin import IPlugin
+from podoc.utils import Bunch
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +61,7 @@ class Inline(Bunch):
 
 
 #------------------------------------------------------------------------------
-# Conversion to json
+# Conversion to JSON
 #------------------------------------------------------------------------------
 
 def _remove_json_meta(d):
@@ -99,7 +101,7 @@ def to_json(ast):
 
 
 #------------------------------------------------------------------------------
-# Conversion from json
+# Conversion from JSON
 #------------------------------------------------------------------------------
 
 def _from_json_inline(inline):
@@ -126,3 +128,33 @@ def from_json(json):
     blocks = json[1]
     blocks = [_from_json_block(b) for b in blocks]
     return AST(blocks=blocks)
+
+
+#------------------------------------------------------------------------------
+# Conversion from JSON
+#------------------------------------------------------------------------------
+
+class ASTPlugin(IPlugin):
+    def attach(self, podoc):
+        # An object in the language 'ast' is an instance of AST.
+        podoc.register_lang('ast', file_ext='.json',
+                            open_func=self.open, save_func=self.save)
+
+    def open(self, path):
+        """Open a .json file and return an AST instance."""
+        logger.debug("Open JSON file `%s`.", path)
+        with open(path, 'r') as f:
+            ast_dict = json.load(f)
+        assert isinstance(ast_dict, dict)
+        ast = from_json(ast_dict)
+        assert isinstance(ast, AST)
+        return ast
+
+    def save(self, path, ast):
+        """Save an AST instance to a JSON file."""
+        assert isinstance(ast, AST)
+        ast_dict = to_json(ast)
+        assert isinstance(ast_dict, dict)
+        logger.debug("Save JSON file `%s`.", path)
+        with open(path, 'w') as f:
+            json.dump(ast_dict, f, sort_keys=True, indent=2)

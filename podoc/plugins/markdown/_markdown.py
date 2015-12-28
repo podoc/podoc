@@ -15,18 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 #------------------------------------------------------------------------------
-# JSON plugin
+# Markdown plugin
 #------------------------------------------------------------------------------
 
-class Markdown(IPlugin):
-    file_extensions = ('.md',)
-
-    def reader(self, contents):
-        # TODO
-        from podoc.testing import open_test_file
-        return open_test_file('hello_ast.py')
-
-    def writer(self, ast):
-        # TODO
-        from podoc.testing import open_test_file
-        return open_test_file('hello.md')
+class MarkdownPlugin(IPlugin):
+    pass
