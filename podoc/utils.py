@@ -62,7 +62,7 @@ class Path(object):
 # pandoc wrapper
 #------------------------------------------------------------------------------
 
-def pandoc(from_path, to_path, **kwargs):
+def pandoc(filename, to, **kwargs):
     """Convert a document with pandoc."""
     import pypandoc
-    return pypandoc.convert(from_path, to_path, **kwargs)
+    return pypandoc.convert(filename, to, **kwargs)

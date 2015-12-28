@@ -15,7 +15,7 @@ lint:
 	flake8 podoc
 
 test: lint
-	py.test podoc
+	py.test podoc --cov podoc --cov-report term-missing
 
 coverage:
 	coverage --html

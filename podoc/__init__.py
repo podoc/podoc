@@ -14,6 +14,8 @@ import os.path as op
 import subprocess
 import sys
 
+import pytest
+
 from .core import Podoc  # noqa
 from .plugin import (IPlugin, discover_plugins, get_plugin,
                      _load_all_native_plugins)  # noqa
@@ -83,3 +85,8 @@ if '--debug' in sys.argv:  # pragma: no cover
 
 # Load all native plugins when importing the library.
 _load_all_native_plugins()
+
+
+def test():  # pragma: no cover
+    """Run the full testing suite of podoc."""
+    pytest.main()
