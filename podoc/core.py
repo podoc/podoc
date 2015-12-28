@@ -51,15 +51,8 @@ class Podoc(object):
         self._funcs = {}  # mapping `(lang0, lang1) => func`
         self._langs = {}  # mapping `lang: Bunch()`
 
-    @property
-    def languages(self):
-        """List of all registered languages."""
-        return sorted(self._langs)
-
-    @property
-    def conversion_pairs(self):
-        """List of registered conversion pairs."""
-        return list(self._funcs.keys())
+    # Main methods
+    # -------------------------------------------------------------------------
 
     def register_func(self, func=None, source=None, target=None):
         """Register a conversion function between two languages."""
@@ -84,6 +77,37 @@ class Podoc(object):
                                   save_func=save_func or save_text,
                                   )
 
+    def convert(self, obj, lang_list):
+        """Convert an object by passing it through a chain of conversion
+        functions."""
+        assert isinstance(lang_list, (tuple, list))
+        # Iterate over all successive pairs.
+        for t0, t1 in zip(lang_list, lang_list[1:]):
+            # Get the function registered for t0, t1.
+            f = self._funcs.get((t0, t1), None)
+            if not f:
+                raise ValueError("No function registered for `{}` => `{}`.".
+                                 format(t0, t1))
+            # Perform the conversion.
+            obj = f(obj)
+        return obj
+
+    # Properties
+    # -------------------------------------------------------------------------
+
+    @property
+    def languages(self):
+        """List of all registered languages."""
+        return sorted(self._langs)
+
+    @property
+    def conversion_pairs(self):
+        """List of registered conversion pairs."""
+        return list(self._funcs.keys())
+
+    # File-related methods
+    # -------------------------------------------------------------------------
+
     def get_files_in_dir(self, path, lang=None):
         """Return the list of files of a given language in a directory."""
         assert path
@@ -100,18 +124,21 @@ class Podoc(object):
         for name, b in self._langs.items():
             if b.file_ext == file_ext:
                 return name
+        raise ValueError(("The file extension `{}` hasn't been "
+                          "registered.").format(file_ext))
 
-    def convert(self, obj, lang_list):
-        """Convert an object by passing it through a chain of conversion
-        functions."""
-        assert isinstance(lang_list, (tuple, list))
-        # Iterate over all successive pairs.
-        for t0, t1 in zip(lang_list, lang_list[1:]):
-            # Get the function registered for t0, t1.
-            f = self._funcs.get((t0, t1), None)
-            if not f:
-                raise ValueError("No function registered for `{}` => `{}`.".
-                                 format(t0, t1))
-            # Perform the conversion.
-            obj = f(obj)
-        return obj
+    def open(self, path):
+        """Open a file which has a registered file extension."""
+        # Find the language corresponding to the file's extension.
+        file_ext = op.splitext(path)[1]
+        lang = self.get_lang_for_file_ext(file_ext)
+        # Open the file using the function registered for the language.
+        return self._langs[lang].open_func(path)
+
+    def save(self, path, contents):
+        """Save an object to a file."""
+        # Find the language corresponding to the file's extension.
+        file_ext = op.splitext(path)[1]
+        lang = self.get_lang_for_file_ext(file_ext)
+        # Save the file using the function registered for the language.
+        return self._langs[lang].save_func(path, contents)

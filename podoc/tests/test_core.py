@@ -38,21 +38,7 @@ def test_podoc_fail():
         p.convert('hello', ['a', 'b'])
 
 
-def test_podoc_1():
-    p = Podoc()
-
-    p.register_lang('lower')
-    p.register_lang('upper')
-
-    @p.register_func(source='lower', target='upper')
-    def toupper(text):
-        return text.upper()
-
-    assert p.conversion_pairs == [('lower', 'upper')]
-    assert p.convert('hello', ['lower', 'upper']) == 'HELLO'
-
-
-def test_podoc_2():
+def test_podoc_convert():
     p = Podoc()
 
     p.register_lang('lower')
@@ -66,10 +52,11 @@ def test_podoc_2():
     def tolower(text):
         return text.lower()
 
+    assert p.conversion_pairs == [('lower', 'upper'), ('upper', 'lower')]
     assert p.convert('Hello', ['lower', 'upper', 'lower']) == 'hello'
 
 
-def test_podoc_3(tempdir):
+def test_podoc_file(tempdir):
     p = Podoc()
 
     p.register_lang('a', file_ext='.a',
@@ -79,7 +66,8 @@ def test_podoc_3(tempdir):
     assert p.languages == ['a']
 
     assert p.get_lang_for_file_ext('.a') == 'a'
-    assert p.get_lang_for_file_ext('.b') is None
+    with raises(ValueError):
+        p.get_lang_for_file_ext('.b')
 
     fn = op.join(tempdir, 'aa.a')
     open(fn, 'w').close()
@@ -88,3 +76,12 @@ def test_podoc_3(tempdir):
     with raises(AssertionError):
         p.get_files_in_dir('')
     assert p.get_files_in_dir(tempdir, lang='a') == [fn]
+
+
+def test_podoc_open_save(tempdir):
+    p = Podoc()
+    p.register_lang('txt', file_ext='.txt')
+    filename = 'test.txt'
+    path = op.join(tempdir, filename)
+    p.save(path, 'hello world')
+    assert p.open(path) == 'hello world'
