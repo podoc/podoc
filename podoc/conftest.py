@@ -11,7 +11,7 @@ from tempfile import TemporaryDirectory
 
 from pytest import yield_fixture
 
-from podoc import add_default_handler
+from podoc import add_default_handler, create_podoc
 
 
 #------------------------------------------------------------------------------
@@ -28,12 +28,19 @@ def tempdir():
         yield tempdir
 
 
-# def pytest_generate_tests(metafunc):
-#     """Generate the test_file_tuple fixture to test all plugin test files."""
-#     if 'test_file_tuple' in metafunc.fixturenames:
+@yield_fixture
+def podoc():
+    yield create_podoc()
 
-#         def _name(tuple):
-#             """Name of the parameterized test: <plugin>_<example_file>."""
-#             return '_'.join(tuple[:2])
 
-#         metafunc.parametrize('test_file_tuple', iter_test_files(), ids=_name)
+@yield_fixture(params=['hello'])
+def test_file(request):
+    name = request.param
+    yield name
+
+
+def pytest_generate_tests(metafunc):
+    """Generate the fixtures to test all format test files."""
+    if 'lang' in metafunc.fixturenames:
+        podoc = create_podoc()
+        metafunc.parametrize('lang', podoc.languages)

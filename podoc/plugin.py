@@ -100,4 +100,4 @@ def _load_all_native_plugins():
     subdirs = [d for d in os.listdir(curdir) if op.isdir(op.join(curdir, d))]
     dirs = [op.join(curdir, subdir) for subdir in subdirs
             if not subdir.startswith('_')]
-    discover_plugins(dirs)
+    return discover_plugins(dirs)

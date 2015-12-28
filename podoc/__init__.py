@@ -16,7 +16,7 @@ import sys
 
 import pytest
 
-from .core import Podoc  # noqa
+from .core import Podoc, create_podoc  # noqa
 from .plugin import (IPlugin, discover_plugins, get_plugin,
                      _load_all_native_plugins)  # noqa
 

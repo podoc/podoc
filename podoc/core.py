@@ -12,6 +12,7 @@ import logging
 import os.path as op
 
 from .utils import Bunch, open_text, save_text
+from .plugin import _load_all_native_plugins
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +128,10 @@ class Podoc(object):
         raise ValueError(("The file extension `{}` hasn't been "
                           "registered.").format(file_ext))
 
+    def get_file_ext(self, lang):
+        """Return the file extension registered for a given language."""
+        return self._langs[lang].file_ext
+
     def open(self, path):
         """Open a file which has a registered file extension."""
         # Find the language corresponding to the file's extension.
@@ -142,3 +147,10 @@ class Podoc(object):
         lang = self.get_lang_for_file_ext(file_ext)
         # Save the file using the function registered for the language.
         return self._langs[lang].save_func(path, contents)
+
+
+def create_podoc():
+    podoc = Podoc()
+    for p in _load_all_native_plugins():
+        p().attach(podoc)
+    return podoc

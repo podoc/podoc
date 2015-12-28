@@ -11,7 +11,26 @@ import os.path as op
 
 from pytest import raises
 
-from ..core import Podoc, _find_path, _get_annotation
+from ..core import Podoc, _find_path, _get_annotation, create_podoc
+from ..utils import open_text
+
+
+#------------------------------------------------------------------------------
+# Testing utils
+#------------------------------------------------------------------------------
+
+def get_test_file_path(podoc, lang, filename):
+    curdir = op.realpath(op.dirname(__file__))
+    file_ext = podoc.get_file_ext(lang)
+    # Construct the directory name for the language and test filename.
+    dirname = op.realpath(op.join(curdir, '../', lang))
+    path = op.join(dirname, 'test_files', filename + file_ext)
+    assert op.exists(path)
+    return path
+
+
+def assert_text_files_equal(p0, p1):
+    assert open_text(p0) == open_text(p1)
 
 
 #------------------------------------------------------------------------------
@@ -87,3 +106,18 @@ def test_podoc_open_save(tempdir):
     path = op.join(tempdir, filename)
     p.save(path, 'hello world')
     assert p.open(path) == 'hello world'
+
+
+def test_create_podoc():
+    podoc = create_podoc()
+    assert 'ast' in podoc.languages
+
+
+def test_all_open_save(tempdir, podoc, lang, test_file):
+    """For all languages and test files, check round-tripping of open
+    and save."""
+    path = get_test_file_path(podoc, lang, test_file)
+    contents = podoc.open(path)
+    to_path = op.join(tempdir, test_file + podoc.get_file_ext(lang))
+    podoc.save(to_path, contents)
+    assert_text_files_equal(path, to_path)
