@@ -10,6 +10,7 @@
 import logging
 
 from CommonMark import Parser
+from six import StringIO
 
 from podoc.ast import AST, Block, Inline
 from podoc.plugin import IPlugin
@@ -48,34 +49,113 @@ def from_cm(cm):
 
 
 #------------------------------------------------------------------------------
-# AST to Markdown
+# Markdown writer
 #------------------------------------------------------------------------------
 
-def _inline_to_cm(inline):
-    if isinstance(inline, str):
-        return {
-            't': 'Str',
-            'c': inline,
-        }
-    else:
-        return {
-            't': inline.name,
-            'c': [_inline_to_cm(i) for i in inline.contents],
-        }
+class MarkdownWriter(object):
+    """A class for writing Markdown documents."""
+    def __init__(self):
+        self._output = StringIO()
+        self._list_number = 0
+        self._in_quote = False
 
+    # Buffer methods
+    # -------------------------------------------------------------------------
 
-def _block_to_cm(block):
-    return {
-        't': block.name,
-        'c': [_inline_to_cm(inline) for inline in block.inlines],
-        'm': block.meta,
-    }
+    @property
+    def contents(self):
+        return self._output.getvalue().rstrip() + '\n'  # end of file \n
 
+    def close(self):
+        self._output.close()
 
-def to_cm(ast):
-    """Convert a podoc AST to a CommonMark AST."""
-    # TODO: create CommonMark AST
-    return [_block_to_cm(block) for block in ast.blocks]
+    def __del__(self):
+        self.close()
+
+    def _write(self, contents):
+        self._output.write(contents.rstrip('\n'))
+
+    # New line methods
+    # -------------------------------------------------------------------------
+
+    def newline(self):
+        self._output.write('\n\n')
+        self._list_number = 0
+
+    def linebreak(self):
+        self._output.write('\n')
+
+    def ensure_newline(self, n):
+        """Make sure there are 'n' line breaks at the end."""
+        assert n >= 0
+        text = self._output.getvalue().rstrip('\n')
+        if not text:
+            return
+        self._output = StringIO()
+        self._output.write(text)
+        self._output.write('\n' * n)
+        text = self._output.getvalue()
+        assert text[-n - 1] != '\n'
+        assert text[-n:] == '\n' * n
+
+    # Block methods
+    # -------------------------------------------------------------------------
+
+    def heading(self, text, level=None):
+        assert 1 <= level <= 6
+        self.ensure_newline(2)
+        self.text(('#' * level) + ' ' + text)
+
+    def numbered_list_item(self, text='', level=0):
+        if level == 0:
+            self._list_number += 1
+        self.list_item(text, level=level, bullet=str(self._list_number),
+                       suffix='. ')
+
+    def list_item(self, text='', level=0, bullet='*', suffix=' '):
+        assert level >= 0
+        self.text(('  ' * level) + bullet + suffix + text)
+
+    def code_start(self, lang=None):
+        if lang is None:
+            lang = ''
+        self.text('```{0}'.format(lang))
+        self.ensure_newline(1)
+
+    def code_end(self):
+        self.ensure_newline(1)
+        self.text('```')
+
+    def quote_start(self):
+        self._in_quote = True
+
+    def quote_end(self):
+        self._in_quote = False
+
+    # Inline methods
+    # -------------------------------------------------------------------------
+
+    def link(self, text, url):
+        self.text('[{0}]({1})'.format(text, url))
+
+    def image(self, caption, url):
+        self.text('![{0}]({1})'.format(caption, url))
+
+    def inline_code(self, text):
+        self.text('`{0}`'.format(text))
+
+    def italic(self, text):
+        self.text('*{0}*'.format(text))
+
+    def bold(self, text):
+        self.text('**{0}**'.format(text))
+
+    def text(self, text):
+        # Add quote '>' at the beginning of each line when quote is activated.
+        if self._in_quote:
+            if self._output.getvalue()[-1] == '\n':
+                text = '> ' + text
+        self._write(text)
 
 
 #------------------------------------------------------------------------------
