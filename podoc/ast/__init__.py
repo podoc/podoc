@@ -8,4 +8,4 @@
 # Imports
 #------------------------------------------------------------------------------
 
-from ._ast import AST
+from ._ast import AST, Block, Inline
