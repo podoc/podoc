@@ -165,9 +165,18 @@ class MarkdownWriter(object):
 class Markdown(IPlugin):
     def attach(self, podoc):
         podoc.register_lang('markdown', file_ext='.md')
+        podoc.register_func(source='markdown', target='ast',
+                            func=self.read_markdown)
+        podoc.register_func(source='ast', target='markdown',
+                            func=self.write_markdown)
 
     def read_markdown(self, contents):
         parser = Parser()
         cm = parser.parse(contents)
         ast = from_cm(cm)
         return ast
+
+    def write_markdown(self, ast):
+        # w = MarkdownWriter()
+        # TODO
+        pass
