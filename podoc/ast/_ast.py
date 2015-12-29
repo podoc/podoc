@@ -31,6 +31,8 @@ def ae(a, b):
 # AST
 #------------------------------------------------------------------------------
 
+# TODO: write down the list of node types
+
 class AST(Bunch):
     def __init__(self, *args, **kwargs):
         super(AST, self).__init__(*args, **kwargs)

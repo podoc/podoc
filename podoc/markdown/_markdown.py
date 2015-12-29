@@ -7,6 +7,7 @@
 # Imports
 #------------------------------------------------------------------------------
 
+from contextlib import contextmanager
 import logging
 
 from CommonMark import Parser
@@ -62,6 +63,16 @@ class MarkdownWriter(object):
     # Buffer methods
     # -------------------------------------------------------------------------
 
+    @contextmanager
+    def capture(self):
+        """Temporarily capture all written contents."""
+        output = self._output
+        self._output = StringIO()
+        yield
+        self._output.close()
+        del self._output
+        self._output = output
+
     @property
     def contents(self):
         return self._output.getvalue().rstrip() + '\n'  # end of file \n
@@ -73,7 +84,9 @@ class MarkdownWriter(object):
         self.close()
 
     def _write(self, contents):
-        self._output.write(contents.rstrip('\n'))
+        contents = contents.rstrip('\n')
+        self._output.write(contents)
+        return contents
 
     # New line methods
     # -------------------------------------------------------------------------
@@ -136,26 +149,57 @@ class MarkdownWriter(object):
     # -------------------------------------------------------------------------
 
     def link(self, text, url):
-        self.text('[{0}]({1})'.format(text, url))
+        return self.text('[{0}]({1})'.format(text, url))
 
     def image(self, caption, url):
-        self.text('![{0}]({1})'.format(caption, url))
+        return self.text('![{0}]({1})'.format(caption, url))
 
     def inline_code(self, text):
-        self.text('`{0}`'.format(text))
+        return self.text('`{0}`'.format(text))
 
     def italic(self, text):
-        self.text('*{0}*'.format(text))
+        return self.text('*{0}*'.format(text))
 
     def bold(self, text):
-        self.text('**{0}**'.format(text))
+        return self.text('**{0}**'.format(text))
 
     def text(self, text):
         # Add quote '>' at the beginning of each line when quote is activated.
         if self._in_quote:
             if self._output.getvalue()[-1] == '\n':
                 text = '> ' + text
-        self._write(text)
+        return self._write(text)
+
+
+class MarkdownRenderer(MarkdownWriter):
+    """Read an AST and render a Markdown string."""
+    def render_block(self, block):
+        n = block.name
+        # Ensure that we don't write the inlines to the document yet.
+        with self.capture():
+            contents = self.render_inline(block.inlines)
+        if n == 'Para':
+            pass
+        # Write the rendered inline contents.
+        self._write(contents)
+        self.newline()
+
+    def render_inline(self, inline):
+        """Return the Markdown of an inline."""
+        if isinstance(inline, list):
+            return ''.join(map(self.render_inlines, inline))
+        assert isinstance(inline, dict)
+        # Inline contents.
+        contents = ''.join(map(self.render_inlines, inline.contents))
+        n = inline.name
+        if n == 'Str':
+            return contents
+        elif n == 'Emph':
+            return self.italic(contents)
+        # TODO: continue
+
+    def render(self, ast):
+        pass
 
 
 #------------------------------------------------------------------------------
