@@ -11,7 +11,7 @@ from contextlib import contextmanager
 import logging
 
 from CommonMark import Parser
-from six import StringIO
+from six import StringIO, string_types
 
 from podoc.ast import AST, Block, Inline
 from podoc.plugin import IPlugin
@@ -28,9 +28,13 @@ def _from_cm_inline(inline):
     contents = inline.c
     if name == 'Str':
         return contents
+    contents = [_from_cm_inline(i) for i in contents]
+    if name == 'Link':
+        url = inline.destination
+        contents = ''.join(_from_cm_inline(_) for _ in inline.label)
+        return Inline(name=name, contents=contents, url=url)
     else:
-        return Inline(name=name,
-                      contents=[_from_cm_inline(i) for i in contents])
+        return Inline(name=name, contents=contents)
 
 
 def _from_cm_block(block):
@@ -97,6 +101,7 @@ class MarkdownWriter(object):
 
     def linebreak(self):
         self._output.write('\n')
+        return '\n'
 
     def ensure_newline(self, n):
         """Make sure there are 'n' line breaks at the end."""
@@ -157,11 +162,14 @@ class MarkdownWriter(object):
     def inline_code(self, text):
         return self.text('`{0}`'.format(text))
 
-    def italic(self, text):
+    def emph(self, text):
         return self.text('*{0}*'.format(text))
 
-    def bold(self, text):
+    def strong(self, text):
         return self.text('**{0}**'.format(text))
+
+    def strikeout(self, text):
+        return self.text('~~{0}~'.format(text))
 
     def text(self, text):
         # Add quote '>' at the beginning of each line when quote is activated.
@@ -174,6 +182,7 @@ class MarkdownWriter(object):
 class MarkdownRenderer(MarkdownWriter):
     """Read an AST and render a Markdown string."""
     def render_block(self, block):
+        """Render a block and write it."""
         n = block.name
         # Ensure that we don't write the inlines to the document yet.
         with self.capture():
@@ -185,21 +194,40 @@ class MarkdownRenderer(MarkdownWriter):
         self.newline()
 
     def render_inline(self, inline):
-        """Return the Markdown of an inline."""
+        """Return the Markdown of an inline (without writing anything to
+        the Markdown document)."""
         if isinstance(inline, list):
-            return ''.join(map(self.render_inlines, inline))
+            return ''.join(map(self.render_inline, inline))
+        if isinstance(inline, string_types):
+            return inline
         assert isinstance(inline, dict)
-        # Inline contents.
-        contents = ''.join(map(self.render_inlines, inline.contents))
+        # Recursive inline contents.
+        contents = ''.join(map(self.render_inline, inline.contents))
         n = inline.name
         if n == 'Str':
             return contents
         elif n == 'Emph':
-            return self.italic(contents)
-        # TODO: continue
+            return self.emph(contents)
+        elif n == 'Strong':
+            return self.strong(contents)
+        elif n == 'Strikeout':
+            return self.strikout(contents)
+        elif n == 'Code':
+            return self.inline_code(contents)
+        elif n == 'Space':
+            return self.text(' ')
+        elif n == 'LineBreak':
+            return self.linebreak()
+        elif n == 'Link':
+            return self.link(contents, inline.url)
+        elif n == 'Image':
+            return self.image(contents, inline.url)
+        raise ValueError()
 
     def render(self, ast):
-        pass
+        for block in ast.blocks:
+            self.render_block(block)
+        return self.contents
 
 
 #------------------------------------------------------------------------------

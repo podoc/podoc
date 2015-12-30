@@ -31,7 +31,38 @@ def ae(a, b):
 # AST
 #------------------------------------------------------------------------------
 
-# TODO: write down the list of node types
+"""Pandoc items
+
+## Blocks
+
+Plain
+Para
+CodeBlock
+RawBlock
+BlockQuote
+OrderedList
+BulletList
+DefinitionList
+Header
+HorizontalRule
+Table
+Div
+
+## Inlines
+
+Str
+Emph
+Strong
+Strikeout
+Code
+Space
+LineBreak
+Math
+Link
+Image
+
+"""
+
 
 class AST(Bunch):
     def __init__(self, *args, **kwargs):

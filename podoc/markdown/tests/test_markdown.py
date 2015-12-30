@@ -7,7 +7,7 @@
 # Imports
 #------------------------------------------------------------------------------
 
-from .._markdown import Markdown, MarkdownWriter
+from .._markdown import Markdown, MarkdownWriter, MarkdownRenderer
 
 
 #------------------------------------------------------------------------------
@@ -72,9 +72,9 @@ def test_markdown_writer():
     w.heading('First chapter', 1)
     w.newline()
 
-    w.bold('Hello')
+    w.strong('Hello')
     w.text(' ')
-    w.italic('world')
+    w.emph('world')
     w.text('!')
     w.linebreak()
     w.text('How are you? Some ')
@@ -90,7 +90,7 @@ def test_markdown_writer():
     w.newline()
 
     w.list_item('Item ')
-    w.bold('1')
+    w.strong('1')
     w.text('.')
     w.linebreak()
     w.list_item('Item 2.')
@@ -118,3 +118,12 @@ def test_markdown_writer():
     w.image('Some image', 'my_image.png')
 
     assert w.contents == expected
+
+
+def test_markdown_renderer_link():
+    s = '[a](b)'
+    # Parse the string.
+    ast = Markdown().read_markdown(s)
+    # Render the AST to Markdown.
+    contents = MarkdownRenderer().render(ast)
+    assert contents.strip() == s
