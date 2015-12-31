@@ -7,9 +7,12 @@
 # Imports
 #------------------------------------------------------------------------------
 
+import json
+
 from pytest import yield_fixture, raises
 
-from .._ast import (AST, Block, Inline, _remove_json_meta, ae,)
+from .._ast import (AST, Block, Inline, _remove_meta, ae,)
+from podoc.utils import has_pandoc, pandoc
 
 
 #------------------------------------------------------------------------------
@@ -48,6 +51,12 @@ def ast():
     block.add_child(inline)
     ast.add_block(block)
 
+    assert block.t == 'Para'
+    assert block.c == block.children
+
+    assert inline.t == inline.name
+    assert inline.c == inline.children
+
     # Second block
     block = Block(name='Para',
                   children=[Inline(name='Str', children='hi!')])
@@ -72,8 +81,8 @@ def test_ae():
         ae('abc\n', 'abc')
 
 
-def test_remove_json_meta(ast_dict):
-    ast_dict = _remove_json_meta(ast_dict)
+def test_remove_meta(ast_dict):
+    ast_dict = _remove_meta(ast_dict)
     expected = [{'unMeta': {}}, [
                 {'c': [{'c': 'hello', 't': 'Str'},
                        {'c': [], 't': 'Space'},
@@ -95,3 +104,35 @@ def test_to_dict(ast_dict, ast):
 def test_from_dict(ast_dict, ast):
     ast_converted = AST.from_dict(ast_dict)
     assert ast_converted == ast
+
+
+#------------------------------------------------------------------------------
+# Tests with pandoc
+#------------------------------------------------------------------------------
+
+def _test_pandoc_ast(s):
+    """Check the compatibility of the podoc AST with pandoc.
+
+    * Perform Markdown -> pandoc AST dict -> podoc AST -> podoc AST dict
+    * Check that pandoc AST dict = podoc AST dict
+
+    """
+    if not has_pandoc():  # pragma: no cover
+        raise ImportError("pypandoc is not available")
+    ast_dict = json.loads(pandoc(s, 'json', format='markdown'))
+    ast = AST.from_dict(ast_dict)
+    ae(ast.to_dict(), ast_dict)
+
+
+def test_pandoc_ast_1():
+    _test_pandoc_ast('hello')
+    _test_pandoc_ast('hello world')
+    _test_pandoc_ast('hello *world*')
+    _test_pandoc_ast('hello **world**')
+    _test_pandoc_ast('hello `world`')
+    _test_pandoc_ast('[hello](world)')
+    _test_pandoc_ast('![hello](world)')
+
+
+def test_pandoc_ast_2():
+    _test_pandoc_ast('[*hello* **world `!`**](world)')

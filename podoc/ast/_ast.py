@@ -22,18 +22,18 @@ logger = logging.getLogger(__name__)
 # Utils
 #------------------------------------------------------------------------------
 
-def _remove_json_meta(d):
+def _remove_meta(d):
     if isinstance(d, dict):
-        return {k: _remove_json_meta(v) for k, v in d.items() if k != 'm'}
+        return {k: _remove_meta(v) for k, v in d.items() if k != 'm'}
     elif isinstance(d, list):
-        return [_remove_json_meta(v) for v in d]
+        return [_remove_meta(v) for v in d]
     else:
         return d
 
 
 def ae(a, b):
     if isinstance(a, (list, dict)):
-        assert _remove_json_meta(a) == _remove_json_meta(b)
+        assert _remove_meta(a) == _remove_meta(b)
     else:
         assert a == b
 
@@ -46,13 +46,14 @@ def ae(a, b):
 PANDOC_BLOCK_NAMES = (
     'Plain',
     'Para',
-    'CodeBlock',
-    'RawBlock',
-    'BlockQuote',
-    'OrderedList',
-    'BulletList',
-    'DefinitionList',
     'Header',
+    'CodeBlock',
+    'BlockQuote',
+    'BulletList',
+    'OrderedList',
+    # The following are not supported yet in podoc.
+    'RawBlock',
+    'DefinitionList',
     'HorizontalRule',
     'Table',
     'Div',
@@ -64,13 +65,14 @@ PANDOC_INLINE_NAMES = (
     'Str',
     'Emph',
     'Strong',
-    'Strikeout',
     'Code',
-    'Space',
-    'LineBreak',
-    'Math',
     'Link',
     'Image',
+    # The following are not supported yet in podoc.
+    'LineBreak',
+    'Math',
+    'Strikeout',
+    'Space',
 )
 
 
@@ -103,6 +105,7 @@ class AST(Bunch):
     @staticmethod
     def from_dict(d):
         """Convert a pandoc-compatible dict to a podoc AST."""
+        assert isinstance(d, list)
         assert len(d) == 2
         blocks = [Block.from_dict(_) for _ in d[1]]
         return AST(blocks=blocks)
@@ -118,6 +121,14 @@ class Block(Bunch):
         self.children = kwargs.pop('children', [])
         Block._check_children(self.children)
 
+    @property
+    def t(self):
+        return self.name
+
+    @property
+    def c(self):
+        return self.children
+
     def add_metadata(self, **kwargs):
         self.meta.update(**kwargs)
 
@@ -129,8 +140,8 @@ class Block(Bunch):
     @staticmethod
     def _check_children(children):
         assert isinstance(children, list)
-        assert all(isinstance(child, (Block, Inline))
-                   for child in children)
+        for child in children:
+            assert isinstance(child, (Block, Inline))
 
     def to_dict(self):
         Block._check_children(self.children)
@@ -142,16 +153,17 @@ class Block(Bunch):
 
     @staticmethod
     def from_dict(d):
+        if isinstance(d, list):
+            return [Block.from_dict(_) for _ in d]
+        assert isinstance(d, dict)
         name = d['t']
         # d can be a Block or an Inline.
         # Route to inline.
         if name in PANDOC_INLINE_NAMES:
             return Inline.from_dict(d)
         # Now, we really have a block.
-        assert name in PANDOC_BLOCK_NAMES
         meta = d.get('m', {})
-        children = d['c']
-        children = [Block.from_dict(_) for _ in children]
+        children = [Block.from_dict(_) for _ in d['c']]
         Block._check_children(children)
         return Block(name=name, meta=meta, children=children)
 
@@ -165,8 +177,13 @@ class Inline(Bunch):
         self.children = kwargs.pop('children', [])
         Inline._check_children(self.children)
 
-    def set_string(self, string):
-        self.children = string
+    @property
+    def t(self):
+        return self.name
+
+    @property
+    def c(self):
+        return self.children
 
     def add_child(self, child):
         """Add an Inline or String child."""
@@ -179,13 +196,22 @@ class Inline(Bunch):
     def _check_children(children):
         assert isinstance(children, (list, string_types))
         if isinstance(children, list):
-            assert all(isinstance(child, Inline) for child in children)
+            for child in children:
+                assert isinstance(child, Inline)
 
     def to_dict(self):
         Inline._check_children(self.children)
         children = self.children
         if isinstance(children, list):
             children = [child.to_dict() for child in self.children]
+        # Put the URL in the children, like what pandoc does.
+        if self.name == 'Link':
+            children = [children, [self.url, '']]
+        elif self.name == 'Image':
+            children = [children, [self.url, 'fig:']]
+        # pandoc uses attributes in the Code inline
+        elif self.name == 'Code':
+            children = [['', [], []], children]
         return {
             't': self.name,
             'c': children,
@@ -193,8 +219,22 @@ class Inline(Bunch):
 
     @staticmethod
     def from_dict(d):
+        if isinstance(d, list):
+            return [Inline.from_dict(_) for _ in d]
+        assert isinstance(d, dict)
         name = d['t']
         children = d['c']
+        # Extract the link for Link and Image elements.
+        if name == 'Code':
+            children = children[1]
+        if name in ('Link', 'Image'):
+            assert len(children) == 2
+            url = children[1][0]
+            children = children[0]
+            if isinstance(children, list):
+                children = [Inline.from_dict(_) for _ in children]
+            Inline._check_children(children)
+            return Inline(name=name, children=children, url=url)
         if isinstance(children, list):
             children = [Inline.from_dict(_) for _ in children]
         Inline._check_children(children)
