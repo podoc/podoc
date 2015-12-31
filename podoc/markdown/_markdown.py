@@ -23,6 +23,15 @@ logger = logging.getLogger(__name__)
 # Markdown to AST through CommonMark-py
 #------------------------------------------------------------------------------
 
+_COMMONMARK_PANDOC_MAPPING = {
+    'Paragraph': 'Para',
+    'ATXHeader': 'Header',
+    'FencedCode': 'CodeBlock',
+    'List': 'OrderedList',
+    'Softbreak': 'LineBreak',
+}
+
+
 def _from_cm_inline(inline):
     if isinstance(inline, string_types):
         return inline
@@ -41,10 +50,18 @@ def _from_cm_inline(inline):
 
 def _from_cm_block(block):
     name = block.t
-    # TODO: what to do with block.c?
+    # Find inlines.
     inlines = block.inline_content
-    # TODO: support for meta in CommonMark?
     inlines = [_from_cm_inline(i) for i in inlines]
+    # Optionally convert the CommonMark-py name to the Pandoc name.
+    name = _COMMONMARK_PANDOC_MAPPING.get(name, name)
+    if name == 'CodeBlock':
+        lang = block.info
+        inlines = [block.string_content]
+        return Block(name=name, inlines=inlines, lang=lang)
+    elif name == 'Header':
+        level = block.level
+        return Block(name=name, inlines=inlines, level=level)
     return Block(name=name, inlines=inlines)
 
 
@@ -173,7 +190,8 @@ class MarkdownWriter(object):
     def text(self, text):
         # Add quote '>' at the beginning of each line when quote is activated.
         if self._in_quote:
-            if self._output.getvalue()[-1] == '\n':
+            s = self._output.getvalue()
+            if not s or s[-1] == '\n':
                 text = '> ' + text
         return self._write(text)
 
@@ -189,10 +207,23 @@ class MarkdownRenderer(MarkdownWriter):
         # Ensure that we don't write the inlines to the document yet.
         with self.capture():
             contents = self.render_inline(block.inlines)
-        if n == 'Para':
+        # Write the block with the already-rendered inline contents.
+        if n in ('Plain', 'Para'):
+            self.text(contents)
+        elif n == 'Header':
+            self.heading(contents, level=block.level)
+        elif n == 'CodeBlock':
+            self.code_start(block.lang)
+            self.text(contents)
+            self.code_end()
+        elif n == 'BlockQuote':
+            self.quote_start()
+            self.text(contents)
+            self.quote_end()
+        elif n == 'OrderedList':
             pass
-        # Write the rendered inline contents.
-        self._write(contents)
+        elif n == 'BulletList':
+            pass
         self.newline()
 
     def render_inline(self, inline):

@@ -31,37 +31,36 @@ def ae(a, b):
 # AST
 #------------------------------------------------------------------------------
 
-"""Pandoc items
+# List of allowed Pandoc block names.
+PANDOC_BLOCK_NAMES = (
+    'Plain',
+    'Para',
+    'CodeBlock',
+    'RawBlock',
+    'BlockQuote',
+    'OrderedList',
+    'BulletList',
+    'DefinitionList',
+    'Header',
+    'HorizontalRule',
+    'Table',
+    'Div',
+)
 
-## Blocks
 
-Plain
-Para
-CodeBlock
-RawBlock
-BlockQuote
-OrderedList
-BulletList
-DefinitionList
-Header
-HorizontalRule
-Table
-Div
-
-## Inlines
-
-Str
-Emph
-Strong
-Strikeout
-Code
-Space
-LineBreak
-Math
-Link
-Image
-
-"""
+# List of allowed Pandoc inline names.
+PANDOC_INLINE_NAMES = (
+    'Str',
+    'Emph',
+    'Strong',
+    'Strikeout',
+    'Code',
+    'Space',
+    'LineBreak',
+    'Math',
+    'Link',
+    'Image',
+)
 
 
 class AST(Bunch):
@@ -78,6 +77,7 @@ class Block(Bunch):
     def __init__(self, *args, **kwargs):
         super(Block, self).__init__(*args, **kwargs)
         self.name = kwargs.pop('name', 'Block')
+        assert self.name in PANDOC_BLOCK_NAMES
         self.meta = kwargs.pop('meta', {})
         self.inlines = kwargs.pop('inlines', [])
 
@@ -93,6 +93,7 @@ class Inline(Bunch):
     def __init__(self, *args, **kwargs):
         super(Inline, self).__init__(*args, **kwargs)
         self.name = kwargs.pop('name', 'Inline')
+        assert self.name in PANDOC_INLINE_NAMES
         self.contents = kwargs.pop('contents', [])
 
     def set_contents(self, contents):
