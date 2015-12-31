@@ -10,6 +10,8 @@
 import json
 import logging
 
+from six import string_types
+
 from podoc.plugin import IPlugin
 from podoc.utils import Bunch
 
@@ -19,6 +21,15 @@ logger = logging.getLogger(__name__)
 #------------------------------------------------------------------------------
 # Utils
 #------------------------------------------------------------------------------
+
+def _remove_json_meta(d):
+    if isinstance(d, dict):
+        return {k: _remove_json_meta(v) for k, v in d.items() if k != 'm'}
+    elif isinstance(d, list):
+        return [_remove_json_meta(v) for v in d]
+    else:
+        return d
+
 
 def ae(a, b):
     if isinstance(a, (list, dict)):
@@ -64,13 +75,37 @@ PANDOC_INLINE_NAMES = (
 
 
 class AST(Bunch):
+    """An AST (Abstract Syntax Tree) represents a complete markup document.
+
+    * An AST contains a list of Blocks.
+    * A Block has a name and a list of children. Every child is either:
+      * A Block
+      * An Inline
+    * An Inline has a name and a list of children. Every child is either:
+      * An Inline
+      * A Python string
+
+    """
     def __init__(self, *args, **kwargs):
         super(AST, self).__init__(*args, **kwargs)
         self.blocks = kwargs.pop('blocks', [])
+        assert isinstance(self.blocks, list)
 
     def add_block(self, block):
-        assert isinstance(block, dict)
+        """Add a Block instance."""
+        assert isinstance(block, Block)
         self.blocks.append(block)
+
+    def to_dict(self):
+        return [{'unMeta': {}},
+                [block.to_dict() for block in self.blocks]]
+
+    @staticmethod
+    def from_dict(d):
+        """Convert a pandoc-compatible dict to a podoc AST."""
+        assert len(d) == 2
+        blocks = [Block.from_dict(_) for _ in d[1]]
+        return AST(blocks=blocks)
 
 
 class Block(Bunch):
@@ -79,14 +114,46 @@ class Block(Bunch):
         self.name = kwargs.pop('name', 'Block')
         assert self.name in PANDOC_BLOCK_NAMES
         self.meta = kwargs.pop('meta', {})
-        self.inlines = kwargs.pop('inlines', [])
+        # List of either Block or Inline instances.
+        self.children = kwargs.pop('children', [])
+        Block._check_children(self.children)
 
     def add_metadata(self, **kwargs):
         self.meta.update(**kwargs)
 
-    def add_inline(self, inline):
-        assert isinstance(inline, (dict, str))
-        self.inlines.append(inline)
+    def add_child(self, child):
+        """Add a Block or Inline child."""
+        assert isinstance(child, (Block, Inline))
+        self.children.append(child)
+
+    @staticmethod
+    def _check_children(children):
+        assert isinstance(children, list)
+        assert all(isinstance(child, (Block, Inline))
+                   for child in children)
+
+    def to_dict(self):
+        Block._check_children(self.children)
+        return {
+            't': self.name,
+            'm': self.meta,
+            'c': [child.to_dict() for child in self.children]
+        }
+
+    @staticmethod
+    def from_dict(d):
+        name = d['t']
+        # d can be a Block or an Inline.
+        # Route to inline.
+        if name in PANDOC_INLINE_NAMES:
+            return Inline.from_dict(d)
+        # Now, we really have a block.
+        assert name in PANDOC_BLOCK_NAMES
+        meta = d.get('m', {})
+        children = d['c']
+        children = [Block.from_dict(_) for _ in children]
+        Block._check_children(children)
+        return Block(name=name, meta=meta, children=children)
 
 
 class Inline(Bunch):
@@ -94,92 +161,52 @@ class Inline(Bunch):
         super(Inline, self).__init__(*args, **kwargs)
         self.name = kwargs.pop('name', 'Inline')
         assert self.name in PANDOC_INLINE_NAMES
-        self.contents = kwargs.pop('contents', [])
+        # This is always a list of dicts.
+        self.children = kwargs.pop('children', [])
+        Inline._check_children(self.children)
 
-    def set_contents(self, contents):
-        assert isinstance(contents, (list, str))
-        self.contents = contents
+    def set_string(self, string):
+        self.children = string
 
-    def add_contents(self, contents):
-        assert isinstance(contents, (dict, str))
-        self.contents.append(contents)
+    def add_child(self, child):
+        """Add an Inline or String child."""
+        assert isinstance(self.children, list)
+        assert isinstance(child, Inline)
+        self.children.append(child)
+        self._check_children(self.children)
 
+    @staticmethod
+    def _check_children(children):
+        assert isinstance(children, (list, string_types))
+        if isinstance(children, list):
+            assert all(isinstance(child, Inline) for child in children)
 
-#------------------------------------------------------------------------------
-# Conversion to JSON
-#------------------------------------------------------------------------------
-
-def _remove_json_meta(d):
-    if isinstance(d, dict):
-        return {k: _remove_json_meta(v) for k, v in d.items() if k != 'm'}
-    elif isinstance(d, list):
-        return [_remove_json_meta(v) for v in d]
-    else:
-        return d
-
-
-def _inline_to_json(inline):
-    if isinstance(inline, str):
+    def to_dict(self):
+        Inline._check_children(self.children)
+        children = self.children
+        if isinstance(children, list):
+            children = [child.to_dict() for child in self.children]
         return {
-            't': 'Str',
-            'c': inline,
-        }
-    else:
-        return {
-            't': inline.name,
-            'c': [_inline_to_json(i) for i in inline.contents],
+            't': self.name,
+            'c': children,
         }
 
-
-def _block_to_json(block):
-    return {
-        't': block.name,
-        'c': [_inline_to_json(inline) for inline in block.inlines],
-        'm': block.meta,
-    }
-
-
-def to_json(ast):
-    """Convert a podoc AST to a pandoc-compatible JSON dict."""
-    return [{'unMeta': {}},
-            [_block_to_json(block) for block in ast.blocks]]
+    @staticmethod
+    def from_dict(d):
+        name = d['t']
+        children = d['c']
+        if isinstance(children, list):
+            children = [Inline.from_dict(_) for _ in children]
+        Inline._check_children(children)
+        return Inline(name=name, children=children)
 
 
 #------------------------------------------------------------------------------
-# Conversion from JSON
-#------------------------------------------------------------------------------
-
-def _from_json_inline(inline):
-    name = inline['t']
-    contents = inline['c']
-    if name == 'Str':
-        return contents
-    else:
-        return Inline(name=name,
-                      contents=[_from_json_inline(i) for i in contents])
-
-
-def _from_json_block(block):
-    name = block['t']
-    inlines = block['c']
-    meta = block.get('m', {})
-    inlines = [_from_json_inline(i) for i in inlines]
-    return Block(name=name, inlines=inlines, meta=meta)
-
-
-def from_json(json):
-    """Convert a JSON pandoc-compatible dict to a podoc AST."""
-    assert len(json) == 2
-    blocks = json[1]
-    blocks = [_from_json_block(b) for b in blocks]
-    return AST(blocks=blocks)
-
-
-#------------------------------------------------------------------------------
-# Conversion from JSON
+# AST plugin
 #------------------------------------------------------------------------------
 
 class ASTPlugin(IPlugin):
+    """The file format is JSON, same as the pandoc json format."""
     def attach(self, podoc):
         # An object in the language 'ast' is an instance of AST.
         podoc.register_lang('ast', file_ext='.json',
@@ -191,14 +218,14 @@ class ASTPlugin(IPlugin):
         with open(path, 'r') as f:
             ast_obj = json.load(f)
         assert isinstance(ast_obj, list)
-        ast = from_json(ast_obj)
+        ast = AST.from_dict(ast_obj)
         assert isinstance(ast, AST)
         return ast
 
     def save(self, path, ast):
         """Save an AST instance to a JSON file."""
         assert isinstance(ast, AST)
-        ast_obj = to_json(ast)
+        ast_obj = ast.to_dict()
         assert isinstance(ast_obj, list)
         logger.debug("Save JSON file `%s`.", path)
         with open(path, 'w') as f:
