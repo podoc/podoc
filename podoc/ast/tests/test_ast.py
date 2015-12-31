@@ -144,5 +144,14 @@ def test_pandoc_ast_inline_2():
 
 def test_pandoc_ast_block_1():
     _test_pandoc_ast('# T1')
-    # _test_pandoc_ast('## T2')
-    # _test_pandoc_ast('# T1\n## T2')
+    _test_pandoc_ast('## T2')
+    _test_pandoc_ast('# T1\n\n## T2')
+    _test_pandoc_ast('```\nhello world\n```')
+    _test_pandoc_ast('> hello\n> world')
+
+
+def test_pandoc_ast_block_list():
+    _test_pandoc_ast('* a')
+    _test_pandoc_ast('* a b')
+    _test_pandoc_ast('* a\n* b')
+    _test_pandoc_ast('* a\n    * b')

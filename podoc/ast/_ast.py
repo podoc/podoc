@@ -83,6 +83,7 @@ class AST(Bunch):
     * A Block has a name and a list of children. Every child is either:
       * A Block
       * An Inline
+      * A list of Blocks
     * An Inline has a name and a list of children. Every child is either:
       * An Inline
       * A Python string
@@ -141,13 +142,16 @@ class Block(Bunch):
     def _check_children(children):
         assert isinstance(children, list)
         for child in children:
-            assert isinstance(child, (Block, Inline))
+            assert isinstance(child, (Block, Inline, list))
 
     def to_dict(self):
         Block._check_children(self.children)
-        c = [child.to_dict() for child in self.children]
+        c = [(child.to_dict() if not isinstance(child, list)
+              else [_.to_dict() for _ in child]) for child in self.children]
         if self.name == 'Header':
             c = [self.level, ['', [], []], c]
+        # elif self.name == 'OrderedList':
+        #     c = [[_] for _ in c]
         return {
             't': self.name,
             'm': self.meta,
@@ -171,6 +175,8 @@ class Block(Bunch):
         if name == 'Header':
             level, __, children = children
             kwargs['level'] = level
+        # elif name == 'OrderedList':
+        #     children = [c[0] for c in children]
         children = [Block.from_dict(_) for _ in children]
         Block._check_children(children)
         return Block(name=name, meta=meta, children=children, **kwargs)
