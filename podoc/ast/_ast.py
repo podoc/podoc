@@ -145,10 +145,13 @@ class Block(Bunch):
 
     def to_dict(self):
         Block._check_children(self.children)
+        c = [child.to_dict() for child in self.children]
+        if self.name == 'Header':
+            c = [self.level, ['', [], []], c]
         return {
             't': self.name,
             'm': self.meta,
-            'c': [child.to_dict() for child in self.children]
+            'c': c
         }
 
     @staticmethod
@@ -163,9 +166,14 @@ class Block(Bunch):
             return Inline.from_dict(d)
         # Now, we really have a block.
         meta = d.get('m', {})
-        children = [Block.from_dict(_) for _ in d['c']]
+        children = d['c']
+        kwargs = {}
+        if name == 'Header':
+            level, __, children = children
+            kwargs['level'] = level
+        children = [Block.from_dict(_) for _ in children]
         Block._check_children(children)
-        return Block(name=name, meta=meta, children=children)
+        return Block(name=name, meta=meta, children=children, **kwargs)
 
 
 class Inline(Bunch):
@@ -205,10 +213,8 @@ class Inline(Bunch):
         if isinstance(children, list):
             children = [child.to_dict() for child in self.children]
         # Put the URL in the children, like what pandoc does.
-        if self.name == 'Link':
+        if self.name in ('Link', 'Image'):
             children = [children, [self.url, '']]
-        elif self.name == 'Image':
-            children = [children, [self.url, 'fig:']]
         # pandoc uses attributes in the Code inline
         elif self.name == 'Code':
             children = [['', [], []], children]

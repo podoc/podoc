@@ -119,12 +119,14 @@ def _test_pandoc_ast(s):
     """
     if not has_pandoc():  # pragma: no cover
         raise ImportError("pypandoc is not available")
-    ast_dict = json.loads(pandoc(s, 'json', format='markdown'))
+    # NOTE: we disable pandoc Markdown extensions.
+    ast_dict = json.loads(pandoc(s, 'json',
+                                 format='markdown_strict'))
     ast = AST.from_dict(ast_dict)
     ae(ast.to_dict(), ast_dict)
 
 
-def test_pandoc_ast_1():
+def test_pandoc_ast_inline_1():
     _test_pandoc_ast('hello')
     _test_pandoc_ast('hello world')
     _test_pandoc_ast('hello *world*')
@@ -134,5 +136,13 @@ def test_pandoc_ast_1():
     _test_pandoc_ast('![hello](world)')
 
 
-def test_pandoc_ast_2():
+def test_pandoc_ast_inline_2():
+    _test_pandoc_ast('*hello* `world` ** !*(?)* **')
     _test_pandoc_ast('[*hello* **world `!`**](world)')
+    _test_pandoc_ast('![*hello* **world `!`**](world)')
+
+
+def test_pandoc_ast_block_1():
+    _test_pandoc_ast('# T1')
+    # _test_pandoc_ast('## T2')
+    # _test_pandoc_ast('# T1\n## T2')
