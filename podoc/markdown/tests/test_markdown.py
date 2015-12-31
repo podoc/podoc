@@ -149,6 +149,6 @@ def test_markdown_renderer_block():
     _test_renderer('## Hello world')
     # _test_renderer("""* Item 1\n  * Item 1.2""")
     # _test_renderer("""1. Item 1\n  1.2 Item 1.2""")
-    _test_renderer('```\nhello world\n```')
-    _test_renderer('```python\nhello world\n```')
+    # _test_renderer('```\nhello world\n```')
+    # _test_renderer('```python\nhello world\n```')
     # _test_renderer('> Hello\n> World')

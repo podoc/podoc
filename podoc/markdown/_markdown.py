@@ -33,36 +33,33 @@ _COMMONMARK_PANDOC_MAPPING = {
 
 
 def _from_cm_inline(inline):
-    if isinstance(inline, string_types):
-        return inline
     name = inline.t
-    contents = inline.c
-    if name == 'Str':
-        return contents
-    contents = [_from_cm_inline(i) for i in contents]
+    children = inline.c
+    if isinstance(children, list):
+        children = [_from_cm_inline(_) for _ in children]
     if name in ('Link', 'Image'):
         url = inline.destination
-        contents = ''.join(_from_cm_inline(_) for _ in inline.label)
-        return Inline(name=name, contents=contents, url=url)
+        children = [_from_cm_inline(_) for _ in inline.label]
+        return Inline(name=name, children=children, url=url)
     else:
-        return Inline(name=name, contents=contents)
+        return Inline(name=name, children=children)
 
 
 def _from_cm_block(block):
     name = block.t
-    # Find inlines.
-    inlines = block.inline_content
-    inlines = [_from_cm_inline(i) for i in inlines]
+    # Find children.
+    children = block.inline_content
+    children = [_from_cm_inline(i) for i in children]
     # Optionally convert the CommonMark-py name to the Pandoc name.
     name = _COMMONMARK_PANDOC_MAPPING.get(name, name)
     if name == 'CodeBlock':
         lang = block.info
-        inlines = [block.string_content]
-        return Block(name=name, inlines=inlines, lang=lang)
+        children = [block.string_content]
+        return Block(name=name, children=children, lang=lang)
     elif name == 'Header':
         level = block.level
-        return Block(name=name, inlines=inlines, level=level)
-    return Block(name=name, inlines=inlines)
+        return Block(name=name, children=children, level=level)
+    return Block(name=name, children=children)
 
 
 def from_cm(cm):
@@ -204,9 +201,9 @@ class MarkdownRenderer(MarkdownWriter):
     def render_block(self, block):
         """Render a block and write it."""
         n = block.name
-        # Ensure that we don't write the inlines to the document yet.
+        # Ensure that we don't write the children to the document yet.
         with self.capture():
-            contents = self.render_inline(block.inlines)
+            contents = self.render_inline(block.children)
         # Write the block with the already-rendered inline contents.
         if n in ('Plain', 'Para'):
             self.text(contents)
@@ -235,7 +232,7 @@ class MarkdownRenderer(MarkdownWriter):
             return inline
         assert isinstance(inline, dict)
         # Recursive inline contents.
-        contents = ''.join(map(self.render_inline, inline.contents))
+        contents = ''.join(map(self.render_inline, inline.children))
         n = inline.name
         if n == 'Emph':
             return self.emph(contents)
@@ -247,8 +244,8 @@ class MarkdownRenderer(MarkdownWriter):
             return self.link(contents, inline.url)
         elif n == 'Image':
             return self.image(contents, inline.url)
-        # if n == 'Str':
-        #     return contents
+        if n == 'Str':
+            return contents
         # elif n == 'Strikeout':
         #     return self.strikout(contents)
         # elif n == 'Space':
