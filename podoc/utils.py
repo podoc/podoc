@@ -65,10 +65,10 @@ class Path(object):
 # pandoc wrapper
 #------------------------------------------------------------------------------
 
-def pandoc(filename, to, **kwargs):
-    """Convert a document with pandoc."""
+def pandoc(obj, to, **kwargs):
+    """Convert a string or a file with pandoc."""
     import pypandoc
-    return pypandoc.convert(filename, to, **kwargs)
+    return pypandoc.convert(obj, to, **kwargs)
 
 
 def has_pandoc():  # pragma: no cover
