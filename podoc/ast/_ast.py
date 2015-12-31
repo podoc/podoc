@@ -150,8 +150,10 @@ class Block(Bunch):
               else [_.to_dict() for _ in child]) for child in self.children]
         if self.name == 'Header':
             c = [self.level, ['', [], []], c]
-        # elif self.name == 'OrderedList':
-        #     c = [[_] for _ in c]
+        elif self.name == 'OrderedList':
+            c = [[self.start,
+                  {"t": self.style, "c": []},
+                  {"t": self.delim, "c": []}], c]
         return {
             't': self.name,
             'm': self.meta,
@@ -175,8 +177,12 @@ class Block(Bunch):
         if name == 'Header':
             level, __, children = children
             kwargs['level'] = level
-        # elif name == 'OrderedList':
-        #     children = [c[0] for c in children]
+        elif name == 'OrderedList':
+            start, style, delim = children[0]
+            children = children[1]
+            kwargs['start'] = start
+            kwargs['style'] = style['t']
+            kwargs['delim'] = delim['t']
         children = [Block.from_dict(_) for _ in children]
         Block._check_children(children)
         return Block(name=name, meta=meta, children=children, **kwargs)

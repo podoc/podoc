@@ -110,6 +110,13 @@ def test_from_dict(ast_dict, ast):
 # Tests with pandoc
 #------------------------------------------------------------------------------
 
+# We use strict Markdown, but we allow fancy lists.
+MARKDOWN_FORMAT = ('markdown_strict+'
+                   'fancy_lists+'
+                   'startnum'
+                   )
+
+
 def _test_pandoc_ast(s):
     """Check the compatibility of the podoc AST with pandoc.
 
@@ -121,7 +128,7 @@ def _test_pandoc_ast(s):
         raise ImportError("pypandoc is not available")
     # NOTE: we disable pandoc Markdown extensions.
     ast_dict = json.loads(pandoc(s, 'json',
-                                 format='markdown_strict'))
+                                 format=MARKDOWN_FORMAT))
     ast = AST.from_dict(ast_dict)
     ae(ast.to_dict(), ast_dict)
 
@@ -150,8 +157,18 @@ def test_pandoc_ast_block_1():
     _test_pandoc_ast('> hello\n> world')
 
 
-def test_pandoc_ast_block_list():
+def test_pandoc_ast_bullet_list():
     _test_pandoc_ast('* a')
     _test_pandoc_ast('* a b')
     _test_pandoc_ast('* a\n* b')
     _test_pandoc_ast('* a\n    * b')
+    _test_pandoc_ast('* a b\n* c *d*\n    * e f\n    * g\n* h')
+
+
+def test_pandoc_ast_ordered_list():
+    _test_pandoc_ast('1. a')
+    _test_pandoc_ast('2. a')
+    _test_pandoc_ast('1. a b')
+    _test_pandoc_ast('1. a\n2. b')
+    _test_pandoc_ast('1. a\n    2. b')
+    _test_pandoc_ast('1. a b\n2. c *d*\n    3. e f\n    4. g\n* h')
