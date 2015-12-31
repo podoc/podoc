@@ -172,3 +172,8 @@ def test_pandoc_ast_ordered_list():
     _test_pandoc_ast('1. a\n2. b')
     _test_pandoc_ast('1. a\n    2. b')
     _test_pandoc_ast('1. a b\n2. c *d*\n    3. e f\n    4. g\n* h')
+
+
+def test_pandoc_ast_ordered_list_style():
+    _test_pandoc_ast('(i) a')
+    _test_pandoc_ast('(ii) a\n1. b\n    (A)  c')
