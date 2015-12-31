@@ -113,7 +113,8 @@ def test_from_dict(ast_dict, ast):
 # We use strict Markdown, but we allow fancy lists.
 MARKDOWN_FORMAT = ('markdown_strict+'
                    'fancy_lists+'
-                   'startnum'
+                   'startnum+'
+                   'backtick_code_blocks'
                    )
 
 
@@ -153,7 +154,8 @@ def test_pandoc_ast_block_1():
     _test_pandoc_ast('# T1')
     _test_pandoc_ast('## T2')
     _test_pandoc_ast('# T1\n\n## T2')
-    _test_pandoc_ast('```\nhello world\n```')
+    # _test_pandoc_ast('```python\nhello world\n```')
+    _test_pandoc_ast('> hello world')
     _test_pandoc_ast('> hello\n> world')
 
 

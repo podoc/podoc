@@ -81,6 +81,7 @@ class AST(Bunch):
 
     * An AST contains a list of Blocks.
     * A Block has a name and a list of children. Every child is either:
+      * A string
       * A Block
       * An Inline
       * A list of Blocks
@@ -112,6 +113,15 @@ class AST(Bunch):
         return AST(blocks=blocks)
 
 
+def _to_dict(c):
+    if isinstance(c, list):
+        return [_.to_dict() for _ in c]
+    elif hasattr(c, 'to_dict'):
+        return c.to_dict()
+    elif isinstance(c, string_types):
+        return c
+
+
 class Block(Bunch):
     def __init__(self, *args, **kwargs):
         super(Block, self).__init__(*args, **kwargs)
@@ -135,21 +145,22 @@ class Block(Bunch):
 
     def add_child(self, child):
         """Add a Block or Inline child."""
-        assert isinstance(child, (Block, Inline))
+        assert isinstance(child, (Block, Inline, list, string_types))
         self.children.append(child)
 
     @staticmethod
     def _check_children(children):
         assert isinstance(children, list)
         for child in children:
-            assert isinstance(child, (Block, Inline, list))
+            assert isinstance(child, (Block, Inline, list, string_types))
 
     def to_dict(self):
         Block._check_children(self.children)
-        c = [(child.to_dict() if not isinstance(child, list)
-              else [_.to_dict() for _ in child]) for child in self.children]
+        c = [_to_dict(child) for child in self.children]
         if self.name == 'Header':
             c = [self.level, ['', [], []], c]
+        if self.name == 'CodeBlock':
+            c = [['', [self.lang], []], self.children]
         elif self.name == 'OrderedList':
             c = [[self.start,
                   {"t": self.style, "c": []},
@@ -164,6 +175,8 @@ class Block(Bunch):
     def from_dict(d):
         if isinstance(d, list):
             return [Block.from_dict(_) for _ in d]
+        elif isinstance(d, string_types):
+            return d
         assert isinstance(d, dict)
         name = d['t']
         # d can be a Block or an Inline.
@@ -177,13 +190,17 @@ class Block(Bunch):
         if name == 'Header':
             level, __, children = children
             kwargs['level'] = level
+        elif name == 'CodeBlock':
+            kwargs['lang'] = children[0][1][0]
+            children = children[1]
         elif name == 'OrderedList':
             start, style, delim = children[0]
             children = children[1]
             kwargs['start'] = start
             kwargs['style'] = style['t']
             kwargs['delim'] = delim['t']
-        children = [Block.from_dict(_) for _ in children]
+        if isinstance(children, list):
+            children = [Block.from_dict(_) for _ in children]
         Block._check_children(children)
         return Block(name=name, meta=meta, children=children, **kwargs)
 
@@ -237,8 +254,8 @@ class Inline(Bunch):
 
     @staticmethod
     def from_dict(d):
-        if isinstance(d, list):
-            return [Inline.from_dict(_) for _ in d]
+        # if isinstance(d, list):
+        #     return [Inline.from_dict(_) for _ in d]
         assert isinstance(d, dict)
         name = d['t']
         children = d['c']
