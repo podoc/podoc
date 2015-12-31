@@ -120,10 +120,25 @@ def test_markdown_writer():
     assert w.contents == expected
 
 
-def test_markdown_renderer_link():
-    s = '[a](b)'
-    # Parse the string.
+# -----------------------------------------------------------------------------
+# Test Markdown renderer
+# -----------------------------------------------------------------------------
+
+def _test_renderer(s):
+    """Test the renderer on a string."""
+    # Parse the string with CommonMark-py.
     ast = Markdown().read_markdown(s)
     # Render the AST to Markdown.
     contents = MarkdownRenderer().render(ast)
     assert contents.strip() == s
+
+
+def test_markdown_renderer_inline():
+    _test_renderer('hello')
+    _test_renderer('hello world')
+    _test_renderer('hello *world*')
+    _test_renderer('hello **world**')
+    _test_renderer('hello ~~world~~')
+    _test_renderer('hello `world`')
+    _test_renderer('[hello](world)')
+    _test_renderer('![hello](world)')

@@ -20,16 +20,18 @@ logger = logging.getLogger(__name__)
 
 
 #------------------------------------------------------------------------------
-# Markdown to AST
+# Markdown to AST through CommonMark-py
 #------------------------------------------------------------------------------
 
 def _from_cm_inline(inline):
+    if isinstance(inline, string_types):
+        return inline
     name = inline.t
     contents = inline.c
     if name == 'Str':
         return contents
     contents = [_from_cm_inline(i) for i in contents]
-    if name == 'Link':
+    if name in ('Link', 'Image'):
         url = inline.destination
         contents = ''.join(_from_cm_inline(_) for _ in inline.label)
         return Inline(name=name, contents=contents, url=url)
@@ -168,15 +170,15 @@ class MarkdownWriter(object):
     def strong(self, text):
         return self.text('**{0}**'.format(text))
 
-    def strikeout(self, text):
-        return self.text('~~{0}~'.format(text))
-
     def text(self, text):
         # Add quote '>' at the beginning of each line when quote is activated.
         if self._in_quote:
             if self._output.getvalue()[-1] == '\n':
                 text = '> ' + text
         return self._write(text)
+
+    # def strikeout(self, text):
+    #     return self.text('~~{0}~'.format(text))
 
 
 class MarkdownRenderer(MarkdownWriter):
@@ -204,25 +206,25 @@ class MarkdownRenderer(MarkdownWriter):
         # Recursive inline contents.
         contents = ''.join(map(self.render_inline, inline.contents))
         n = inline.name
-        if n == 'Str':
-            return contents
-        elif n == 'Emph':
+        if n == 'Emph':
             return self.emph(contents)
         elif n == 'Strong':
             return self.strong(contents)
-        elif n == 'Strikeout':
-            return self.strikout(contents)
         elif n == 'Code':
             return self.inline_code(contents)
-        elif n == 'Space':
-            return self.text(' ')
-        elif n == 'LineBreak':
-            return self.linebreak()
         elif n == 'Link':
             return self.link(contents, inline.url)
         elif n == 'Image':
             return self.image(contents, inline.url)
-        raise ValueError()
+        # if n == 'Str':
+        #     return contents
+        # elif n == 'Strikeout':
+        #     return self.strikout(contents)
+        # elif n == 'Space':
+        #     return self.text(' ')
+        # elif n == 'LineBreak':
+        #     return self.linebreak()
+        raise ValueError()  # pragma: no cover
 
     def render(self, ast):
         for block in ast.blocks:
