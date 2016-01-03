@@ -95,6 +95,12 @@ class ASTNode(Node):
                     assert not child.is_block()
 
 
+def _node_dict(node, children=None):
+        return {'t': node.name,
+                'm': node.meta,
+                'c': children or node.inner_contents}
+
+
 class PodocToPandoc(object):
     def __init__(self):
         self.transformer = TreeTransformer()
@@ -102,7 +108,33 @@ class PodocToPandoc(object):
         self.transformer.register(self.visit_Node)
 
     def visit_Node(self, node):
-        return {'t': node.name, 'c': node.inner_contents}
+        return _node_dict(node)
+
+    def visit_Header(self, node):
+        children = [node.level, ['', [], []], node.inner_contents]
+        return _node_dict(node, children)
+
+    def visit_CodeBlock(self, node):
+        children = [['', [node.lang], []], node.inner_contents]
+        return _node_dict(node, children)
+
+    def visit_OrderedList(self, node):
+        children = [[node.start,
+                    {"t": node.style, "c": []},
+                    {"t": node.delim, "c": []}], node.inner_contents]
+        return _node_dict(node, children)
+
+    def visit_Link(self, node):
+        children = [node.inner_contents, [node.url, '']]
+        return _node_dict(node, children)
+
+    def visit_Image(self, node):
+        children = [node.inner_contents, [node.url, '']]
+        return _node_dict(node, children)
+
+    def visit_Code(self, node):
+        children = [['', [], []], node.inner_contents]
+        return _node_dict(node, children)
 
 
 #------------------------------------------------------------------------------
