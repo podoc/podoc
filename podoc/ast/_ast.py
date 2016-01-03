@@ -12,6 +12,7 @@ import logging
 
 from six import string_types
 
+from podoc.tree import Node, TreeTransformer
 from podoc.plugin import IPlugin
 from podoc.utils import Bunch
 
@@ -52,11 +53,11 @@ PANDOC_BLOCK_NAMES = (
     'BulletList',
     'OrderedList',
     # The following are not supported yet in podoc.
-    'RawBlock',
-    'DefinitionList',
-    'HorizontalRule',
-    'Table',
-    'Div',
+    # 'RawBlock',
+    # 'DefinitionList',
+    # 'HorizontalRule',
+    # 'Table',
+    # 'Div',
 )
 
 
@@ -69,211 +70,39 @@ PANDOC_INLINE_NAMES = (
     'Link',
     'Image',
     # The following are not supported yet in podoc.
-    'LineBreak',
-    'Math',
-    'Strikeout',
-    'Space',
+    # 'LineBreak',
+    # 'Math',
+    # 'Strikeout',
+    # 'Space',
 )
 
 
-class AST(Bunch):
-    """An AST (Abstract Syntax Tree) represents a complete markup document.
+class ASTNode(Node):
+    def __init__(self, name, **kwargs):
+        super(ASTNode, self).__init__(**kwargs)
 
-    * An AST contains a list of Blocks.
-    * A Block has a name and a list of children. Every child is either:
-      * A string
-      * A Block
-      * An Inline
-      * A list of Blocks
-    * An Inline has a name and a list of children. Every child is either:
-      * An Inline
-      * A Python string
+    def is_block(self):
+        return self.name in PANDOC_BLOCK_NAMES
 
-    """
-    def __init__(self, *args, **kwargs):
-        super(AST, self).__init__(*args, **kwargs)
-        self.blocks = kwargs.pop('blocks', [])
-        assert isinstance(self.blocks, list)
+    def is_inline(self):
+        return self.name in PANDOC_INLINE_NAMES
 
-    def add_block(self, block):
-        """Add a Block instance."""
-        assert isinstance(block, Block)
-        self.blocks.append(block)
-
-    def to_dict(self):
-        return [{'unMeta': {}},
-                [block.to_dict() for block in self.blocks]]
-
-    @staticmethod
-    def from_dict(d):
-        """Convert a pandoc-compatible dict to a podoc AST."""
-        assert isinstance(d, list)
-        assert len(d) == 2
-        blocks = [Block.from_dict(_) for _ in d[1]]
-        return AST(blocks=blocks)
+    def validate(self):
+        if self.is_inline():
+            # The children of an Inline node cannot be blocks.
+            for child in self.children:
+                if hasattr(child, 'is_block'):
+                    assert not child.is_block()
 
 
-def _to_dict(c):
-    if isinstance(c, list):
-        return [_.to_dict() for _ in c]
-    elif hasattr(c, 'to_dict'):
-        return c.to_dict()
-    elif isinstance(c, string_types):
-        return c
+class PodocToPandoc(object):
+    def __init__(self):
+        self.transformer = TreeTransformer()
+        self.transformer.set_fold(lambda _: _)
+        self.transformer.register(self.visit_Node)
 
-
-class Block(Bunch):
-    def __init__(self, *args, **kwargs):
-        super(Block, self).__init__(*args, **kwargs)
-        self.name = kwargs.pop('name', 'Block')
-        assert self.name in PANDOC_BLOCK_NAMES
-        self.meta = kwargs.pop('meta', {})
-        # List of either Block or Inline instances.
-        self.children = kwargs.pop('children', [])
-        Block._check_children(self.children)
-
-    @property
-    def t(self):
-        return self.name
-
-    @property
-    def c(self):
-        return self.children
-
-    def add_metadata(self, **kwargs):
-        self.meta.update(**kwargs)
-
-    def add_child(self, child):
-        """Add a Block or Inline child."""
-        assert isinstance(child, (Block, Inline, list, string_types))
-        self.children.append(child)
-
-    @staticmethod
-    def _check_children(children):
-        assert isinstance(children, list)
-        for child in children:
-            assert isinstance(child, (Block, Inline, list, string_types))
-
-    def to_dict(self):
-        Block._check_children(self.children)
-        c = [_to_dict(child) for child in self.children]
-        if self.name == 'Header':
-            c = [self.level, ['', [], []], c]
-        if self.name == 'CodeBlock':
-            c = [['', [self.lang], []], self.children]
-        elif self.name == 'OrderedList':
-            c = [[self.start,
-                  {"t": self.style, "c": []},
-                  {"t": self.delim, "c": []}], c]
-        return {
-            't': self.name,
-            'm': self.meta,
-            'c': c
-        }
-
-    @staticmethod
-    def from_dict(d):
-        if isinstance(d, list):
-            return [Block.from_dict(_) for _ in d]
-        elif isinstance(d, string_types):
-            return d
-        assert isinstance(d, dict)
-        name = d['t']
-        # d can be a Block or an Inline.
-        # Route to inline.
-        if name in PANDOC_INLINE_NAMES:
-            return Inline.from_dict(d)
-        # Now, we really have a block.
-        meta = d.get('m', {})
-        children = d['c']
-        kwargs = {}
-        if name == 'Header':
-            level, __, children = children
-            kwargs['level'] = level
-        elif name == 'CodeBlock':
-            kwargs['lang'] = children[0][1][0]
-            children = children[1]
-        elif name == 'OrderedList':
-            start, style, delim = children[0]
-            children = children[1]
-            kwargs['start'] = start
-            kwargs['style'] = style['t']
-            kwargs['delim'] = delim['t']
-        if isinstance(children, list):
-            children = [Block.from_dict(_) for _ in children]
-        Block._check_children(children)
-        return Block(name=name, meta=meta, children=children, **kwargs)
-
-
-class Inline(Bunch):
-    def __init__(self, *args, **kwargs):
-        super(Inline, self).__init__(*args, **kwargs)
-        self.name = kwargs.pop('name', 'Inline')
-        assert self.name in PANDOC_INLINE_NAMES
-        # This is always a list of dicts.
-        self.children = kwargs.pop('children', [])
-        Inline._check_children(self.children)
-
-    @property
-    def t(self):
-        return self.name
-
-    @property
-    def c(self):
-        return self.children
-
-    def add_child(self, child):
-        """Add an Inline or String child."""
-        assert isinstance(self.children, list)
-        assert isinstance(child, Inline)
-        self.children.append(child)
-        self._check_children(self.children)
-
-    @staticmethod
-    def _check_children(children):
-        assert isinstance(children, (list, string_types))
-        if isinstance(children, list):
-            for child in children:
-                assert isinstance(child, Inline)
-
-    def to_dict(self):
-        Inline._check_children(self.children)
-        children = self.children
-        if isinstance(children, list):
-            children = [child.to_dict() for child in self.children]
-        # Put the URL in the children, like what pandoc does.
-        if self.name in ('Link', 'Image'):
-            children = [children, [self.url, '']]
-        # pandoc uses attributes in the Code inline
-        elif self.name == 'Code':
-            children = [['', [], []], children]
-        return {
-            't': self.name,
-            'c': children,
-        }
-
-    @staticmethod
-    def from_dict(d):
-        # if isinstance(d, list):
-        #     return [Inline.from_dict(_) for _ in d]
-        assert isinstance(d, dict)
-        name = d['t']
-        children = d['c']
-        # Extract the link for Link and Image elements.
-        if name == 'Code':
-            children = children[1]
-        if name in ('Link', 'Image'):
-            assert len(children) == 2
-            url = children[1][0]
-            children = children[0]
-            if isinstance(children, list):
-                children = [Inline.from_dict(_) for _ in children]
-            Inline._check_children(children)
-            return Inline(name=name, children=children, url=url)
-        if isinstance(children, list):
-            children = [Inline.from_dict(_) for _ in children]
-        Inline._check_children(children)
-        return Inline(name=name, children=children)
+    def visit_Node(self, node):
+        return {'t': node.name, 'c': node.inner_contents}
 
 
 #------------------------------------------------------------------------------

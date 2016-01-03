@@ -45,7 +45,7 @@ class Node(Bunch):
 class TreeTransformer(object):
     def __init__(self):
         self._funcs = {'String': lambda node: node,
-                       'Node': lambda node: node.name}
+                       'Node': lambda node: ''}
         self._fold = lambda l: ''.join(l)
 
     def set_fold(self, func):
@@ -64,29 +64,13 @@ class TreeTransformer(object):
         """
         self._fold = func
 
-    def transform(self, node):
-        """Transform a node and all of its children recursively."""
-        if isinstance(node, string_types) and 'String' in self._funcs:
-            return self._funcs['String'](node)
-        assert isinstance(node, Node)
-        # Get the registered function for that name.
-        func = self._funcs.get(node.name, self._funcs['Node'])
-        # Recursively transform all children.
-        l = [self.transform(child) for child in node.children]
-        # Set the transformed children.
-        node.transformed_children = self._fold(l)
-        # Call the function on the node. The function has access
-        # to the transformed children.
-        if func:
-            return func(node)
-
     def register(self, func):
         """Register a transformer function for a given node type.
 
         The function's name must be `transform_NodeName`.
 
-        The node possess a special attribute `transformed_children` which
-        is the folded transformation of all of the node's children.
+        The node possess a special attribute `inner_contents` which
+        is the concatenation of the transformed children.
 
         Generally, this method should return a string. The fold function should
         return an object of the same type.
@@ -97,3 +81,20 @@ class TreeTransformer(object):
         assert name.startswith(prefix)
         name = name[len(prefix):]
         self._funcs[name] = func
+
+    def transform(self, node):
+        """Transform a node and all of its children recursively."""
+        if isinstance(node, string_types) and 'String' in self._funcs:
+            return self._funcs['String'](node)
+        assert isinstance(node, Node)
+        # Get the registered function for that name.
+        func = self._funcs.get(node.name, self._funcs['Node'])
+        # Recursively transform all children.
+        l = [self.transform(child) for child in node.children]
+        # Set the inner contents.
+        node.inner_contents = self._fold(l)
+        # Call the function on the node. The function has access
+        # to the inner contents (concatenated transformation of the
+        # children).
+        if func:
+            return func(node)

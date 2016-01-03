@@ -13,7 +13,7 @@ import logging
 from CommonMark import Parser
 from six import StringIO, string_types
 
-from podoc.ast import AST, Block, Inline
+# from podoc.ast import AST, Block, Inline
 from podoc.plugin import IPlugin
 
 logger = logging.getLogger(__name__)
