@@ -95,9 +95,7 @@ def test_markdown_writer():
     w.numbered_list_item('2')
     w.newline()
 
-    w.code_start()
-    w.text('print("Hello world!")')
-    w.code_end()
+    w.code('print("Hello world!")')
     w.newline()
 
     w.text('Go to ')

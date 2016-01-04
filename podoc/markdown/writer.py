@@ -7,7 +7,7 @@
 # Imports
 #------------------------------------------------------------------------------
 
-from contextlib import contextmanager
+# from contextlib import contextmanager
 
 from six import StringIO
 
@@ -26,15 +26,15 @@ class MarkdownWriter(object):
     # Buffer methods
     # -------------------------------------------------------------------------
 
-    @contextmanager
-    def capture(self):
-        """Temporarily capture all written contents."""
-        output = self._output
-        self._output = StringIO()
-        yield
-        self._output.close()
-        del self._output
-        self._output = output
+    # @contextmanager
+    # def capture(self):
+    #     """Temporarily capture all written contents."""
+    #     output = self._output
+    #     self._output = StringIO()
+    #     yield
+    #     self._output.close()
+    #     del self._output
+    #     self._output = output
 
     @property
     def contents(self):
