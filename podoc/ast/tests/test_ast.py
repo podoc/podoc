@@ -71,8 +71,8 @@ def test_podoc_to_pandoc(ast, ast_pandoc):
 
 def test_pandoc_to_podoc(ast, ast_pandoc):
     pp = PandocToPodoc()
-    # ast_t = pp.transform(ast_pandoc)
-    # assert ast == ast_t
+    ast_t = pp.transform(ast_pandoc)
+    assert ast == ast_t
 
 
 #------------------------------------------------------------------------------

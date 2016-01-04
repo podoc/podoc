@@ -125,6 +125,7 @@ class TreeTransformer(object):
         # Recursively transform all children.
         l = [self.transform(child) for child in node.children]
         # Set the inner contents.
+        # TODO: pass this as a second argument to the transform function.
         node.inner_contents = self._fold(l)
         # Call the function on the node. The function has access
         # to the inner contents (concatenated transformation of the

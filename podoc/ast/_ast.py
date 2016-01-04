@@ -10,33 +10,12 @@
 import json
 import logging
 
-# from six import string_types
+from six import string_types
 
 from podoc.tree import Node, TreeTransformer
 from podoc.plugin import IPlugin
-# from podoc.utils import Bunch
 
 logger = logging.getLogger(__name__)
-
-
-#------------------------------------------------------------------------------
-# Utils
-#------------------------------------------------------------------------------
-
-# def _remove_meta(d):
-#     if isinstance(d, dict):
-#         return {k: _remove_meta(v) for k, v in d.items() if k != 'm'}
-#     elif isinstance(d, list):
-#         return [_remove_meta(v) for v in d]
-#     else:
-#         return d
-
-
-# def ae(a, b):
-#     if isinstance(a, (list, dict)):
-#         assert _remove_meta(a) == _remove_meta(b)
-#     else:
-#         assert a == b
 
 
 #------------------------------------------------------------------------------
@@ -91,6 +70,9 @@ class ASTNode(Node):
                 if hasattr(child, 'is_block'):
                     assert not child.is_block()
 
+    def to_pandoc(self):
+        return PodocToPandoc().transform(self)
+
 
 #------------------------------------------------------------------------------
 # AST <-> pandoc
@@ -98,7 +80,6 @@ class ASTNode(Node):
 
 def _node_dict(node, children=None):
         return {'t': node.name,
-                # 'm': node.meta,
                 'c': children or node.inner_contents}
 
 
@@ -147,8 +128,67 @@ class PodocToPandoc(object):
         return [{'unMeta': {}}, blocks]
 
 
+def tree_from_pandoc(d):
+    return PandocToPodoc().transform(d)
+
+
 class PandocToPodoc(object):
-    pass
+    def transform(self, obj):
+        if isinstance(obj, list):
+            # Check that this is really the root.
+            assert len(obj) == 2
+            assert 'unMeta' in obj[0]
+            # Special case: the root.
+            # Process the root: obj is a list, and the second item
+            # is a list of blocks to process.
+            children = [self.transform(block) for block in obj[1]]
+            return Node('root', children=children)
+        # For normal nodes, obj is a dict.
+        name, c = obj['t'], obj['c']
+        # The transform_* functions take the 'c' attribute and the newly-
+        # created node, and return the list of children dicts to process.
+        func = getattr(self, 'transform_%s' % name, self.transform_Node)
+        node = Node(name)
+        # Create the node and return the list of children that have yet
+        # to be processed.
+        children = func(c, node)
+        # Handle string nodes.
+        if isinstance(children, string_types):
+            return children
+        assert isinstance(children, list)
+        # Recursively transform all children and assign them to the node.
+        node.children = [self.transform(child) for child in children]
+        return node
+
+    def transform_Node(self, c, node):
+        # By default, obj['c'] is the list of children to process.
+        return c
+
+    def transform_Header(self, c, node):
+        node.level, _, children = c
+        return children
+
+    def transform_CodeBlock(self, c, node):
+        node.lang = c[0][1][0]
+        return c[1]
+
+    def transform_OrderedList(self, c, node):
+        (node.start, style, delim), children = c[0]
+        node.style = style['t']
+        node.delim = delim['t']
+        return children
+
+    def transform_Code(self, c, node):
+        return c[1]
+
+    def transform_Image(self, c, node):
+        return self.transform_Link(c, node)
+
+    def transform_Link(self, c, node):
+        assert len(c) == 2
+        node.url = c[1][0]
+        children = c[0]
+        return children
 
 
 #------------------------------------------------------------------------------
