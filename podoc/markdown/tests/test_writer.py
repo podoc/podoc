@@ -17,17 +17,9 @@ from ..writer import MarkdownWriter
 def test_markdown_writer_newline():
     w = MarkdownWriter()
     w.text('Hello.')
-    w.ensure_newline(1)
+    w.linebreak()
     w.text('Hello.\n')
-    w.ensure_newline(1)
-    w.text('Hello.\n\n')
-    w.ensure_newline(1)
-    w.text('Hello.\n\n\n')
-    w.ensure_newline(2)
-    w.text('End')
-
-    expected = ('Hello.\n' * 4) + '\nEnd\n'
-
+    expected = ('Hello.\n' * 2)
     assert w.contents == expected
 
 
@@ -57,7 +49,7 @@ def test_markdown_writer():
                           ("Go to [google](http://www.google.com). "
                            "And here is an image for you:"),
                           "",
-                          "![Some image](my_image.png)\n"))
+                          "![Some image](my_image.png)"))
 
     w.heading('First chapter', 1)
     w.newline()
