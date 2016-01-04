@@ -47,6 +47,7 @@ class MarkdownWriter(object):
         self.close()
 
     def _write(self, contents):
+        # TODO: clean \n mess in this module
         contents = contents.rstrip('\n')
         self._output.write(contents)
         return contents
@@ -57,12 +58,14 @@ class MarkdownWriter(object):
     def newline(self):
         self._output.write('\n\n')
         self._list_number = 0
+        return '\n\n'
 
     def linebreak(self):
         self._output.write('\n')
         return '\n'
 
     def ensure_newline(self, n):
+        # TODO: remove this
         """Make sure there are 'n' line breaks at the end."""
         assert n >= 0
         text = self._output.getvalue().rstrip('\n')
@@ -81,27 +84,34 @@ class MarkdownWriter(object):
     def heading(self, text, level=None):
         assert 1 <= level <= 6
         self.ensure_newline(2)
-        self.text(('#' * level) + ' ' + text)
+        return self.text(('#' * level) + ' ' + text)
 
     def numbered_list_item(self, text='', level=0):
         if level == 0:
             self._list_number += 1
-        self.list_item(text, level=level, bullet=str(self._list_number),
-                       suffix='. ')
+        return self.list_item(text, level=level, bullet=str(self._list_number),
+                              suffix='. ')
 
     def list_item(self, text='', level=0, bullet='*', suffix=' '):
         assert level >= 0
-        self.text(('  ' * level) + bullet + suffix + text)
+        return self.text(('  ' * level) + bullet + suffix + text)
 
     def code_start(self, lang=None):
         if lang is None:
             lang = ''
-        self.text('```{0}'.format(lang))
+        out = self.text('```{0}'.format(lang))
         self.ensure_newline(1)
+        return out
 
     def code_end(self):
         self.ensure_newline(1)
-        self.text('```')
+        return self.text('```')
+
+    def code(self, code, lang=None):
+        out = self.code_start(lang)
+        out += self._write(code)
+        out += self.code_end()
+        return out
 
     def quote_start(self):
         self._in_quote = True
