@@ -48,11 +48,13 @@ def ast():
     block.add_child(inline)
     ast.add_child(block)
 
-    # assert block.t == 'Para'
-    # assert block.c == block.children
+    assert block.is_block()
+    assert not block.is_inline()
+    inline.validate()
 
-    # assert inline.t == inline.name
-    # assert inline.c == inline.children
+    assert not inline.is_block()
+    assert inline.is_inline()
+    inline.validate()
 
     # Second block
     block = ASTNode(name='Para',
@@ -97,6 +99,7 @@ def _test_pandoc_ast(s):
     # NOTE: we disable pandoc Markdown extensions.
     ast_dict = json.loads(pandoc(s, 'json', format=MARKDOWN_FORMAT))
     ast = ast_from_pandoc(ast_dict)
+    # ast.show()
     assert ast.to_pandoc() == ast_dict
 
 
@@ -120,7 +123,7 @@ def test_pandoc_ast_block_1():
     _test_pandoc_ast('# T1')
     _test_pandoc_ast('## T2')
     _test_pandoc_ast('# T1\n\n## T2')
-    # _test_pandoc_ast('```python\nhello world\n```')
+    _test_pandoc_ast('```python\nhello world\n```')
     _test_pandoc_ast('> hello world')
     _test_pandoc_ast('> hello\n> world')
 

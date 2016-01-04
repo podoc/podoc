@@ -57,6 +57,13 @@ PANDOC_INLINE_NAMES = (
 
 
 class ASTNode(Node):
+    # def __init__(self, name, *args, **kwargs):
+    #     super(ASTNode, self).__init__(name, *args, **kwargs)
+    #     # NOTE: there is no such things as String Nodes in podoc AST:
+    #     # children of a node can be non-string nodes or actual Python
+    #     # strings.
+    #     assert name not in ('Str', 'String', 'str')
+
     def is_block(self):
         return self.name in PANDOC_BLOCK_NAMES
 
@@ -68,7 +75,7 @@ class ASTNode(Node):
             # The children of an Inline node cannot be blocks.
             for child in self.children:
                 if hasattr(child, 'is_block'):
-                    assert not child.is_block()
+                    assert not child.is_block()  # pragma: no cover
 
     def to_pandoc(self):
         return PodocToPandoc().transform(self)
@@ -102,7 +109,8 @@ class PodocToPandoc(object):
         return _node_dict(node, children)
 
     def transform_CodeBlock(self, node):
-        children = [['', [node.lang], []], node.inner_contents]
+        # NOTE: node.children contains a single element, which is the code.
+        children = [['', [node.lang], []], node.children[0]]
         return _node_dict(node, children)
 
     def transform_OrderedList(self, node):
@@ -153,9 +161,9 @@ class PandocToPodoc(object):
         return ASTNode('root', children=children)
 
     def transform(self, obj):
-        if isinstance(obj, list):
-            return [self.transform(_) for _ in obj]
-        elif isinstance(obj, string_types):
+        # if isinstance(obj, list):
+        #     return [self.transform(_) for _ in obj]
+        if isinstance(obj, string_types):
             return obj
         # For normal nodes, obj is a dict.
         name, c = obj['t'], obj['c']
@@ -184,7 +192,8 @@ class PandocToPodoc(object):
 
     def transform_CodeBlock(self, c, node):
         node.lang = c[0][1][0]
-        return c[1]
+        # NOTE: code has one child: a string with the code.
+        return [c[1]]
 
     def transform_OrderedList(self, c, node):
         (node.start, style, delim), children = c
@@ -205,7 +214,7 @@ class PandocToPodoc(object):
     def transform_Code(self, c, node):
         code = c[1]
         assert isinstance(code, string_types)
-        # Code has one child: a string with the code.
+        # NOTE: code has one child: a string with the code.
         return [code]
 
     def transform_Image(self, c, node):
