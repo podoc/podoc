@@ -59,7 +59,8 @@ class Node(Bunch):
             for i, _ in enumerate(l):
                 # Choose the prefix.
                 prefix = prefix_t if i < n - 1 else prefix_l
-                prefix = prefix_d if _.startswith((prefix_t, prefix_l)) else prefix
+                prefix = (prefix_d if _.startswith((prefix_t, prefix_l))
+                          else prefix)
                 out += prefix + _ + '\n'
             return node.name + '\n' + out.strip()
 
@@ -76,7 +77,7 @@ class Node(Bunch):
 
 class TreeTransformer(object):
     def __init__(self):
-        self._funcs = {'String': lambda node: node,
+        self._funcs = {'str': lambda node: node,
                        'Node': lambda node: ''}
         self._fold = lambda l: ''.join(l)
 
@@ -116,8 +117,8 @@ class TreeTransformer(object):
 
     def transform(self, node):
         """Transform a node and all of its children recursively."""
-        if isinstance(node, string_types) and 'String' in self._funcs:
-            return self._funcs['String'](node)
+        if isinstance(node, string_types) and 'str' in self._funcs:
+            return self._funcs['str'](node)
         assert isinstance(node, Node)
         # Get the registered function for that name.
         func = self._funcs.get(node.name, self._funcs['Node'])
