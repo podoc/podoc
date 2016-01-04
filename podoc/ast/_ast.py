@@ -242,19 +242,19 @@ class ASTPlugin(IPlugin):
         """Open a .json file and return an AST instance."""
         logger.debug("Open JSON file `%s`.", path)
         with open(path, 'r') as f:
-            ast_obj = json.load(f)
-        assert isinstance(ast_obj, list)
-        # ast = AST.from_dict(ast_obj)
-        # assert isinstance(ast, AST)
-        # return ast
+            d = json.load(f)
+        assert isinstance(d, list)
+        ast = ast_from_pandoc(d)
+        assert isinstance(ast, ASTNode)
+        return ast
 
     def save(self, path, ast):
         """Save an AST instance to a JSON file."""
         # assert isinstance(ast, AST)
-        ast_obj = ast.to_dict()
-        assert isinstance(ast_obj, list)
+        d = ast.to_pandoc()
+        assert isinstance(d, list)
         logger.debug("Save JSON file `%s`.", path)
-        # with open(path, 'w') as f:
-        #     json.dump(ast_obj, f, sort_keys=True, indent=2)
-        #     # Add a new line at the end.
-        #     f.write('\n')
+        with open(path, 'w') as f:
+            json.dump(d, f, sort_keys=True, indent=2)
+            # Add a new line at the end.
+            f.write('\n')
