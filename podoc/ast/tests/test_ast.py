@@ -7,9 +7,11 @@
 # Imports
 #------------------------------------------------------------------------------
 
+import json
+
 from pytest import fixture
 
-from .._ast import ASTNode, PodocToPandoc, PandocToPodoc
+from .._ast import ASTNode, ast_from_pandoc
 from podoc.utils import has_pandoc, pandoc
 
 
@@ -63,16 +65,12 @@ def ast():
 # Tests AST <-> pandoc
 #------------------------------------------------------------------------------
 
-def test_podoc_to_pandoc(ast, ast_pandoc):
-    pp = PodocToPandoc()
-    ast_pandoc_t = pp.transform(ast)
-    assert ast_pandoc == ast_pandoc_t
+def test_to_pandoc(ast, ast_pandoc):
+    assert ast.to_pandoc() == ast_pandoc
 
 
-def test_pandoc_to_podoc(ast, ast_pandoc):
-    pp = PandocToPodoc()
-    ast_t = pp.transform(ast_pandoc)
-    assert ast == ast_t
+def test_from_pandoc(ast, ast_pandoc):
+    assert ast_from_pandoc(ast_pandoc) == ast
 
 
 #------------------------------------------------------------------------------
@@ -97,10 +95,9 @@ def _test_pandoc_ast(s):
     if not has_pandoc():  # pragma: no cover
         raise ImportError("pypandoc is not available")
     # NOTE: we disable pandoc Markdown extensions.
-    # ast_dict = json.loads(pandoc(s, 'json',
-    #                              format=MARKDOWN_FORMAT))
-    # ast = AST.from_dict(ast_dict)
-    # ae(ast.to_dict(), ast_dict)
+    ast_dict = json.loads(pandoc(s, 'json', format=MARKDOWN_FORMAT))
+    ast = ast_from_pandoc(ast_dict)
+    assert ast.to_pandoc() == ast_dict
 
 
 def test_pandoc_ast_inline_1():
@@ -136,11 +133,11 @@ def test_pandoc_ast_bullet_list():
     _test_pandoc_ast('* a b\n* c *d*\n    * e f\n    * g\n* h')
 
 
-def test_pandoc_ast_ordered_list():
+def test_pandoc_ast_ordered_list_simple():
     _test_pandoc_ast('1. a')
     _test_pandoc_ast('2. a')
     _test_pandoc_ast('1. a b')
-    _test_pandoc_ast('1. a\n2. b')
+    _test_pandoc_ast('1. a b\n2. c d')
     _test_pandoc_ast('1. a\n    2. b')
     _test_pandoc_ast('1. a b\n2. c *d*\n    3. e f\n    4. g\n* h')
 

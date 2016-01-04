@@ -106,10 +106,17 @@ class PodocToPandoc(object):
         return _node_dict(node, children)
 
     def transform_OrderedList(self, node):
+        # NOTE: we remove the ListItem node for pandoc
+        items = [_['c'] for _ in node.inner_contents]
         children = [[node.start,
                     {"t": node.style, "c": []},
-                    {"t": node.delim, "c": []}], node.inner_contents]
+                    {"t": node.delim, "c": []}], items]
         return _node_dict(node, children)
+
+    def transform_BulletList(self, node):
+        # NOTE: we remove the ListItem node for pandoc
+        items = [_['c'] for _ in node.inner_contents]
+        return _node_dict(node, items)
 
     def transform_Link(self, node):
         children = [node.inner_contents, [node.url, '']]
@@ -120,7 +127,8 @@ class PodocToPandoc(object):
         return _node_dict(node, children)
 
     def transform_Code(self, node):
-        children = [['', [], []], node.inner_contents]
+        # NOTE: node.children contains a single element, which is the code.
+        children = [['', [], []], node.children[0]]
         return _node_dict(node, children)
 
     def transform(self, ast):
@@ -128,27 +136,33 @@ class PodocToPandoc(object):
         return [{'unMeta': {}}, blocks]
 
 
-def tree_from_pandoc(d):
-    return PandocToPodoc().transform(d)
+def ast_from_pandoc(d):
+    return PandocToPodoc().transform_root(d)
 
 
 class PandocToPodoc(object):
+    def transform_root(self, obj):
+        assert isinstance(obj, list)
+        # Check that this is really the root.
+        assert len(obj) == 2
+        assert 'unMeta' in obj[0]
+        # Special case: the root.
+        # Process the root: obj is a list, and the second item
+        # is a list of blocks to process.
+        children = [self.transform(block) for block in obj[1]]
+        return ASTNode('root', children=children)
+
     def transform(self, obj):
         if isinstance(obj, list):
-            # Check that this is really the root.
-            assert len(obj) == 2
-            assert 'unMeta' in obj[0]
-            # Special case: the root.
-            # Process the root: obj is a list, and the second item
-            # is a list of blocks to process.
-            children = [self.transform(block) for block in obj[1]]
-            return Node('root', children=children)
+            return [self.transform(_) for _ in obj]
+        elif isinstance(obj, string_types):
+            return obj
         # For normal nodes, obj is a dict.
         name, c = obj['t'], obj['c']
         # The transform_* functions take the 'c' attribute and the newly-
         # created node, and return the list of children dicts to process.
         func = getattr(self, 'transform_%s' % name, self.transform_Node)
-        node = Node(name)
+        node = ASTNode(name)
         # Create the node and return the list of children that have yet
         # to be processed.
         children = func(c, node)
@@ -173,13 +187,26 @@ class PandocToPodoc(object):
         return c[1]
 
     def transform_OrderedList(self, c, node):
-        (node.start, style, delim), children = c[0]
+        (node.start, style, delim), children = c
+        # NOTE: create a ListItem node that contains the elements under
+        # the list item.
+        children = [{'t': 'ListItem', 'c': child} for child in children]
         node.style = style['t']
         node.delim = delim['t']
         return children
 
+    def transform_BulletList(self, c, node):
+        children = c
+        # NOTE: create a ListItem node that contains the elements under
+        # the list item.
+        children = [{'t': 'ListItem', 'c': child} for child in children]
+        return children
+
     def transform_Code(self, c, node):
-        return c[1]
+        code = c[1]
+        assert isinstance(code, string_types)
+        # Code has one child: a string with the code.
+        return [code]
 
     def transform_Image(self, c, node):
         return self.transform_Link(c, node)
