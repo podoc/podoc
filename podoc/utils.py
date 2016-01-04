@@ -2,10 +2,12 @@
 
 """Utility functions."""
 
+from contextlib import contextmanager
 import logging
 import os.path as op
+import sys
 
-from six import string_types
+from six import string_types, StringIO
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +39,17 @@ def open_text(path):
 def save_text(path, contents):
     with open(path, 'w') as f:
         return f.write(contents)
+
+
+@contextmanager
+def captured_output():
+    new_out, new_err = StringIO(), StringIO()
+    old_out, old_err = sys.stdout, sys.stderr
+    try:
+        sys.stdout, sys.stderr = new_out, new_err
+        yield sys.stdout, sys.stderr
+    finally:
+        sys.stdout, sys.stderr = old_out, old_err
 
 
 #------------------------------------------------------------------------------

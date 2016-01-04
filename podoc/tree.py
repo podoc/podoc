@@ -37,6 +37,38 @@ class Node(Bunch):
     def __repr__(self):
         return '<Node %s with %d children>' % (self.name, len(self.children))
 
+    @property
+    def ascii_tree(self):
+        """Return an ASCII representation of the tree under the current node.
+        """
+        t = TreeTransformer()
+        t.set_fold(lambda l: '\n'.join(l))
+
+        @t.register
+        def transform_Node(node):
+            """This function is called on every node. It generates an ASCII
+            tree.
+            """
+            c = node.inner_contents
+            prefix_t = '├─ '
+            prefix_l = '└─ '
+            prefix_d = '│  '
+            out = ''
+            l = c.splitlines()
+            n = len(l)
+            for i, _ in enumerate(l):
+                # Choose the prefix.
+                prefix = prefix_t if i < n - 1 else prefix_l
+                prefix = prefix_d if _.startswith((prefix_t, prefix_l)) else prefix
+                out += prefix + _ + '\n'
+            return node.name + '\n' + out.strip()
+
+        s = t.transform(self)
+        return s
+
+    def show(self):
+        print(self.ascii_tree)
+
 
 #------------------------------------------------------------------------------
 # Tree transformer

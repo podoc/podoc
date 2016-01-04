@@ -11,6 +11,7 @@ from textwrap import dedent
 
 from pytest import fixture
 
+from ..utils import captured_output
 from ..tree import Node, TreeTransformer
 
 
@@ -29,39 +30,10 @@ def root():
     return root
 
 
-def test_transform_1(root):
+def test_show_tree(root):
     assert 'root' in ('%s' % root)
-
-    # Create a tree transformer.
-    t = TreeTransformer()
-
-    # The fold function takes the list of transformed children of a node,
-    # and returns their concatenation.
-    t.set_fold(lambda l: '\n'.join(l))
-
-    @t.register
-    def transform_Node(node):
-        """This function is called on every node. It generates an ASCII tree.
-
-        `node.inner_contents` contains the concatenated output of all
-        of the node's children.
-
-        """
-        c = node.inner_contents
-        prefix_t = '├─ '
-        prefix_l = '└─ '
-        prefix_d = '│  '
-        out = ''
-        l = c.splitlines()
-        n = len(l)
-        for i, _ in enumerate(l):
-            # Choose the prefix.
-            prefix = prefix_t if i < n - 1 else prefix_l
-            prefix = prefix_d if _.startswith((prefix_t, prefix_l)) else prefix
-            out += prefix + _ + '\n'
-        return node.name + '\n' + out.strip()
-
-    trans = t.transform(root)
+    with captured_output() as (out, err):
+        root.show()
     expected = '''
         root
         ├─ 1
@@ -69,10 +41,10 @@ def test_transform_1(root):
         │  └─ 1.2
         └─ 2
         '''
-    assert trans == dedent(expected).strip()
+    assert out.getvalue().strip() == dedent(expected).strip()
 
 
-def test_transform_2(root):
+def test_transform_1(root):
 
     t = TreeTransformer()
     t.set_fold(lambda _: _)
