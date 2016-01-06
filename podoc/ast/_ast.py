@@ -86,9 +86,9 @@ class ASTNode(Node):
 # AST <-> pandoc
 #------------------------------------------------------------------------------
 
-def _node_dict(node, children=None, inner_contents=None):
+def _node_dict(node, children=None):
         return {'t': node.name,
-                'c': children or inner_contents or []}
+                'c': children or []}
 
 
 class PodocToPandoc(object):
@@ -99,46 +99,50 @@ class PodocToPandoc(object):
             if m.startswith('transform_'):
                 self.transformer.register(getattr(self, m))
 
-    def transform_Node(self, node, inner_contents):
-        return _node_dict(node, inner_contents)
+    def transform_Node(self, node):
+        return _node_dict(node,
+                          self.transformer.transform_children(node))
 
     def transform_str(self, text):
         return {'t': 'Str', 'c': text}
 
-    def transform_Header(self, node, inner_contents):
-        children = [node.level, ['', [], []], inner_contents]
-        return _node_dict(node, children, inner_contents)
+    def transform_Header(self, node):
+        children = [node.level, ['', [], []],
+                    self.transformer.get_inner_contents(node)]
+        return _node_dict(node, children)
 
-    def transform_CodeBlock(self, node, inner_contents):
+    def transform_CodeBlock(self, node):
         # NOTE: node.children contains a single element, which is the code.
         children = [['', [node.lang], []], node.children[0]]
-        return _node_dict(node, children, inner_contents)
+        return _node_dict(node, children)
 
-    def transform_OrderedList(self, node, inner_contents):
+    def transform_OrderedList(self, node):
         # NOTE: we remove the ListItem node for pandoc
-        items = [_['c'] for _ in inner_contents]
+        items = [_['c'] for _ in self.transformer.get_inner_contents(node)]
         children = [[node.start,
                     {"t": node.style, "c": []},
                     {"t": node.delim, "c": []}], items]
-        return _node_dict(node, children, inner_contents)
+        return _node_dict(node, children)
 
-    def transform_BulletList(self, node, inner_contents):
+    def transform_BulletList(self, node):
         # NOTE: we remove the ListItem node for pandoc
-        items = [_['c'] for _ in inner_contents]
-        return _node_dict(node, items, inner_contents)
+        items = [_['c'] for _ in self.transformer.get_inner_contents(node)]
+        return _node_dict(node, items)
 
-    def transform_Link(self, node, inner_contents):
-        children = [inner_contents, [node.url, '']]
-        return _node_dict(node, children, inner_contents)
+    def transform_Link(self, node):
+        children = [self.transformer.get_inner_contents(node),
+                    [node.url, '']]
+        return _node_dict(node, children)
 
-    def transform_Image(self, node, inner_contents):
-        children = [inner_contents, [node.url, '']]
-        return _node_dict(node, children, inner_contents)
+    def transform_Image(self, node):
+        children = [self.transformer.get_inner_contents(node),
+                    [node.url, '']]
+        return _node_dict(node, children)
 
-    def transform_Code(self, node, inner_contents):
+    def transform_Code(self, node):
         # NOTE: node.children contains a single element, which is the code.
         children = [['', [], []], node.children[0]]
-        return _node_dict(node, children, inner_contents)
+        return _node_dict(node, children)
 
     def transform(self, ast):
         blocks = self.transformer.transform(ast)['c']

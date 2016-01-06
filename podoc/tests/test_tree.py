@@ -51,11 +51,32 @@ def test_show_tree(root):
 def test_transform_1(root):
 
     t = TreeTransformer()
+    t.set_fold(lambda l: '\n'.join(l))
+
+    @t.register
+    def transform_Node(node):
+        return node.name + '\n' + t.get_inner_contents(node)
+
+    expected = '''
+        root
+        1
+        1.1
+        1.1.1
+        1.1.2
+        1.2
+        2
+        '''
+    assert t.transform(root) == dedent(expected).strip()
+
+
+def test_transform_2(root):
+
+    t = TreeTransformer()
     t.set_fold(lambda _: _)
 
     @t.register
-    def transform_Node(node, inner_contents):
-        return {'t': node.name, 'c': inner_contents}
+    def transform_Node(node):
+        return {'t': node.name, 'c': t.get_inner_contents(node)}
 
     assert t.transform(root) == {'t': 'root',
                                  'c': [{'t': '1',

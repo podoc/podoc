@@ -45,7 +45,7 @@ class Node(Bunch):
         t.set_fold(lambda l: '\n'.join(l))
 
         @t.register
-        def transform_Node(node, inner_contents):
+        def transform_Node(node):
             """This function is called on every node. It generates an ASCII
             tree.
             """
@@ -53,7 +53,7 @@ class Node(Bunch):
             prefix_l = '└─ '
             prefix_d = '│  '
             out = ''
-            l = inner_contents.splitlines()
+            l = t.get_inner_contents(node).splitlines()
             n = len(l)
             for i, _ in enumerate(l):
                 # Choose the prefix.
@@ -100,8 +100,9 @@ class TreeTransformer(object):
         """Register a transformer function for a given node type.
 
         The function's name must be `transform_NodeName`.
-        It arguments must be `node, inner_contents` where the second argument
-        is the processed output of all of the node's children..
+        It arguments must be `node`.
+        The function can call `self.get_inner_contents(node)` to get the
+        transformed output of all of the node's children.
 
         Generally, this method should return a string. The fold function should
         return an object of the same type.
@@ -113,25 +114,28 @@ class TreeTransformer(object):
         name = name[len(prefix):]
         self._funcs[name] = func
 
-    def _transform_children(self, node):
+    def transform_children(self, node):
         return [self.transform(child) for child in node.children]
+
+    def get_inner_contents(self, node):
+        return self._fold(self.transform_children(node))
 
     def transform_str(self, contents):
         return contents
 
-    def transform_Node(self, node, inner_contents):
+    def transform_Node(self, node):
+        """Fallback transform functions when no function is registered
+        for the given node."""
         return ''
 
     def transform(self, node):
-        """Transform a node and all of its children recursively."""
+        """Transform a node and the tree below it."""
         if isinstance(node, string_types) and 'str' in self._funcs:
             return self._funcs['str'](node)
         assert isinstance(node, Node)
         # Get the registered function for that name.
         func = self._funcs.get(node.name, self._funcs['Node'])
-        # Recursively transform all children.
-        l = self._transform_children(node)
         # Call the function.
-        if func:
-            # Pass the node and the inner contents.
-            return func(node, self._fold(l))
+        assert func
+        # Pass the node and the inner contents.
+        return func(node)
