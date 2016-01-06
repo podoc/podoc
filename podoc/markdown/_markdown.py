@@ -135,26 +135,26 @@ class ASTToMarkdown(object):
     def transform_str(self, text):
         return text
 
-    def transform_Node(self, node):
-        return node.inner_contents
+    def transform_Node(self, node, inner_contents):
+        return inner_contents
 
-    def transform_Plain(self, node):
-        return self.writer.text(node.inner_contents)
+    def transform_Plain(self, node, inner_contents):
+        return self.writer.text(inner_contents)
 
-    def transform_Para(self, node):
-        return self.transform_Plain(node)
+    def transform_Para(self, node, inner_contents):
+        return self.transform_Plain(node, inner_contents)
 
-    def transform_Space(self, node):
+    def transform_Space(self, node, inner_contents):
         return self.writer._write(' ')
 
-    def transform_Header(self, node):
-        return self.writer.heading(node.inner_contents, level=node.level)
+    def transform_Header(self, node, inner_contents):
+        return self.writer.heading(inner_contents, level=node.level)
 
-    def transform_CodeBlock(self, node):
-        return self.writer.code(node.inner_contents, lang=node.lang)
+    def transform_CodeBlock(self, node, inner_contents):
+        return self.writer.code(inner_contents, lang=node.lang)
 
-    def transform_BlockQuote(self, node):
-        return self.writer.quote(node.inner_contents)
+    def transform_BlockQuote(self, node, inner_contents):
+        return self.writer.quote(inner_contents)
 
     # def _push_list(self, **kwargs):
     #     data = Bunch(kwargs)
@@ -169,45 +169,45 @@ class ASTToMarkdown(object):
     #     else:
     #         bullet_char = str(node.number)
     #         node.number += 1
-    #     return self.writer.list_item(node.inner_contents,
+    #     return self.writer.list_item(inner_contents,
     #                                  bullet=bullet_char,
     #                                  level=node.level,
     #                                  suffix=node.delimiter,
     #                                  )
 
-    # def transform_BulletList(self, node):
+    # def transform_BulletList(self, node, inner_contents):
     #     self._write_list(type='bullet',
     #                      bullet=node.bullet_char,
     #                      delimiter=node.delimiter,
     #                      )
 
-    # def transform_OrderedList(self, node):
+    # def transform_OrderedList(self, node, inner_contents):
     #     self._write_list(type='ordered',
     #                      start=node.start,
     #                      delimiter=node.delimiter,
     #                      contents
     #                      )
 
-    # def transform_ListItem(self, node):
-    #     return node.inner_contents
+    # def transform_ListItem(self, node, inner_contents):
+    #     return inner_contents
 
-    def transform_Emph(self, node):
-        return self.writer.emph(node.inner_contents)
+    def transform_Emph(self, node, inner_contents):
+        return self.writer.emph(inner_contents)
 
-    def transform_Strong(self, node):
-        return self.writer.strong(node.inner_contents)
+    def transform_Strong(self, node, inner_contents):
+        return self.writer.strong(inner_contents)
 
-    def transform_Code(self, node):
-        return self.writer.inline_code(node.inner_contents)
+    def transform_Code(self, node, inner_contents):
+        return self.writer.inline_code(inner_contents)
 
-    def transform_LineBreak(self, node):
+    def transform_LineBreak(self, node, inner_contents):
         return self.writer.linebreak()
 
-    def transform_Link(self, node):
-        return self.writer.link(node.inner_contents, node.url)
+    def transform_Link(self, node, inner_contents):
+        return self.writer.link(inner_contents, node.url)
 
-    def transform_Image(self, node):
-        return self.writer.image(node.inner_contents, node.url)
+    def transform_Image(self, node, inner_contents):
+        return self.writer.image(inner_contents, node.url)
 
 
 #------------------------------------------------------------------------------

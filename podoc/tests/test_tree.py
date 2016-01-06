@@ -54,8 +54,8 @@ def test_transform_1(root):
     t.set_fold(lambda _: _)
 
     @t.register
-    def transform_Node(node):
-        return {'t': node.name, 'c': node.inner_contents}
+    def transform_Node(node, inner_contents):
+        return {'t': node.name, 'c': inner_contents}
 
     assert t.transform(root) == {'t': 'root',
                                  'c': [{'t': '1',

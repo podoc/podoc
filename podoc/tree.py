@@ -45,16 +45,15 @@ class Node(Bunch):
         t.set_fold(lambda l: '\n'.join(l))
 
         @t.register
-        def transform_Node(node):
+        def transform_Node(node, inner_contents):
             """This function is called on every node. It generates an ASCII
             tree.
             """
-            c = node.inner_contents
             prefix_t = '├─ '
             prefix_l = '└─ '
             prefix_d = '│  '
             out = ''
-            l = c.splitlines()
+            l = inner_contents.splitlines()
             n = len(l)
             for i, _ in enumerate(l):
                 # Choose the prefix.
@@ -77,8 +76,8 @@ class Node(Bunch):
 
 class TreeTransformer(object):
     def __init__(self):
-        self._funcs = {'str': lambda node: node,
-                       'Node': lambda node: ''}
+        self._funcs = {'str': self.transform_str,
+                       'Node': self.transform_Node}
         self._fold = lambda l: ''.join(l)
 
     def set_fold(self, func):
@@ -101,9 +100,8 @@ class TreeTransformer(object):
         """Register a transformer function for a given node type.
 
         The function's name must be `transform_NodeName`.
-
-        The node possess a special attribute `inner_contents` which
-        is the concatenation of the transformed children.
+        It arguments must be `node, inner_contents` where the second argument
+        is the processed output of all of the node's children..
 
         Generally, this method should return a string. The fold function should
         return an object of the same type.
@@ -115,6 +113,15 @@ class TreeTransformer(object):
         name = name[len(prefix):]
         self._funcs[name] = func
 
+    def _transform_children(self, node):
+        return [self.transform(child) for child in node.children]
+
+    def transform_str(self, contents):
+        return contents
+
+    def transform_Node(self, node, inner_contents):
+        return ''
+
     def transform(self, node):
         """Transform a node and all of its children recursively."""
         if isinstance(node, string_types) and 'str' in self._funcs:
@@ -123,12 +130,8 @@ class TreeTransformer(object):
         # Get the registered function for that name.
         func = self._funcs.get(node.name, self._funcs['Node'])
         # Recursively transform all children.
-        l = [self.transform(child) for child in node.children]
-        # Set the inner contents.
-        # TODO: pass this as a second argument to the transform function.
-        node.inner_contents = self._fold(l)
-        # Call the function on the node. The function has access
-        # to the inner contents (concatenated transformation of the
-        # children).
+        l = self._transform_children(node)
+        # Call the function.
         if func:
-            return func(node)
+            # Pass the node and the inner contents.
+            return func(node, self._fold(l))
