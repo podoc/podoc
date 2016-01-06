@@ -141,25 +141,37 @@ class ASTToMarkdown(object):
     def transform_Node(self, node):
         return self.transformer.get_inner_contents(node)
 
+    # Block nodes
+    # -------------------------------------------------------------------------
+
     def transform_Plain(self, node):
         return self.writer.text(self.transformer.get_inner_contents(node))
 
-    def transform_Para(self, node):
-        return self.transform_Plain(node)
+    def _newlines_between_blocks(self, node):
+        """Add 2 newlines between two block nodes."""
+        if (isinstance(node, ASTNode) and
+                node.is_block() and
+                isinstance(node.nxt, ASTNode) and
+                node.nxt.is_block()):
+            return self.writer.ensure_newlines(2)
+        return ''
 
-    def transform_Space(self, node):
-        return self.writer._write(' ')
+    def transform_Para(self, node):
+        return self.transform_Plain(node) + self._newlines_between_blocks(node)
 
     def transform_Header(self, node):
         return self.writer.heading(self.transformer.get_inner_contents(node),
-                                   level=node.level)
+                                   level=node.level) + \
+            self._newlines_between_blocks(node)
 
     def transform_CodeBlock(self, node):
         return self.writer.code(self.transformer.get_inner_contents(node),
-                                lang=node.lang)
+                                lang=node.lang) + \
+            self._newlines_between_blocks(node)
 
     def transform_BlockQuote(self, node):
-        return self.writer.quote(self.transformer.get_inner_contents(node))
+        return self.writer.quote(self.transformer.get_inner_contents(node)) + \
+            self._newlines_between_blocks(node)
 
     def _write_list(self, node, list_type):
         assert list_type in ('bullet', 'ordered')
@@ -176,6 +188,7 @@ class ASTToMarkdown(object):
                                          bullet=bullet,
                                          suffix=node.delimiter)
             out += self.writer.linebreak()
+        out += self._newlines_between_blocks(node)
         return out
 
     def transform_BulletList(self, node):
@@ -186,6 +199,13 @@ class ASTToMarkdown(object):
 
     def transform_ListItem(self, node):
         return self.transformer.get_inner_contents(node)
+
+    # Inline nodes
+    # -------------------------------------------------------------------------
+
+    def transform_Space(self, node):
+        # TODO: remove spaces completely from the podoc AST
+        return self.writer._write(' ')
 
     def transform_Emph(self, node):
         return self.writer.emph(self.transformer.get_inner_contents(node))

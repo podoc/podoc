@@ -17,9 +17,14 @@ from ..writer import MarkdownWriter
 def test_markdown_writer_newline():
     w = MarkdownWriter()
     w.text('Hello.')
-    w.linebreak()
+    w.ensure_newlines(2)
     w.text('Hello.\n')
-    expected = ('Hello.\n' * 2)
+    w.ensure_newlines(2)
+    w.text('Hello.\n\n')
+    w.ensure_newlines(0)
+    w.text('End')
+
+    expected = ('Hello.\n\n' * 3) + 'End'
     assert w.contents == expected
 
 

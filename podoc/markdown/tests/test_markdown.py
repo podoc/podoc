@@ -139,4 +139,4 @@ def test_markdown_renderer_list():
 
 def test_markdown_renderer_paras():
     _test_renderer('hello\nworld')
-    # _test_renderer('hello\n\nworld')
+    _test_renderer('hello\n\nworld')

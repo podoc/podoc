@@ -7,7 +7,7 @@
 # Imports
 #------------------------------------------------------------------------------
 
-# from contextlib import contextmanager
+import re
 
 from six import StringIO
 
@@ -44,6 +44,26 @@ class MarkdownWriter(object):
 
     def linebreak(self):
         return self.text('\n')
+
+    def ensure_newlines(self, n):
+        """Make sure there are `n` line breaks at the end."""
+        if n == 0:
+            return
+        assert n >= 1
+        text = self._output.getvalue()
+        if not text:
+            return
+        r = re.search(r'(\n*)$', text)
+        if r:
+            n_newlines = len(r.group(1))
+        else:
+            n_newlines = 0
+        d = n - n_newlines
+        out = ''
+        if d > 0:
+            out = self.text('\n' * d)
+        assert self._output.getvalue()[-n:] == ('\n' * n)
+        return out
 
     # Block methods
     # -------------------------------------------------------------------------
