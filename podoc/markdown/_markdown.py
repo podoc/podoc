@@ -12,6 +12,7 @@ import logging
 from CommonMark import Parser
 from six import string_types
 
+# from podoc.utils import Bunch
 from podoc.plugin import IPlugin
 from podoc.tree import TreeTransformer
 from podoc.ast import ASTNode
@@ -35,8 +36,8 @@ class CommonMarkToAST(object):
     _name_mapping = {
         'Paragraph': 'Para',
         'Heading': 'Header',
-        'List': 'BulletList',
         'Softbreak': 'LineBreak',
+        'Item': 'ListItem',
     }
 
     def transform_root(self, cm):
@@ -47,13 +48,21 @@ class CommonMarkToAST(object):
     def transform(self, obj):
         if isinstance(obj, string_types):
             return obj
-        # For normal nodes, obj is a dict.
+        # obj is a CommonMark.Node instance.
         name = obj.t
         # Convert from CommonMark name to Pandoc
         name = self._name_mapping.get(name, name)
         # The transform_* functions take the 'c' attribute and the newly-
         # created node, and return the list of children objects to process.
-        func = getattr(self, 'transform_%s' % name, self.transform_Node)
+        if name == 'List':
+            # Special treatment for lists. In CommonMark, there is a single
+            # node type, List, and the type (Bullet or Ordered) is found
+            # in list_data['type']
+            func = (self.transform_BulletList
+                    if obj.list_data['type'] == 'Bullet'
+                    else self.transform_OrderedList)
+        else:
+            func = getattr(self, 'transform_%s' % name, self.transform_Node)
         node = ASTNode(name)
         # Create the node and return the list of children that have yet
         # to be processed.
@@ -94,6 +103,15 @@ class CommonMarkToAST(object):
         node.level = obj.level
         return list(_iter_child(obj))
 
+    def transform_BulletList(self, obj, node):
+        node.bullet_char = obj.list_data['bullet_char']
+        return list(_iter_child(obj))
+
+    def transform_OrderedList(self, obj, node):
+        node.start = obj.list_data['start']
+        node.delimiter = obj.list_data['delimiter']
+        return list(_iter_child(obj))
+
 
 #------------------------------------------------------------------------------
 # Markdown renderer
@@ -105,6 +123,8 @@ class ASTToMarkdown(object):
     def __init__(self):
         self.transformer = TreeTransformer()
         self.writer = MarkdownWriter()
+        # Nested lists.
+        self._lists = []
         for m in dir(self):
             if m.startswith('transform_'):
                 self.transformer.register(getattr(self, m))
@@ -136,13 +156,40 @@ class ASTToMarkdown(object):
     def transform_BlockQuote(self, node):
         return self.writer.quote(node.inner_contents)
 
-    def transform_OrderedList(self, node):
-        # TODO
-        return ''
+    # def _push_list(self, **kwargs):
+    #     data = Bunch(kwargs)
+    #     # Determine the level of the list: the number of nested lists.
+    #     data.level = len(self._lists)
+    #     if data.type == 'ordered':
+    #         data.number = data.start
+    #     self._lists.append(data)
+    #     l = self._lists[-1]
+    #     if l.type == 'bullet':
+    #         bullet_char = node.bullet_char
+    #     else:
+    #         bullet_char = str(node.number)
+    #         node.number += 1
+    #     return self.writer.list_item(node.inner_contents,
+    #                                  bullet=bullet_char,
+    #                                  level=node.level,
+    #                                  suffix=node.delimiter,
+    #                                  )
 
-    def transform_BulletList(self, node):
-        # TODO
-        return ''
+    # def transform_BulletList(self, node):
+    #     self._write_list(type='bullet',
+    #                      bullet=node.bullet_char,
+    #                      delimiter=node.delimiter,
+    #                      )
+
+    # def transform_OrderedList(self, node):
+    #     self._write_list(type='ordered',
+    #                      start=node.start,
+    #                      delimiter=node.delimiter,
+    #                      contents
+    #                      )
+
+    # def transform_ListItem(self, node):
+    #     return node.inner_contents
 
     def transform_Emph(self, node):
         return self.writer.emph(node.inner_contents)

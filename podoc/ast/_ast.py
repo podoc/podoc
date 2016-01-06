@@ -57,6 +57,7 @@ PANDOC_INLINE_NAMES = (
 
 
 class ASTNode(Node):
+    # TODO: uncomment this: there are no Str elements in the podoc AST
     # def __init__(self, name, *args, **kwargs):
     #     super(ASTNode, self).__init__(name, *args, **kwargs)
     #     # NOTE: there is no such things as String Nodes in podoc AST:
