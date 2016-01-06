@@ -123,5 +123,5 @@ def test_markdown_renderer_blockquote():
     _test_renderer('> hello world\n> end')
 
 
-# def test_markdown_renderer_list():
-#     _test_renderer('* Item 1')
+def test_markdown_renderer_list():
+    _test_renderer('* Item 1')

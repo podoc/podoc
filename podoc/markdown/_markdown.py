@@ -12,7 +12,6 @@ import logging
 from CommonMark import Parser
 from six import string_types
 
-# from podoc.utils import Bunch
 from podoc.plugin import IPlugin
 from podoc.tree import TreeTransformer
 from podoc.ast import ASTNode
@@ -58,6 +57,8 @@ class CommonMarkToAST(object):
             # Special treatment for lists. In CommonMark, there is a single
             # node type, List, and the type (Bullet or Ordered) is found
             # in list_data['type']
+            # The name is BulletList or OrderedList.
+            name = obj.list_data['type'] + 'List'
             func = (self.transform_BulletList
                     if obj.list_data['type'] == 'Bullet'
                     else self.transform_OrderedList)
@@ -105,11 +106,13 @@ class CommonMarkToAST(object):
 
     def transform_BulletList(self, obj, node):
         node.bullet_char = obj.list_data['bullet_char']
+        node.delimiter = obj.list_data['delimiter'] or ' '
         return list(_iter_child(obj))
 
     def transform_OrderedList(self, obj, node):
         node.start = obj.list_data['start']
-        node.delimiter = obj.list_data['delimiter']
+        assert node.start >= 0
+        node.delimiter = obj.list_data['delimiter'] or ' '
         return list(_iter_child(obj))
 
 
@@ -158,41 +161,30 @@ class ASTToMarkdown(object):
     def transform_BlockQuote(self, node):
         return self.writer.quote(self.transformer.get_inner_contents(node))
 
-    # def _push_list(self, **kwargs):
-    #     data = Bunch(kwargs)
-    #     # Determine the level of the list: the number of nested lists.
-    #     data.level = len(self._lists)
-    #     if data.type == 'ordered':
-    #         data.number = data.start
-    #     self._lists.append(data)
-    #     l = self._lists[-1]
-    #     if l.type == 'bullet':
-    #         bullet_char = node.bullet_char
-    #     else:
-    #         bullet_char = str(node.number)
-    #         node.number += 1
-    #     inner_contents = self.transformer.get_inner_contents(node)
-    #     return self.writer.list_item(inner_contents,
-    #                                  bullet=bullet_char,
-    #                                  level=node.level,
-    #                                  suffix=node.delimiter,
-    #                                  )
+    def _write_list(self, node, list_type):
+        assert list_type in ('bullet', 'ordered')
+        if list_type == 'bullet':
+            bullet = node.bullet_char
+        elif list_type == 'ordered':
+            bullet = str(node.start)  # TODO
+        # This is a list of processed items.
+        items = self.transformer.transform_children(node)
+        out = ''
+        for item in items:
+            out += self.writer.list_item(item,
+                                         level=0,  # TODO
+                                         bullet=bullet,
+                                         suffix=node.delimiter)
+        return out
 
-    # def transform_BulletList(self, node):
-    #     self._write_list(type='bullet',
-    #                      bullet=node.bullet_char,
-    #                      delimiter=node.delimiter,
-    #                      )
+    def transform_BulletList(self, node):
+        return self._write_list(node, 'bullet')
 
-    # def transform_OrderedList(self, node):
-    #     self._write_list(type='ordered',
-    #                      start=node.start,
-    #                      delimiter=node.delimiter,
-    #                      contents
-    #                      )
+    def transform_OrderedList(self, node):
+        return self._write_list(node, 'ordered')
 
-    # def transform_ListItem(self, node):
-    #     return self.transformer.get_inner_contents(node)
+    def transform_ListItem(self, node):
+        return self.transformer.get_inner_contents(node)
 
     def transform_Emph(self, node):
         return self.writer.emph(self.transformer.get_inner_contents(node))
