@@ -7,6 +7,7 @@
 # Imports
 #------------------------------------------------------------------------------
 
+from itertools import zip_longest
 import logging
 
 from six import string_types
@@ -61,7 +62,10 @@ class Node(Bunch):
                 prefix = (prefix_d if (prefix_t in _ or prefix_l in _)
                           else prefix)
                 out += prefix + _ + '\n'
-            return node.name + '\n' + out.strip()
+            out = out.strip()
+            if out:
+                out = '\n' + out
+            return node.name + out
 
         s = t.transform(self)
         return s
@@ -115,7 +119,16 @@ class TreeTransformer(object):
         self._funcs[name] = func
 
     def transform_children(self, node):
-        return [self.transform(child) for child in node.children]
+        out = []
+        for child, next_child in zip_longest(node.children, node.children[1:]):
+            # Double-linked list for children.
+            # TODO: do this when creating the tree, in setattr children maybe?
+            if isinstance(child, Node):
+                child.nxt = next_child
+            if isinstance(next_child, Node):
+                next_child.prv = child
+            out.append(self.transform(child))
+        return out
 
     def get_inner_contents(self, node):
         return self._fold(self.transform_children(node))

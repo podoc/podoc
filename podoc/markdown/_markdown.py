@@ -175,6 +175,7 @@ class ASTToMarkdown(object):
                                          level=0,  # TODO
                                          bullet=bullet,
                                          suffix=node.delimiter)
+            out += self.writer.linebreak()
         return out
 
     def transform_BulletList(self, node):

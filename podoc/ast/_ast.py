@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 # AST
 #------------------------------------------------------------------------------
 
+# TODO: ensure there are no Spaces or Str in the AST (exclude list)
+
 # List of allowed Pandoc block names.
 PANDOC_BLOCK_NAMES = (
     'Plain',

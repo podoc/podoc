@@ -32,7 +32,21 @@ def root():
     return root
 
 
-def test_show_tree(root):
+def test_show_tree_1():
+    root = Node('root')
+    root.add_child(Node('1'))
+    root.add_child(Node('2'))
+    with captured_output() as (out, err):
+        root.show()
+    expected = '''
+        root
+        ├─ 1
+        └─ 2
+        '''
+    assert out.getvalue().strip() == dedent(expected).strip()
+
+
+def test_show_tree_2(root):
     assert 'root' in ('%s' % root)
     with captured_output() as (out, err):
         root.show()

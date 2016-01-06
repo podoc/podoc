@@ -79,7 +79,7 @@ def test_markdown_write(ast, markdown):
 
 
 # -----------------------------------------------------------------------------
-# Test Markdown renderer
+# Test Markdown renderer inline
 # -----------------------------------------------------------------------------
 
 def _test_renderer(s):
@@ -108,6 +108,10 @@ def test_markdown_renderer_codeinline():
     _test_renderer('hello `world`')
 
 
+# -----------------------------------------------------------------------------
+# Test Markdown renderer block
+# -----------------------------------------------------------------------------
+
 def test_markdown_renderer_header():
     _test_renderer('# Hello')
     _test_renderer('## Hello world')
@@ -125,3 +129,14 @@ def test_markdown_renderer_blockquote():
 
 def test_markdown_renderer_list():
     _test_renderer('* Item 1')
+    _test_renderer('* Item 1\n* Item 2')
+    # _test_renderer('* Item 1\n  * Item 1.2')
+
+
+# -----------------------------------------------------------------------------
+# Test Markdown renderer multiple blocks
+# -----------------------------------------------------------------------------
+
+def test_markdown_renderer_paras():
+    _test_renderer('hello\nworld')
+    # _test_renderer('hello\n\nworld')
