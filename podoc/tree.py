@@ -59,7 +59,7 @@ class Node(Bunch):
             for i, _ in enumerate(l):
                 # Choose the prefix.
                 prefix = prefix_t if i < n - 1 else prefix_l
-                prefix = (prefix_d if _.startswith((prefix_t, prefix_l))
+                prefix = (prefix_d if (prefix_t in _ or prefix_l in _)
                           else prefix)
                 out += prefix + _ + '\n'
             return node.name + '\n' + out.strip()
