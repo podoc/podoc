@@ -33,9 +33,7 @@ def ast():
 
     # First block
     block = ASTNode(name='Para',
-                    children=['hello',
-                              ASTNode(name='Space'),
-                              ])
+                    children=['hello '])
     inline = ASTNode(name='Emph')
     inline.add_child('world')
     block.add_child(inline)
@@ -56,8 +54,7 @@ def test_cm_to_ast(commonmark, ast):
     ast_t = CommonMarkToAST().transform_root(commonmark)
     ast.show()
     ast_t.show()
-    # TODO: not sure if CommonMark parses Space...
-    # assert ast == ast_t
+    assert ast == ast_t
 
 
 #------------------------------------------------------------------------------
@@ -74,9 +71,7 @@ def test_ast_to_markdown(ast, markdown):
 #------------------------------------------------------------------------------
 
 def test_markdown_read(ast, markdown):
-    # TODO
-    # assert Markdown().read_markdown(markdown) == ast
-    pass
+    assert Markdown().read_markdown(markdown) == ast
 
 
 def test_markdown_write(ast, markdown):
@@ -91,26 +86,42 @@ def _test_renderer(s):
     """Test the renderer on a string."""
     # Parse the string with CommonMark-py.
     ast = Markdown().read_markdown(s)
+    ast.show()
     # Render the AST to Markdown.
     contents = ASTToMarkdown().transform(ast)
     assert contents.strip() == s
 
 
-def test_markdown_renderer_inline():
+def test_markdown_renderer_simple():
     _test_renderer('hello')
     _test_renderer('hello world')
     _test_renderer('hello *world*')
     _test_renderer('hello **world**')
-    _test_renderer('hello ~~world~~')
-    # _test_renderer('hello `world`')
-    # _test_renderer('[hello](world)')
-    # _test_renderer('![hello](world)')
 
 
-def test_markdown_renderer_block():
+def test_markdown_renderer_link():
+    _test_renderer('[hello](world)')
+    _test_renderer('![hello](world)')
+
+
+def test_markdown_renderer_codeinline():
+    _test_renderer('hello `world`')
+
+
+def test_markdown_renderer_header():
     _test_renderer('# Hello')
     _test_renderer('## Hello world')
-    # _test_renderer('```\nhello world\n```')
-    # _test_renderer('```python\nhello world\n```')
-    # _test_renderer('> hello world')
-    # _test_renderer('* Item 1')
+
+
+def test_markdown_renderer_codeblock():
+    _test_renderer('```\nhello world\n```')
+    _test_renderer('```python\nhello world\n```')
+
+
+def test_markdown_renderer_blockquote():
+    _test_renderer('> hello world')
+    _test_renderer('> hello world\n> end')
+
+
+# def test_markdown_renderer_list():
+#     _test_renderer('* Item 1')

@@ -64,11 +64,7 @@ def test_markdown_writer():
     w.text('.')
     w.newline()
 
-    w.quote_start()
-    w.text('Good, and you?')
-    w.linebreak()
-    w.text('End of citation.')
-    w.quote_end()
+    w.quote('Good, and you?\nEnd of citation.')
     w.newline()
 
     w.list_item('Item ')
@@ -87,7 +83,7 @@ def test_markdown_writer():
     w.numbered_list_item('2')
     w.newline()
 
-    w.code('print("Hello world!")')
+    w.code('print("Hello world!")\n')
     w.newline()
 
     w.text('Go to ')

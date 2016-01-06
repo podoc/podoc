@@ -21,7 +21,6 @@ class MarkdownWriter(object):
     def __init__(self):
         self._output = StringIO()
         self._list_number = 0
-        self._in_quote = False
 
     # Buffer methods
     # -------------------------------------------------------------------------
@@ -36,19 +35,15 @@ class MarkdownWriter(object):
     def __del__(self):
         self.close()
 
-    def _write(self, contents):
-        self._output.write(contents)
-        return contents
-
     # New line methods
     # -------------------------------------------------------------------------
 
     def newline(self):
         self._list_number = 0
-        return self._write('\n\n')
+        return self.text('\n\n')
 
     def linebreak(self):
-        return self._write('\n')
+        return self.text('\n')
 
     # Block methods
     # -------------------------------------------------------------------------
@@ -70,13 +65,11 @@ class MarkdownWriter(object):
         return self.text(('  ' * level) + bullet + suffix + text)
 
     def code(self, code, lang=None):
-        return self.text('```{}\n{}\n```'.format(lang or '', code))
+        return self.text('```{}\n{}```'.format(lang or '', code))
 
-    def quote_start(self):
-        self._in_quote = True
-
-    def quote_end(self):
-        self._in_quote = False
+    def quote(self, text):
+        # Add quote '>' at the beginning of each line when quote is activated.
+        return self.text('\n'.join('> ' + l for l in text.splitlines()))
 
     # Inline methods
     # -------------------------------------------------------------------------
@@ -97,12 +90,8 @@ class MarkdownWriter(object):
         return self.text('**{0}**'.format(text))
 
     def text(self, text):
-        # Add quote '>' at the beginning of each line when quote is activated.
-        if self._in_quote:
-            s = self._output.getvalue()
-            if not s or s[-1] == '\n':
-                text = '> ' + text
-        return self._write(text)
+        self._output.write(text)
+        return text
 
     # def strikeout(self, text):
     #     return self.text('~~{0}~'.format(text))

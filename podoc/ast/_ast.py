@@ -48,8 +48,8 @@ PANDOC_INLINE_NAMES = (
     'Code',
     'Link',
     'Image',
+    'LineBreak',
     # The following are not supported yet in podoc.
-    # 'LineBreak',
     # 'Math',
     # 'Strikeout',
     # 'Space',

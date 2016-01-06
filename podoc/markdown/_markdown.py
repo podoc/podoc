@@ -24,18 +24,24 @@ logger = logging.getLogger(__name__)
 # Markdown reader (using CommonMark-py)
 #------------------------------------------------------------------------------
 
+def _iter_child(cm):
+    child = cm.first_child
+    while child is not None:
+        yield child
+        child = child.nxt
+
+
 class CommonMarkToAST(object):
     _name_mapping = {
         'Paragraph': 'Para',
-        'ATXHeader': 'Header',
-        'FencedCode': 'CodeBlock',
-        'List': 'OrderedList',
+        'Heading': 'Header',
+        'List': 'BulletList',
         'Softbreak': 'LineBreak',
     }
 
     def transform_root(self, cm):
         # TODO: should be def transform() for consistency with the other way
-        children = [self.transform(block) for block in cm.children]
+        children = [self.transform(block) for block in _iter_child(cm)]
         return ASTNode('root', children=children)
 
     def transform(self, obj):
@@ -61,22 +67,32 @@ class CommonMarkToAST(object):
         return node
 
     def transform_Node(self, obj, node):
-        return obj.c or obj.inline_content
+        return list(_iter_child(obj))
+
+    def transform_Code(self, obj, node):
+        return [obj.literal]
+
+    def transform_Text(self, obj, node):
+        return obj.literal
 
     def transform_Link(self, obj, node):
         node.url = obj.destination
-        return obj.label
+        return list(_iter_child(obj))
 
     def transform_Image(self, obj, node):
-        return self.transform_Link(obj.c, node)
+        node.url = obj.destination
+        return list(_iter_child(obj))
 
     def transform_CodeBlock(self, obj, node):
         node.lang = obj.info
-        return [obj.inline_content]
+        return [obj.literal]
+
+    def transform_BlockQuote(self, obj, node):
+        return list(_iter_child(obj))
 
     def transform_Header(self, obj, node):
         node.level = obj.level
-        return obj.inline_content
+        return list(_iter_child(obj))
 
 
 #------------------------------------------------------------------------------
@@ -118,10 +134,7 @@ class ASTToMarkdown(object):
         return self.writer.code(node.inner_contents, lang=node.lang)
 
     def transform_BlockQuote(self, node):
-        self.writer.quote_start()
-        out = self.writer.text(node.inner_contents)
-        self.writer.quote_end()
-        return out
+        return self.writer.quote(node.inner_contents)
 
     def transform_OrderedList(self, node):
         # TODO
@@ -140,11 +153,14 @@ class ASTToMarkdown(object):
     def transform_Code(self, node):
         return self.writer.inline_code(node.inner_contents)
 
+    def transform_LineBreak(self, node):
+        return self.writer.linebreak()
+
     def transform_Link(self, node):
         return self.writer.link(node.inner_contents, node.url)
 
     def transform_Image(self, node):
-        return self.writer.transform_Link(node)
+        return self.writer.image(node.inner_contents, node.url)
 
 
 #------------------------------------------------------------------------------
