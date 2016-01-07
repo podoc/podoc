@@ -187,10 +187,13 @@ class ASTToMarkdown(object):
         items = self.transformer.transform_children(node)
         out = ''
         for item in items:
-            out += self.writer.list_item(item,
-                                         level=0,  # TODO
-                                         bullet=str(bullet),
-                                         suffix=suffix)
+            # We indent all lines in the item.
+            item_lines = item.splitlines()
+            item = '\n'.join((('  ' if i else '') + line)
+                             for i, line in enumerate(item_lines))
+            # We add the bullet and suffix to the first line in the item.
+            out += str(bullet) + suffix + item
+            # We increase the current ordered list number.
             if list_type == 'ordered':
                 bullet += 1
             out += self.writer.linebreak()

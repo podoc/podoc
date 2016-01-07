@@ -19,6 +19,7 @@ from six import StringIO
 class MarkdownWriter(object):
     """A class for writing Markdown documents."""
     def __init__(self):
+        # TODO: remove the _output, no necessary when used in AST transformer.
         self._output = StringIO()
         self._list_number = 0
 
