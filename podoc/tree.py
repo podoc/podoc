@@ -43,7 +43,7 @@ class Node(Bunch):
         """Return an ASCII representation of the tree under the current node.
         """
         t = TreeTransformer()
-        t.set_fold(lambda l: '\n'.join(l))
+        t.set_fold(lambda l, node=None: '\n'.join(l))
 
         @t.register
         def transform_Node(node):
@@ -131,7 +131,7 @@ class TreeTransformer(object):
         return out
 
     def get_inner_contents(self, node):
-        return self._fold(self.transform_children(node))
+        return self._fold(self.transform_children(node), node=node)
 
     def transform_str(self, contents):
         return contents

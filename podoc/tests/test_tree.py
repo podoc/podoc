@@ -70,7 +70,7 @@ def test_transform_0(root):
 def test_transform_1(root):
 
     t = TreeTransformer()
-    t.set_fold(lambda l: '\n'.join(l))
+    t.set_fold(lambda l, node=None: '\n'.join(l))
 
     @t.register
     def transform_Node(node):
@@ -91,7 +91,7 @@ def test_transform_1(root):
 def test_transform_2(root):
 
     t = TreeTransformer()
-    t.set_fold(lambda _: _)
+    t.set_fold(lambda _, node=None: _)
 
     @t.register
     def transform_Node(node):

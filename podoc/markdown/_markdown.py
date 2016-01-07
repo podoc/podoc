@@ -125,12 +125,17 @@ class ASTToMarkdown(object):
 
     def __init__(self):
         self.transformer = TreeTransformer()
+        self.transformer.set_fold(self.fold)
         self.renderer = MarkdownRenderer()
         # Nested lists.
         self._lists = []
         for m in dir(self):
             if m.startswith('transform_'):
                 self.transformer.register(getattr(self, m))
+
+    def fold(self, transformed_children, node=None):
+        delim = '\n\n' if node.name == 'root' else ''
+        return delim.join(transformed_children)
 
     def transform(self, ast):
         return self.transformer.transform(ast)
@@ -147,31 +152,19 @@ class ASTToMarkdown(object):
     def transform_Plain(self, node):
         return self.renderer.text(self.transformer.get_inner_contents(node))
 
-    def _newlines_between_blocks(self, node):
-        """Add 2 newlines between two block nodes."""
-        if (isinstance(node, ASTNode) and
-                node.is_block() and
-                isinstance(node.nxt, ASTNode) and
-                node.nxt.is_block()):
-            return self.renderer.ensure_newlines(2)
-        return ''
-
     def transform_Para(self, node):
-        return self.transform_Plain(node) + self._newlines_between_blocks(node)
+        return self.transform_Plain(node)
 
     def transform_Header(self, node):
         return self.renderer.heading(self.transformer.get_inner_contents(node),
-                                   level=node.level) + \
-            self._newlines_between_blocks(node)
+                                     level=node.level)
 
     def transform_CodeBlock(self, node):
         return self.renderer.code(self.transformer.get_inner_contents(node),
-                                lang=node.lang) + \
-            self._newlines_between_blocks(node)
+                                  lang=node.lang)
 
     def transform_BlockQuote(self, node):
-        return self.renderer.quote(self.transformer.get_inner_contents(node)) + \
-            self._newlines_between_blocks(node)
+        return self.renderer.quote(self.transformer.get_inner_contents(node))
 
     def _write_list(self, node, list_type):
         assert list_type in ('bullet', 'ordered')
@@ -185,20 +178,18 @@ class ASTToMarkdown(object):
                 suffix += ' '
         # This is a list of processed items.
         items = self.transformer.transform_children(node)
-        out = ''
+        out = []
         for item in items:
             # We indent all lines in the item.
             item_lines = item.splitlines()
             item = '\n'.join((('  ' if i else '') + line)
                              for i, line in enumerate(item_lines))
             # We add the bullet and suffix to the first line in the item.
-            out += str(bullet) + suffix + item
+            out.append(str(bullet) + suffix + item)
             # We increase the current ordered list number.
             if list_type == 'ordered':
                 bullet += 1
-            out += self.renderer.linebreak()
-        out += self._newlines_between_blocks(node)
-        return out
+        return '\n'.join(out)
 
     def transform_BulletList(self, node):
         return self._write_list(node, 'bullet')
@@ -212,10 +203,6 @@ class ASTToMarkdown(object):
 
     # Inline nodes
     # -------------------------------------------------------------------------
-
-    # def transform_Space(self, node):
-    #     # TODO: remove spaces completely from the podoc AST
-    #     return self.renderer._write(' ')
 
     def transform_Emph(self, node):
         return self.renderer.emph(self.transformer.get_inner_contents(node))
@@ -232,11 +219,11 @@ class ASTToMarkdown(object):
 
     def transform_Link(self, node):
         return self.renderer.link(self.transformer.get_inner_contents(node),
-                                node.url)
+                                  node.url)
 
     def transform_Image(self, node):
         return self.renderer.image(self.transformer.get_inner_contents(node),
-                                 node.url)
+                                   node.url)
 
 
 #------------------------------------------------------------------------------

@@ -4,15 +4,6 @@
 
 
 #------------------------------------------------------------------------------
-# Imports
-#------------------------------------------------------------------------------
-
-import re
-
-from six import StringIO
-
-
-#------------------------------------------------------------------------------
 # Markdown renderer
 #------------------------------------------------------------------------------
 
@@ -35,20 +26,8 @@ class MarkdownRenderer(object):
     # -------------------------------------------------------------------------
 
     def heading(self, text, level=None):
-        assert 1 <= level <= 6
+        assert level >= 1
         return self.text(('#' * level) + ' ' + text)
-
-    def numbered_list_item(self, text='', level=0):
-        if level == 0:
-            self._list_number += 1
-        return self.list_item(text,
-                              level=level,
-                              bullet=str(self._list_number),
-                              suffix='. ')
-
-    def list_item(self, text='', level=0, bullet='*', suffix=' '):
-        assert level >= 0
-        return self.text(('  ' * level) + bullet + suffix + text)
 
     def code(self, code, lang=None):
         return self.text('```{}\n{}```'.format(lang or '', code))

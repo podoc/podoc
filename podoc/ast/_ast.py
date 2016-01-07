@@ -96,7 +96,7 @@ def _node_dict(node, children=None):
 class PodocToPandoc(object):
     def __init__(self):
         self.transformer = TreeTransformer()
-        self.transformer.set_fold(lambda _: _)
+        self.transformer.set_fold(lambda _, node=None: _)
         for m in dir(self):
             if m.startswith('transform_'):
                 self.transformer.register(getattr(self, m))
