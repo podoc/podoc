@@ -153,7 +153,7 @@ def test_markdown_renderer_ordered_bullet():
     _test_renderer('1. Item 1\n\n* Bullet')
     _test_renderer('* Bullet\n\n1. Item 1')
     _test_renderer('1. Item 1\n2. Item 2\n\n* Bullet')
-    # _test_renderer('1. Item 1\n2. Item 2\n\n* Bullet\n\n3. Item 3\n')
+    _test_renderer('1. Item 1\n2. Item 2\n\n* Bullet\n\n3. Item 3')
 
 
 # TODO: compare Markdown -> AST with Markdown -> pandoc -> AST
