@@ -80,6 +80,7 @@ def test_markdown_write(ast, markdown):
 
 # -----------------------------------------------------------------------------
 # Test Markdown renderer inline
+# Check safe round-tripping on CommonMark -> AST -> CommonMark
 # -----------------------------------------------------------------------------
 
 def _test_renderer(s):
@@ -136,6 +137,7 @@ def test_markdown_renderer_bullet_list():
 def test_markdown_renderer_ordered_list():
     _test_renderer('1. Item 1')
     _test_renderer('1. Item 1\n2. Item 2')
+    _test_renderer('2. Item 1\n3. Item 2')
 
 
 # -----------------------------------------------------------------------------
@@ -145,3 +147,7 @@ def test_markdown_renderer_ordered_list():
 def test_markdown_renderer_paras():
     _test_renderer('hello\nworld')
     _test_renderer('hello\n\nworld')
+
+
+def test_markdown_renderer_ordered_bullet():
+    _test_renderer('1. Item 1\n2. Item 2\n\n* Bullet')
