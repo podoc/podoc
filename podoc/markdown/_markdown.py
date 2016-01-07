@@ -15,7 +15,7 @@ from six import string_types
 from podoc.plugin import IPlugin
 from podoc.tree import TreeTransformer
 from podoc.ast import ASTNode
-from podoc.markdown.writer import MarkdownWriter
+from podoc.markdown.renderer import MarkdownRenderer
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +125,7 @@ class ASTToMarkdown(object):
 
     def __init__(self):
         self.transformer = TreeTransformer()
-        self.writer = MarkdownWriter()
+        self.renderer = MarkdownRenderer()
         # Nested lists.
         self._lists = []
         for m in dir(self):
@@ -145,7 +145,7 @@ class ASTToMarkdown(object):
     # -------------------------------------------------------------------------
 
     def transform_Plain(self, node):
-        return self.writer.text(self.transformer.get_inner_contents(node))
+        return self.renderer.text(self.transformer.get_inner_contents(node))
 
     def _newlines_between_blocks(self, node):
         """Add 2 newlines between two block nodes."""
@@ -153,24 +153,24 @@ class ASTToMarkdown(object):
                 node.is_block() and
                 isinstance(node.nxt, ASTNode) and
                 node.nxt.is_block()):
-            return self.writer.ensure_newlines(2)
+            return self.renderer.ensure_newlines(2)
         return ''
 
     def transform_Para(self, node):
         return self.transform_Plain(node) + self._newlines_between_blocks(node)
 
     def transform_Header(self, node):
-        return self.writer.heading(self.transformer.get_inner_contents(node),
+        return self.renderer.heading(self.transformer.get_inner_contents(node),
                                    level=node.level) + \
             self._newlines_between_blocks(node)
 
     def transform_CodeBlock(self, node):
-        return self.writer.code(self.transformer.get_inner_contents(node),
+        return self.renderer.code(self.transformer.get_inner_contents(node),
                                 lang=node.lang) + \
             self._newlines_between_blocks(node)
 
     def transform_BlockQuote(self, node):
-        return self.writer.quote(self.transformer.get_inner_contents(node)) + \
+        return self.renderer.quote(self.transformer.get_inner_contents(node)) + \
             self._newlines_between_blocks(node)
 
     def _write_list(self, node, list_type):
@@ -196,7 +196,7 @@ class ASTToMarkdown(object):
             # We increase the current ordered list number.
             if list_type == 'ordered':
                 bullet += 1
-            out += self.writer.linebreak()
+            out += self.renderer.linebreak()
         out += self._newlines_between_blocks(node)
         return out
 
@@ -215,27 +215,27 @@ class ASTToMarkdown(object):
 
     # def transform_Space(self, node):
     #     # TODO: remove spaces completely from the podoc AST
-    #     return self.writer._write(' ')
+    #     return self.renderer._write(' ')
 
     def transform_Emph(self, node):
-        return self.writer.emph(self.transformer.get_inner_contents(node))
+        return self.renderer.emph(self.transformer.get_inner_contents(node))
 
     def transform_Strong(self, node):
-        return self.writer.strong(self.transformer.get_inner_contents(node))
+        return self.renderer.strong(self.transformer.get_inner_contents(node))
 
     def transform_Code(self, node):
-        return self.writer.inline_code(
+        return self.renderer.inline_code(
             self.transformer.get_inner_contents(node))
 
     def transform_LineBreak(self, node):
-        return self.writer.linebreak()
+        return self.renderer.linebreak()
 
     def transform_Link(self, node):
-        return self.writer.link(self.transformer.get_inner_contents(node),
+        return self.renderer.link(self.transformer.get_inner_contents(node),
                                 node.url)
 
     def transform_Image(self, node):
-        return self.writer.image(self.transformer.get_inner_contents(node),
+        return self.renderer.image(self.transformer.get_inner_contents(node),
                                  node.url)
 
 

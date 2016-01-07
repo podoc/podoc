@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Markdown writer."""
+"""Markdown renderer."""
 
 
 #------------------------------------------------------------------------------
@@ -13,28 +13,13 @@ from six import StringIO
 
 
 #------------------------------------------------------------------------------
-# Markdown writer
+# Markdown renderer
 #------------------------------------------------------------------------------
 
-class MarkdownWriter(object):
-    """A class for writing Markdown documents."""
+class MarkdownRenderer(object):
+    """A class for rendering Markdown documents."""
     def __init__(self):
-        # TODO: remove the _output, no necessary when used in AST transformer.
-        self._output = StringIO()
         self._list_number = 0
-
-    # Buffer methods
-    # -------------------------------------------------------------------------
-
-    @property
-    def contents(self):
-        return self._output.getvalue()
-
-    def close(self):
-        self._output.close()
-
-    def __del__(self):
-        self.close()
 
     # New line methods
     # -------------------------------------------------------------------------
@@ -45,26 +30,6 @@ class MarkdownWriter(object):
 
     def linebreak(self):
         return self.text('\n')
-
-    def ensure_newlines(self, n):
-        """Make sure there are `n` line breaks at the end."""
-        if n == 0:
-            return
-        assert n >= 1
-        text = self._output.getvalue()
-        if not text:
-            return
-        r = re.search(r'(\n*)$', text)
-        if r:
-            n_newlines = len(r.group(1))
-        else:
-            n_newlines = 0
-        d = n - n_newlines
-        out = ''
-        if d > 0:
-            out = self.text('\n' * d)
-        assert self._output.getvalue()[-n:] == ('\n' * n)
-        return out
 
     # Block methods
     # -------------------------------------------------------------------------
@@ -111,8 +76,4 @@ class MarkdownWriter(object):
         return self.text('**{0}**'.format(text))
 
     def text(self, text):
-        self._output.write(text)
         return text
-
-    # def strikeout(self, text):
-    #     return self.text('~~{0}~'.format(text))
