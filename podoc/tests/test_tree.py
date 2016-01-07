@@ -62,6 +62,11 @@ def test_show_tree_2(root):
     assert out.getvalue().strip() == dedent(expected).strip()
 
 
+def test_transform_0(root):
+    t = TreeTransformer()
+    assert t.transform(root) == ''
+
+
 def test_transform_1(root):
 
     t = TreeTransformer()

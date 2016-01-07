@@ -177,8 +177,12 @@ class ASTToMarkdown(object):
         assert list_type in ('bullet', 'ordered')
         if list_type == 'bullet':
             bullet = node.bullet_char
+            suffix = node.delimiter
         elif list_type == 'ordered':
             bullet = str(node.start)  # TODO
+            suffix = node.delimiter
+            if not suffix.endswith(' '):
+                suffix += ' '
         # This is a list of processed items.
         items = self.transformer.transform_children(node)
         out = ''
@@ -186,7 +190,7 @@ class ASTToMarkdown(object):
             out += self.writer.list_item(item,
                                          level=0,  # TODO
                                          bullet=bullet,
-                                         suffix=node.delimiter)
+                                         suffix=suffix)
             out += self.writer.linebreak()
         out += self._newlines_between_blocks(node)
         return out
@@ -203,9 +207,9 @@ class ASTToMarkdown(object):
     # Inline nodes
     # -------------------------------------------------------------------------
 
-    def transform_Space(self, node):
-        # TODO: remove spaces completely from the podoc AST
-        return self.writer._write(' ')
+    # def transform_Space(self, node):
+    #     # TODO: remove spaces completely from the podoc AST
+    #     return self.writer._write(' ')
 
     def transform_Emph(self, node):
         return self.writer.emph(self.transformer.get_inner_contents(node))

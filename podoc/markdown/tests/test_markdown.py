@@ -127,10 +127,15 @@ def test_markdown_renderer_blockquote():
     _test_renderer('> hello world\n> end')
 
 
-def test_markdown_renderer_list():
+def test_markdown_renderer_bullet_list():
     _test_renderer('* Item 1')
     _test_renderer('* Item 1\n* Item 2')
     # _test_renderer('* Item 1\n  * Item 1.2')
+
+
+def test_markdown_renderer_ordered_list():
+    _test_renderer('1. Item 1')
+    # _test_renderer('1. Item 1\n2. Item 2')
 
 
 # -----------------------------------------------------------------------------
