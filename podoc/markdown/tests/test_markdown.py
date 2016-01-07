@@ -135,7 +135,7 @@ def test_markdown_renderer_bullet_list():
 
 def test_markdown_renderer_ordered_list():
     _test_renderer('1. Item 1')
-    # _test_renderer('1. Item 1\n2. Item 2')
+    _test_renderer('1. Item 1\n2. Item 2')
 
 
 # -----------------------------------------------------------------------------

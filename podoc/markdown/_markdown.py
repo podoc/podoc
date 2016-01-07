@@ -179,7 +179,7 @@ class ASTToMarkdown(object):
             bullet = node.bullet_char
             suffix = node.delimiter
         elif list_type == 'ordered':
-            bullet = str(node.start)  # TODO
+            bullet = node.start
             suffix = node.delimiter
             if not suffix.endswith(' '):
                 suffix += ' '
@@ -189,8 +189,10 @@ class ASTToMarkdown(object):
         for item in items:
             out += self.writer.list_item(item,
                                          level=0,  # TODO
-                                         bullet=bullet,
+                                         bullet=str(bullet),
                                          suffix=suffix)
+            if list_type == 'ordered':
+                bullet += 1
             out += self.writer.linebreak()
         out += self._newlines_between_blocks(node)
         return out
@@ -202,7 +204,8 @@ class ASTToMarkdown(object):
         return self._write_list(node, 'ordered')
 
     def transform_ListItem(self, node):
-        return self.transformer.get_inner_contents(node)
+        out = self.transformer.get_inner_contents(node)
+        return out
 
     # Inline nodes
     # -------------------------------------------------------------------------
