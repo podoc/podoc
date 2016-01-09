@@ -300,6 +300,7 @@ class ASTPlugin(IPlugin):
         assert isinstance(d, list)
         logger.debug("Save JSON file `%s`.", path)
         with open(path, 'w') as f:
-            json.dump(d, f, sort_keys=True, indent=2)
+            json.dump(d, f, sort_keys=True, indent=2,
+                      separators=(',', ': '))  # avoid trailing whitespaces
             # Add a new line at the end.
             f.write('\n')

@@ -16,6 +16,8 @@ import logging
 import os
 import os.path as op
 
+from six import with_metaclass
+
 logger = logging.getLogger(__name__)
 
 
@@ -33,7 +35,7 @@ class IPluginRegistry(type):
                 IPluginRegistry.plugins.append(cls)
 
 
-class IPlugin(object, metaclass=IPluginRegistry):
+class IPlugin(with_metaclass(IPluginRegistry)):
     def attach(self, podoc):
         pass
 

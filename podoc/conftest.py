@@ -7,7 +7,7 @@
 #------------------------------------------------------------------------------
 
 import logging
-from tempfile import TemporaryDirectory
+from .tempdir import TemporaryDirectory
 
 from pytest import yield_fixture
 

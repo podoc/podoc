@@ -9,6 +9,7 @@
 
 from textwrap import dedent
 
+from six import u
 from pytest import fixture
 
 from ..utils import captured_output
@@ -38,11 +39,11 @@ def test_show_tree_1():
     root.add_child(Node('2'))
     with captured_output() as (out, err):
         root.show()
-    expected = '''
+    expected = u('''
         root
         ├─ 1
         └─ 2
-        '''
+        ''')
     assert out.getvalue().strip() == dedent(expected).strip()
 
 
@@ -50,7 +51,7 @@ def test_show_tree_2(root):
     assert 'root' in ('%s' % root)
     with captured_output() as (out, err):
         root.show()
-    expected = '''
+    expected = u('''
         root
         ├─ 1
         │  ├─ 1.1
@@ -58,7 +59,7 @@ def test_show_tree_2(root):
         │  │  └─ 1.1.2
         │  └─ 1.2
         └─ 2
-        '''
+        ''')
     assert out.getvalue().strip() == dedent(expected).strip()
 
 

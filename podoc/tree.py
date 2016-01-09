@@ -7,10 +7,10 @@
 # Imports
 #------------------------------------------------------------------------------
 
-from itertools import zip_longest
 import logging
 
-from six import string_types
+from six import string_types, u
+from six.moves import zip_longest
 
 from .utils import Bunch
 
@@ -50,9 +50,9 @@ class Node(Bunch):
             """This function is called on every node. It generates an ASCII
             tree.
             """
-            prefix_t = '├─ '
-            prefix_l = '└─ '
-            prefix_d = '│  '
+            prefix_t = u('├─ ')
+            prefix_l = u('└─ ')
+            prefix_d = u('│  ')
             out = ''
             l = t.get_inner_contents(node).splitlines()
             n = len(l)

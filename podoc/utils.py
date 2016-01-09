@@ -7,9 +7,15 @@ import logging
 import os.path as op
 import sys
 
-from six import string_types, StringIO
+from six import string_types, StringIO, PY2
 
 logger = logging.getLogger(__name__)
+
+
+if PY2:
+    # This exception is only defined in Python 3.
+    class FileNotFoundError(OSError):  # pragma: no cover
+        pass
 
 
 #------------------------------------------------------------------------------
@@ -33,7 +39,8 @@ class Bunch(dict):
 def open_text(path):
     assert op.exists(path)
     with open(path, 'r') as f:
-        return f.read()
+        out = f.read()
+    return out
 
 
 def save_text(path, contents):

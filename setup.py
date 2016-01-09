@@ -59,11 +59,15 @@ setup(
     keywords='podoc,pandoc,markup,markdown,conversion',
     classifiers=[
         'Development Status :: 1 - Planning',
+        'Framework :: IPython',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
         'Topic :: Text Processing :: Markup',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
     ],
 )
