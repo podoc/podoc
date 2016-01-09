@@ -127,7 +127,13 @@ class TreeTransformer(object):
                 child.nxt = next_child
             if isinstance(next_child, Node):
                 next_child.prv = child
-            out.append(self.transform(child))
+            child_t = self.transform(child)
+            # If a transform function returns a list, we take this into
+            # account.
+            if isinstance(child_t, list):
+                out.extend(child_t)
+            else:
+                out.append(child_t)
         return out
 
     def get_inner_contents(self, node):
@@ -150,5 +156,4 @@ class TreeTransformer(object):
         func = self._funcs.get(node.name, self._funcs['Node'])
         # Call the function.
         assert func
-        # Pass the node and the inner contents.
         return func(node)

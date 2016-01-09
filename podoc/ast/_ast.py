@@ -7,8 +7,10 @@
 # Imports
 #------------------------------------------------------------------------------
 
+from itertools import chain
 import json
 import logging
+import re
 
 from six import string_types
 
@@ -93,6 +95,21 @@ def _node_dict(node, children=None):
                 'c': children or []}
 
 
+def _split_spaces(text):
+    """Split a string by spaces."""
+    tokens = re.split(r'[^\S\n]+', text)
+    n = len(tokens)
+    spaces = [''] * n
+    tokens = list(chain.from_iterable(zip(tokens, spaces)))[:-1]
+    # Remove consecutive ''.
+    out = []
+    for el in tokens:
+        if out and not el and not out[-1]:
+            continue
+        out.append(el)
+    return out
+
+
 class PodocToPandoc(object):
     def __init__(self):
         self.transformer = TreeTransformer()
@@ -106,7 +123,10 @@ class PodocToPandoc(object):
                           self.transformer.transform_children(node))
 
     def transform_str(self, text):
-        return {'t': 'Str', 'c': text}
+        """Split on spaces and insert Space elements for pandoc."""
+        tokens = _split_spaces(text)
+        return [{'t': 'Str', 'c': s} if s else {'t': 'Space', 'c': []}
+                for s in tokens]
 
     def transform_Header(self, node):
         children = [node.level, ['', [], []],
@@ -155,6 +175,18 @@ def ast_from_pandoc(d):
     return PandocToPodoc().transform_root(d)
 
 
+def _merge_str(l):
+    """Concatenate consecutive strings in a list of nodes."""
+    out = []
+    for node in l:
+        if (out and isinstance(out[-1], string_types) and
+                isinstance(node, string_types)):
+            out[-1] += node
+        else:
+            out.append(node)
+    return out
+
+
 class PandocToPodoc(object):
     def transform_root(self, obj):
         assert isinstance(obj, list)
@@ -187,11 +219,17 @@ class PandocToPodoc(object):
         assert isinstance(children, list)
         # Recursively transform all children and assign them to the node.
         node.children = [self.transform(child) for child in children]
+        # Merge consecutive strings in the list of children.
+        node.children = _merge_str(node.children)
         return node
 
     def transform_Node(self, c, node):
         # By default, obj['c'] is the list of children to process.
         return c
+
+    def transform_Space(self, c, node):
+        """Replace Space elements by space Strings."""
+        return ' '
 
     def transform_Header(self, c, node):
         node.level, _, children = c

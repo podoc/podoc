@@ -11,7 +11,8 @@ import json
 
 from pytest import fixture
 
-from .._ast import ASTNode, ast_from_pandoc
+from .._ast import (ASTNode, ast_from_pandoc,
+                    _merge_str, _split_spaces)
 from podoc.utils import has_pandoc, pandoc
 
 
@@ -40,8 +41,7 @@ def ast():
 
     # First block
     block = ASTNode(name='Para',
-                    children=['hello',
-                              ASTNode(name='Space'),
+                    children=['hello ',
                               ])
     inline = ASTNode(name='Emph')
     inline.add_child('world')
@@ -66,6 +66,15 @@ def ast():
 #------------------------------------------------------------------------------
 # Tests AST <-> pandoc
 #------------------------------------------------------------------------------
+
+def test_merge_str():
+    assert _merge_str(['a', 'b', None, 'c']) == ['ab', None, 'c']
+
+
+def test_split_spaces():
+    assert _split_spaces('a  b') == ['a', '', 'b']
+    assert _split_spaces('a b  \tc,d ') == ['a', '', 'b', '', 'c,d', '']
+
 
 def test_to_pandoc(ast, ast_pandoc):
     assert ast.to_pandoc() == ast_pandoc
