@@ -7,6 +7,7 @@
 # Imports
 #------------------------------------------------------------------------------
 
+from collections import defaultdict
 import glob
 import logging
 import os.path as op
@@ -18,28 +19,46 @@ logger = logging.getLogger(__name__)
 
 
 #------------------------------------------------------------------------------
+# Graph routines
+#------------------------------------------------------------------------------
+
+def _graph_from_edges(edges):
+    """Return the adjacency list of a graph defined by a list of edges."""
+    g = defaultdict(set)
+    for a, b in edges:
+        g[a].add(b)
+        g[b].add(a)
+    return g
+
+
+def _bfs_paths(graph, start, target):
+    """Generate paths from start to target."""
+    # http://eddmann.com/posts/depth-first-search-and-breadth-first-search-in-python/  # noqa
+    queue = [(start, [start])]
+    while queue:
+        (vertex, path) = queue.pop(0)
+        for next in graph[vertex] - set(path):
+            if next == target:
+                yield path + [next]
+            else:
+                queue.append((next, path + [next]))
+
+
+def _find_path(edges, start, target):
+    """Return a shortest path in a graph defined by a list of edges."""
+    graph = _graph_from_edges(edges)
+    try:
+        return next(_bfs_paths(graph, start, target))
+    except StopIteration:
+        return None
+
+
+#------------------------------------------------------------------------------
 # Main class
 #------------------------------------------------------------------------------
 
 def _get_annotation(func, name):
     return getattr(func, '__annotations__', {}).get(name, None)
-
-
-def _find_path(edges, source, target):
-    """Find a path from source to target in a graph specified as a list
-    of edges."""
-    out = None
-    if (source, target) in edges:
-        # Direct conversion exists.
-        out = [source, target]
-    else:
-        # Find an intermediate format.
-        inter0 = [t1 for t0, t1 in edges if t0 == source]
-        inter1 = [t0 for t0, t1 in edges if t1 == target]
-        inter = sorted(set(inter0).intersection(inter1))
-        if inter:
-            out = [source, inter[0], target]
-    return out
 
 
 class Podoc(object):

@@ -44,6 +44,9 @@ def test_get_annotation():
 def test_find_path():
     assert _find_path([(1, 2), (2, 3)], 1, 2) == [1, 2]
     assert _find_path([(1, 2), (2, 3)], 1, 3) == [1, 2, 3]
+    assert _find_path([(1, 2), (2, 3)], 1, 4) is None
+    assert _find_path([(1, 2), (2, 3), (3, 4), (4, 5)], 1, 5) == \
+        [1, 2, 3, 4, 5]
     assert _find_path([(1, 2), (2, 3), (1, 4), (4, 5)], 1, 5) == [1, 4, 5]
 
 

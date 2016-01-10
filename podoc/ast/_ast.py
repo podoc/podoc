@@ -201,13 +201,6 @@ class PandocToPodoc(TreeTransformer):
         children = [self.transform(block) for block in obj[1]]
         return ASTNode('root', children=children)
 
-    def transform_children(self, children):
-        if isinstance(children, string_types):
-            return children
-        out = super(PandocToPodoc, self).transform_children(children)
-        out = _merge_str(out)
-        return out
-
     def transform(self, d):
         if isinstance(d, string_types):
             return d

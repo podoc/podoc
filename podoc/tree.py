@@ -75,7 +75,7 @@ class TreeTransformer(object):
         return contents
 
     def transform_Node(self, node):
-        return node
+        return node  # pragma: no cover
 
     def get_transform_func(self, node):
         assert node is not None
