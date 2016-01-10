@@ -31,7 +31,7 @@ def _iter_child(cm):
         child = child.nxt
 
 
-class CommonMarkToAST(object):
+class CommonMarkToAST(TreeTransformer):
     _name_mapping = {
         'Paragraph': 'Para',
         'Heading': 'Header',
@@ -39,18 +39,25 @@ class CommonMarkToAST(object):
         'Item': 'ListItem',
     }
 
-    def transform_root(self, cm):
+    def get_node_name(self, obj):
+        # Convert from CommonMark name to Pandoc
+        return self._name_mapping.get(obj.t, obj.t)
+
+    def get_node_children(self, obj):
+        return list(_iter_child(obj))
+
+    def transform_main(self, cm):
         # TODO: should be def transform() for consistency with the other way
-        children = [self.transform(block) for block in _iter_child(cm)]
+        children = [self.transform(block)
+                    for block in self.get_node_children(cm)]
         return ASTNode('root', children=children)
 
     def transform(self, obj):
         if isinstance(obj, string_types):
             return obj
         # obj is a CommonMark.Node instance.
-        name = obj.t
-        # Convert from CommonMark name to Pandoc
-        name = self._name_mapping.get(name, name)
+        name = self.get_node_name(obj)
+
         # The transform_* functions take the 'c' attribute and the newly-
         # created node, and return the list of children objects to process.
         if name == 'List':
@@ -64,11 +71,9 @@ class CommonMarkToAST(object):
                     else self.transform_OrderedList)
         else:
             func = getattr(self, 'transform_%s' % name, self.transform_Node)
+
         node = ASTNode(name)
-        # Create the node and return the list of children that have yet
-        # to be processed.
         children = func(obj, node)
-        # Handle string nodes.
         if isinstance(children, string_types):
             return children
         assert isinstance(children, list)
@@ -236,7 +241,7 @@ class Markdown(IPlugin):
     def read_markdown(self, contents):
         parser = Parser()
         cm = parser.parse(contents)
-        ast = CommonMarkToAST().transform_root(cm)
+        ast = CommonMarkToAST().transform_main(cm)
         return ast
 
     def write_markdown(self, ast):

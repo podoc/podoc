@@ -51,7 +51,7 @@ def markdown():
 #------------------------------------------------------------------------------
 
 def test_cm_to_ast(commonmark, ast):
-    ast_t = CommonMarkToAST().transform_root(commonmark)
+    ast_t = CommonMarkToAST().transform_main(commonmark)
     ast.show()
     ast_t.show()
     assert ast == ast_t
