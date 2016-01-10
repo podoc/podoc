@@ -91,6 +91,11 @@ def pandoc(obj, to, **kwargs):
     return pypandoc.convert(obj, to, **kwargs)
 
 
+def get_pandoc_formats():
+    import pypandoc
+    return pypandoc.get_pandoc_formats()
+
+
 def has_pandoc():  # pragma: no cover
     try:
         import pypandoc

@@ -13,7 +13,8 @@ import os.path as op
 
 from pytest import mark
 
-from ..utils import Bunch, Path, open_text, save_text, pandoc, has_pandoc
+from ..utils import (Bunch, Path, open_text, save_text,
+                     pandoc, has_pandoc, get_pandoc_formats)
 
 logger = logging.getLogger(__name__)
 
@@ -52,3 +53,7 @@ def test_open_save_text(tempdir):
 def test_pandoc():
     out = pandoc('hello *world*', 'json', format='markdown')
     assert isinstance(json.loads(out), list)
+
+    sl, tl = get_pandoc_formats()
+    assert 'markdown' in sl
+    assert 'markdown' in tl
