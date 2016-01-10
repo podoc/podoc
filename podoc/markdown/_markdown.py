@@ -120,51 +120,46 @@ class CommonMarkToAST(object):
 # Markdown renderer
 #------------------------------------------------------------------------------
 
-class ASTToMarkdown(object):
+class ASTToMarkdown(TreeTransformer):
     """Read an AST and render a Markdown string."""
 
     def __init__(self):
-        self.transformer = TreeTransformer()
-        self.transformer.set_fold(self.fold)
         self.renderer = MarkdownRenderer()
         # Nested lists.
         self._lists = []
-        for m in dir(self):
-            if m.startswith('transform_'):
-                self.transformer.register(getattr(self, m))
 
     def fold(self, transformed_children, node=None):
         delim = '\n\n' if node.name == 'root' else ''
         return delim.join(transformed_children)
 
-    def transform(self, ast):
-        return self.transformer.transform(ast)
+    def get_inner_contents(self, node):
+        return self.fold(self.transform_children(node), node)
 
     def transform_str(self, text):
         return text
 
     def transform_Node(self, node):
-        return self.transformer.get_inner_contents(node)
+        return self.get_inner_contents(node)
 
     # Block nodes
     # -------------------------------------------------------------------------
 
     def transform_Plain(self, node):
-        return self.renderer.text(self.transformer.get_inner_contents(node))
+        return self.renderer.text(self.get_inner_contents(node))
 
     def transform_Para(self, node):
         return self.transform_Plain(node)
 
     def transform_Header(self, node):
-        return self.renderer.heading(self.transformer.get_inner_contents(node),
+        return self.renderer.heading(self.get_inner_contents(node),
                                      level=node.level)
 
     def transform_CodeBlock(self, node):
-        return self.renderer.code(self.transformer.get_inner_contents(node),
+        return self.renderer.code(self.get_inner_contents(node),
                                   lang=node.lang)
 
     def transform_BlockQuote(self, node):
-        return self.renderer.quote(self.transformer.get_inner_contents(node))
+        return self.renderer.quote(self.get_inner_contents(node))
 
     def _write_list(self, node, list_type):
         assert list_type in ('bullet', 'ordered')
@@ -177,7 +172,7 @@ class ASTToMarkdown(object):
             if not suffix.endswith(' '):
                 suffix += ' '
         # This is a list of processed items.
-        items = self.transformer.transform_children(node)
+        items = self.transform_children(node)
         out = []
         for item in items:
             # We indent all lines in the item.
@@ -198,31 +193,31 @@ class ASTToMarkdown(object):
         return self._write_list(node, 'ordered')
 
     def transform_ListItem(self, node):
-        out = self.transformer.get_inner_contents(node)
+        out = self.get_inner_contents(node)
         return out
 
     # Inline nodes
     # -------------------------------------------------------------------------
 
     def transform_Emph(self, node):
-        return self.renderer.emph(self.transformer.get_inner_contents(node))
+        return self.renderer.emph(self.get_inner_contents(node))
 
     def transform_Strong(self, node):
-        return self.renderer.strong(self.transformer.get_inner_contents(node))
+        return self.renderer.strong(self.get_inner_contents(node))
 
     def transform_Code(self, node):
         return self.renderer.inline_code(
-            self.transformer.get_inner_contents(node))
+            self.get_inner_contents(node))
 
     def transform_LineBreak(self, node):
         return self.renderer.linebreak()
 
     def transform_Link(self, node):
-        return self.renderer.link(self.transformer.get_inner_contents(node),
+        return self.renderer.link(self.get_inner_contents(node),
                                   node.url)
 
     def transform_Image(self, node):
-        return self.renderer.image(self.transformer.get_inner_contents(node),
+        return self.renderer.image(self.get_inner_contents(node),
                                    node.url)
 
 
