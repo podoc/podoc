@@ -7,31 +7,59 @@
 # Imports
 #------------------------------------------------------------------------------
 
+from collections import defaultdict
+import glob
 import logging
 import os.path as op
 
-from .plugin import get_plugin
+from .utils import Bunch, open_text, save_text
+from .plugin import get_plugins
 
 logger = logging.getLogger(__name__)
 
 
 #------------------------------------------------------------------------------
-# Utility functions
+# Graph routines
 #------------------------------------------------------------------------------
 
-def open_text(path):
-    with open(path, 'r') as f:
-        return f.read()
+def _graph_from_edges(edges):
+    """Return the adjacency list of a graph defined by a list of edges."""
+    g = defaultdict(set)
+    for a, b in edges:
+        g[a].add(b)
+        g[b].add(a)
+    return g
 
 
-def save_text(path, contents):
-    with open(path, 'w') as f:
-        return f.write(contents)
+def _bfs_paths(graph, start, target):
+    """Generate paths from start to target."""
+    # http://eddmann.com/posts/depth-first-search-and-breadth-first-search-in-python/  # noqa
+    queue = [(start, [start])]
+    while queue:
+        (vertex, path) = queue.pop(0)
+        for next in graph[vertex] - set(path):
+            if next == target:
+                yield path + [next]
+            else:
+                queue.append((next, path + [next]))
+
+
+def _find_path(edges, start, target):
+    """Return a shortest path in a graph defined by a list of edges."""
+    graph = _graph_from_edges(edges)
+    try:
+        return next(_bfs_paths(graph, start, target))
+    except StopIteration:
+        return None
 
 
 #------------------------------------------------------------------------------
 # Main class
 #------------------------------------------------------------------------------
+
+def _get_annotation(func, name):
+    return getattr(func, '__annotations__', {}).get(name, None)
+
 
 class Podoc(object):
     """Conversion pipeline for markup documents.
@@ -39,227 +67,125 @@ class Podoc(object):
     This class implements the core conversion functionality of podoc.
 
     """
-    opener = open_text
-    preprocessors = None
-    reader = None
-    filters = None
-    writer = None
-    postprocessors = None
-    saver = save_text
-
     def __init__(self):
-        if self.preprocessors is None:
-            self.preprocessors = []
-        if self.filters is None:
-            self.filters = []
-        if self.postprocessors is None:
-            self.postprocessors = []
+        self._funcs = {}  # mapping `(lang0, lang1) => func`
+        self._langs = {}  # mapping `lang: Bunch()`
 
-    # Individual stages
+    # Main methods
     # -------------------------------------------------------------------------
+
+    def register_func(self, func=None, source=None, target=None):
+        """Register a conversion function between two languages."""
+        if func is None:
+            return lambda _: self.register_func(_, source=source,
+                                                target=target)
+        assert func
+        source = source or _get_annotation(func, 'source')
+        target = target or _get_annotation(func, 'target')
+        assert source
+        assert target
+        if (source, target) in self._funcs:
+            logger.warn("Conversion `%s -> %s` already registered, skipping.",
+                        source, target)
+            return
+        logger.debug("Register conversion `%s -> %s`.", source, target)
+        self._funcs[(source, target)] = func
+
+    def register_lang(self, name, file_ext=None,
+                      open_func=None, save_func=None, **kwargs):
+        """Register a language with a file extension and open/save
+        functions."""
+        if file_ext:
+            assert file_ext.startswith('.')
+        if name in self._langs:
+            logger.warn("Language `%s` already registered, skipping.", name)
+            return
+        logger.debug("Register language `%s`.", name)
+        self._langs[name] = Bunch(file_ext=file_ext,
+                                  open_func=open_func or open_text,
+                                  save_func=save_func or save_text,
+                                  **kwargs)
+
+    def convert(self, obj, lang_list):
+        """Convert an object by passing it through a chain of conversion
+        functions."""
+        assert isinstance(lang_list, (tuple, list))
+        # Iterate over all successive pairs.
+        for t0, t1 in zip(lang_list, lang_list[1:]):
+            # Get the function registered for t0, t1.
+            f = self._funcs.get((t0, t1), None)
+            if not f:
+                raise ValueError("No function registered for `{}` => `{}`.".
+                                 format(t0, t1))
+            # Perform the conversion.
+            obj = f(obj)
+        return obj
+
+    # Properties
+    # -------------------------------------------------------------------------
+
+    @property
+    def languages(self):
+        """List of all registered languages."""
+        return sorted(self._langs)
+
+    @property
+    def languages_nopandoc(self):
+        """List of all registered languages."""
+        return sorted(_ for _ in self._langs
+                      if not self._langs[_].get('pandoc', None))
+
+    @property
+    def conversion_pairs(self):
+        """List of registered conversion pairs."""
+        return sorted(self._funcs.keys())
+
+    # File-related methods
+    # -------------------------------------------------------------------------
+
+    def get_files_in_dir(self, path, lang=None):
+        """Return the list of files of a given language in a directory."""
+        assert path
+        path = op.realpath(op.expanduser(path))
+        assert op.exists(path)
+        assert op.isdir(path)
+        # Find the file extension for the given language.
+        file_ext = (self._langs[lang].file_ext or '') if lang else ''
+        filenames = glob.glob(op.join(path, '*' + file_ext))
+        return [op.join(path, fn) for fn in filenames]
+
+    def get_lang_for_file_ext(self, file_ext):
+        """Get the language registered with a given file extension."""
+        for name, b in self._langs.items():
+            if b.file_ext == file_ext:
+                return name
+        raise ValueError(("The file extension `{}` hasn't been "
+                          "registered.").format(file_ext))
+
+    def get_file_ext(self, lang):
+        """Return the file extension registered for a given language."""
+        return self._langs[lang].file_ext
 
     def open(self, path):
-        """Open a file and return an object."""
-        assert self.opener is not None
-        return self.opener(path)
+        """Open a file which has a registered file extension."""
+        # Find the language corresponding to the file's extension.
+        file_ext = op.splitext(path)[1]
+        lang = self.get_lang_for_file_ext(file_ext)
+        # Open the file using the function registered for the language.
+        return self._langs[lang].open_func(path)
 
     def save(self, path, contents):
-        """Save contents to a file."""
-        assert self.saver is not None
-        return self.saver(path, contents)
-
-    def preprocess(self, contents):
-        """Apply preprocessors to contents."""
-        for p in self.preprocessors:
-            contents = p(contents)
-        return contents
-
-    def read(self, contents):
-        """Read contents to an AST."""
-        if self.reader is None:
-            raise RuntimeError("No reader has been set.")
-        assert self.reader is not None
-        ast = self.reader(contents)
-        return ast
-
-    def filter(self, ast):
-        """Apply filters to an AST."""
-        for f in self.filters:
-            ast = f(ast)
-        return ast
-
-    def write(self, ast):
-        """Write an AST to contents."""
-        if self.writer is None:
-            raise RuntimeError("No writer has been set.")
-        assert self.writer is not None
-        converted = self.writer(ast)
-        return converted
-
-    def postprocess(self, contents):
-        """Apply postprocessors to contents."""
-        for p in self.postprocessors:
-            contents = p(contents)
-        return contents
-
-    # Partial conversion methods
-    # -------------------------------------------------------------------------
-
-    def read_contents(self, contents):
-        """Read contents and return an AST.
-
-        Preprocessors -> Reader.
-
-        """
-        contents = self.preprocess(contents)
-        ast = self.read(contents)
-        return ast
-
-    def read_file(self, from_path):
-        """Read a file and return an AST.
-
-        Opener -> Preprocessors -> Reader.
-
-        """
-        contents = self.open(from_path)
-        return self.read_contents(contents)
-
-    def write_contents(self, ast):
-        """Write an AST to contents.
-
-        Writer -> Postprocessors.
-
-        """
-        converted = self.write(ast)
-        converted = self.postprocess(converted)
-        return converted
-
-    def write_file(self, to_path, ast):
-        """Write an AST to a file.
-
-        Writer -> Postprocessors -> Saver.
-
-        """
-        converted = self.write_contents(ast)
-        return self.save(to_path, converted) if to_path else converted
-
-    # Complete conversion methods
-    # -------------------------------------------------------------------------
-
-    def convert_file(self, from_path, to_path=None):
-        """Convert a file."""
-        contents = self.open(from_path)
-        converted = self.convert_contents(contents)
-        return self.save(to_path, converted) if to_path else converted
-
-    def convert_contents(self, contents):
-        """Convert contents without writing files."""
-        ast = self.read_contents(contents)
-        ast = self.filter(ast)
-        converted = self.write_contents(ast)
-        return converted
-
-    # Pipeline configuration
-    # -------------------------------------------------------------------------
-
-    def set_opener(self, func):
-        """An Opener is a function `str (path)` -> `str (or object)`.
-
-        The output may be a string or another type of object, like a file
-        handle, etc.
-
-        """
-        self.opener = func
-        return self
-
-    def add_preprocessor(self, func):
-        self.preprocessors.append(func)
-        return self
-
-    def set_reader(self, func):
-        """A reader is a function `str (or object)` -> `ast`.
-
-        The input corresponds to the output of the file opener.
-
-        """
-        self.reader = func
-        return self
-
-    def add_filter(self, func):
-        self.filters.append(func)
-        return self
-
-    def set_writer(self, func):
-        """A reader is a function `ast` -> `str (or object)`.
-
-        The output corresponds to the input of the file saver.
-
-        """
-        self.writer = func
-        return self
-
-    def add_postprocessor(self, func):
-        self.postprocessors.append(func)
-        return self
-
-    def set_saver(self, func):
-        """A Saver is a function `str (path), str (or object) -> None`.
-
-        The second input corresponds to the output of the writer.
-
-        """
-        self.saver = func
-        return self
-
-    # Plugins
-    # -------------------------------------------------------------------------
-
-    _from_steps = ('opener', 'preprocessors', 'reader')
-    _to_steps = ('writer', 'postprocessors', 'saver')
-    _all_steps = _from_steps + _to_steps + ('filters',)
-
-    def attach(self, plugin, steps=None):
-        """Attach a plugin with the specified steps.
-
-        Parameters
-        ----------
-
-        plugin : IPlugin class
-            The plugin to attach to the current pipeline.
-        steps : str or list
-            List of pipeline steps to set with the plugin. The list of
-            accepted steps is: `opener`, `preprocessors`, `reader`, `filters`,
-            `writer`, `postprocessors`, `saver`. There are also two aliases:
-            `from` refers to the first three steps, `to` to the last three.
-
-        """
-        # By default, attach all steps.
-        if steps is None:
-            steps = self._all_steps
-        if steps == 'from':
-            steps = self._from_steps
-        elif steps == 'to':
-            steps = self._to_steps
-        assert set(steps) <= set(self._all_steps)
-        plugin().attach(self, steps)
-        return self
+        """Save an object to a file."""
+        # Find the language corresponding to the file's extension.
+        file_ext = op.splitext(path)[1]
+        lang = self.get_lang_for_file_ext(file_ext)
+        # Save the file using the function registered for the language.
+        return self._langs[lang].save_func(path, contents)
 
 
-#------------------------------------------------------------------------------
-# Misc functions
-#------------------------------------------------------------------------------
-
-def open_file(path, plugin_name=None):
-    """Open a file using a given plugin.
-
-    If no plugin is specified, the file extension is used to find the
-    appropriate plugin.
-
-    """
-    if plugin_name is None:
-        search = op.splitext(path)[1]
-    else:
-        search = plugin_name
-    plugin = get_plugin(search)
-    assert plugin
-    return Podoc().attach(plugin, ['opener']).open(path)
+def create_podoc():
+    podoc = Podoc()
+    plugins = get_plugins()
+    for p in plugins:
+        p().attach(podoc)
+    return podoc

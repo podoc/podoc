@@ -11,121 +11,116 @@ import os.path as op
 
 from pytest import raises
 
-from ..core import open_text, save_text, open_file
-from ..plugin import IPlugin
+from ..core import Podoc, _find_path, _get_annotation, create_podoc
+from ..utils import open_text
 
 
 #------------------------------------------------------------------------------
-# Tests
+# Testing utils
 #------------------------------------------------------------------------------
 
-def test_open_save_text(tempdir, hello_markdown):
-    path = op.join(tempdir, 'test.txt')
-
-    save_text(path, hello_markdown)
-    assert open_text(path) == hello_markdown
-
-
-def test_podoc_complete(podoc):
-    path = 'abc'
-    contents = path + ' open'
-    ast = ['Abc', 'open']
-
-    with raises(RuntimeError):
-        podoc.read_contents(contents)
-    with raises(RuntimeError):
-        podoc.write_contents(ast)
-
-    podoc.set_opener(lambda path: (path + ' open'))
-    podoc.add_preprocessor(lambda x: x[0].upper() + x[1:])
-    podoc.set_reader(lambda x: x.split(' '))
-    podoc.add_filter(lambda x: (x + ['filter']))
-    podoc.set_writer(lambda x: ' '.join(x))
-    podoc.add_postprocessor(lambda x: x[:-1] + x[-1].upper())
-    podoc.set_saver(lambda path, contents: (contents + ' in ' + path))
-
-    assert podoc.convert_file(path, 'path') == 'Abc open filteR in path'
-    assert podoc.convert_contents(contents) == 'Abc open filteR'
-
-    assert podoc.read_file(path) == ast
-    assert podoc.read_contents(contents) == ast
-
-    assert podoc.write_contents(ast) == 'Abc opeN'
-    assert podoc.write_file('path', ast) == 'Abc opeN in path'
+def get_test_file_path(podoc, lang, filename):
+    curdir = op.realpath(op.dirname(__file__))
+    file_ext = podoc.get_file_ext(lang)
+    # Construct the directory name for the language and test filename.
+    dirname = op.realpath(op.join(curdir, '../', lang))
+    path = op.join(dirname, 'test_files', filename + file_ext)
+    assert op.exists(path)
+    return path
 
 
-def test_podoc_errors(podoc):
-    class EmptyPlugin0(IPlugin):
-        pass
-
-    class EmptyPluginFilter(IPlugin):
-        pass
-
-    class EmptyPluginFrom(IPlugin):
-        def reader(self, contents):
-            pass
-
-    class EmptyPluginTo(IPlugin):
-        def writer(self, ast):
-            pass
-
-    podoc.attach(EmptyPlugin0)
-
-    # Only one reader can be attached.
-    podoc.attach(EmptyPluginFrom)
-    with raises(RuntimeError):
-        podoc.attach(EmptyPluginFrom)
-
-    # Only one writer can be attached.
-    podoc.attach(EmptyPluginTo)
-    with raises(RuntimeError):
-        podoc.attach(EmptyPluginTo)
-
-    # Several filters can be attached.
-    podoc.attach(EmptyPluginFilter)
-    podoc.attach(EmptyPluginFilter)
+def assert_text_files_equal(p0, p1):
+    assert open_text(p0) == open_text(p1)
 
 
-def test_podoc_plugins(podoc):
+#------------------------------------------------------------------------------
+# Tests utils
+#------------------------------------------------------------------------------
 
-    class MyPlugin1(IPlugin):
-        def opener(self, path):
-            return path + ' open'
-
-        def preprocessor(self, contents):
-            return contents[0].upper() + contents[1:]
-
-    class MyPlugin2(IPlugin):
-        def postprocessor(self, contents):
-            return contents[:-1] + contents[-1].upper()
-
-        def saver(self, path, contents):
-            return contents + ' in ' + path
-
-    class MyPluginFrom(IPlugin):
-        def reader(self, contents):
-            return contents.split(' ')
-
-        def filter(self, ast):
-            return ast + ['filter']
-
-    class MyPluginTo(IPlugin):
-        def writer(self, ast):
-            return ' '.join(ast)
-
-    podoc.attach(MyPlugin1)
-    podoc.attach(MyPlugin2)
-    podoc.attach(MyPluginFrom)
-    podoc.attach(MyPluginTo)
-
-    contents = 'abc'
-    assert podoc.convert_contents(contents) == 'Abc filteR'
-    assert podoc.convert_file(contents, 'path') == 'Abc open filteR in path'
+def test_get_annotation():
+    assert _get_annotation(lambda: None, 'a') is None
 
 
-def test_open_file(hello_json_path):
-    for d in (open_file(hello_json_path),
-              open_file(hello_json_path, plugin_name='json')):
-        assert len(d) == 2
-        assert 'unMeta' in d[0]
-        assert isinstance(d[1], list)
+def test_find_path():
+    assert _find_path([(1, 2), (2, 3)], 1, 2) == [1, 2]
+    assert _find_path([(1, 2), (2, 3)], 1, 3) == [1, 2, 3]
+    assert _find_path([(1, 2), (2, 3)], 1, 4) is None
+    assert _find_path([(1, 2), (2, 3), (3, 4), (4, 5)], 1, 5) == \
+        [1, 2, 3, 4, 5]
+    assert _find_path([(1, 2), (2, 3), (1, 4), (4, 5)], 1, 5) == [1, 4, 5]
+
+
+#------------------------------------------------------------------------------
+# Tests podoc
+#------------------------------------------------------------------------------
+
+def test_podoc_fail():
+    p = Podoc()
+    with raises(ValueError):
+        p.convert('hello', ['a', 'b'])
+
+
+def test_podoc_convert():
+    p = Podoc()
+
+    p.register_lang('lower')
+    p.register_lang('upper')
+
+    @p.register_func(source='lower', target='upper')
+    def toupper(text):
+        return text.upper()
+
+    @p.register_func(source='upper', target='lower')
+    def tolower(text):
+        return text.lower()
+
+    assert p.conversion_pairs == [('lower', 'upper'), ('upper', 'lower')]
+    assert p.convert('Hello', ['lower', 'upper', 'lower']) == 'hello'
+
+
+def test_podoc_file(tempdir):
+    p = Podoc()
+
+    p.register_lang('a', file_ext='.a',
+                    open_func=lambda path: 'a',
+                    save_func=lambda path, contents: None,
+                    )
+    assert p.languages == ['a']
+
+    assert p.get_lang_for_file_ext('.a') == 'a'
+    with raises(ValueError):
+        p.get_lang_for_file_ext('.b')
+
+    fn = op.join(tempdir, 'aa.a')
+    open(fn, 'w').close()
+    open(op.join(tempdir, 'bb.b'), 'w').close()
+
+    with raises(AssertionError):
+        p.get_files_in_dir('')
+    files = p.get_files_in_dir(tempdir, lang='a')
+    assert len(files) == 1
+    assert fn in files[0]
+
+
+def test_podoc_open_save(tempdir):
+    p = Podoc()
+    p.register_lang('txt', file_ext='.txt')
+    filename = 'test.txt'
+    path = op.join(tempdir, filename)
+    p.save(path, 'hello world')
+    assert p.open(path) == 'hello world'
+
+
+def test_create_podoc():
+    podoc = create_podoc()
+    assert 'ast' in podoc.languages
+
+
+def test_all_open_save(tempdir, podoc, lang, test_file):
+    """For all languages and test files, check round-tripping of open
+    and save."""
+    path = get_test_file_path(podoc, lang, test_file)
+    contents = podoc.open(path)
+    to_path = op.join(tempdir, test_file + podoc.get_file_ext(lang))
+    podoc.save(to_path, contents)
+    assert_text_files_equal(path, to_path)

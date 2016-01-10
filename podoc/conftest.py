@@ -7,12 +7,11 @@
 #------------------------------------------------------------------------------
 
 import logging
-from tempfile import TemporaryDirectory
+from .tempdir import TemporaryDirectory
 
 from pytest import yield_fixture
 
-from podoc import Podoc, add_default_handler
-from podoc.testing import open_test_file, get_test_file_path, iter_test_files
+from podoc import add_default_handler, create_podoc
 
 
 #------------------------------------------------------------------------------
@@ -31,30 +30,17 @@ def tempdir():
 
 @yield_fixture
 def podoc():
-    yield Podoc()
+    yield create_podoc()
 
 
-@yield_fixture
-def hello_ast():
-    yield open_test_file('hello_ast.py')
-
-
-@yield_fixture
-def hello_json():
-    yield open_test_file('hello.json')
-
-
-@yield_fixture
-def hello_json_path():
-    yield get_test_file_path('hello.json')
-
-
-@yield_fixture
-def hello_markdown():
-    yield open_test_file('hello.md')
+@yield_fixture(params=['hello'])
+def test_file(request):
+    name = request.param
+    yield name
 
 
 def pytest_generate_tests(metafunc):
-    """Generate the test_file_tuple fixture to test all plugin test files."""
-    if 'test_file_tuple' in metafunc.fixturenames:
-        metafunc.parametrize('test_file_tuple', iter_test_files())
+    """Generate the fixtures to test all format test files."""
+    if 'lang' in metafunc.fixturenames:
+        podoc = create_podoc()
+        metafunc.parametrize('lang', podoc.languages_nopandoc)

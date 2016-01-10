@@ -9,10 +9,10 @@
 
 import os.path as op
 
-from ..core import save_text
-from ..plugin import (IPluginRegistry, IPlugin, discover_plugins, get_plugin,
-                      iter_plugins_dirs, _load_all_native_plugins)
-from ..testing import _test_readers, _test_writers
+from ..plugin import (IPluginRegistry, IPlugin, discover_plugins,
+                      # _load_all_native_plugins,
+                      get_plugin, get_plugins)
+from ..utils import save_text
 
 from pytest import yield_fixture, raises
 
@@ -34,24 +34,20 @@ def no_native_plugins():
 # Tests
 #------------------------------------------------------------------------------
 
+def test_plugins():
+    from podoc.ast import ASTPlugin
+    assert ASTPlugin in get_plugins()
+
+
 def test_plugin_registration(no_native_plugins):
     class MyPlugin(IPlugin):
         pass
 
-    assert IPluginRegistry.plugins == [(MyPlugin, ())]
-
-
-def test_get_plugin():
-    assert get_plugin('jso').__name__ == 'JSON'
-    assert get_plugin('JSO').__name__ == 'JSON'
-    assert get_plugin('JSON').__name__ == 'JSON'
-    assert get_plugin('json').__name__ == 'JSON'
-    assert get_plugin('.json').__name__ == 'JSON'
+    assert IPluginRegistry.plugins == [MyPlugin]
+    assert get_plugin('myplugin') == MyPlugin
 
     with raises(ValueError):
-        assert get_plugin('.jso') is None
-    with raises(ValueError):
-        assert get_plugin('jsonn') is None
+        get_plugin('unknown')
 
 
 def test_discover_plugins(tempdir, no_native_plugins):
@@ -60,31 +56,4 @@ def test_discover_plugins(tempdir, no_native_plugins):
     save_text(path, contents)
     plugins = discover_plugins([tempdir])
     assert plugins
-    assert plugins[0][0].__name__ == 'MyPlugin'
-
-
-def test_iter_plugins_dirs():
-    assert 'json' in [op.basename(plugin_dir)
-                      for plugin_dir in iter_plugins_dirs()]
-
-
-def test_load_all_native_plugins(no_native_plugins):
-    _load_all_native_plugins()
-
-
-def test_reader_plugins(test_file_tuple):
-    """This test is called on all plugin test files.
-
-    It tests the readers of all plugins.
-
-    """
-    _test_readers(*test_file_tuple)
-
-
-def test_writer_plugins(test_file_tuple):
-    """This test is called on all plugin test files.
-
-    It tests the writers of all plugins.
-
-    """
-    _test_writers(*test_file_tuple)
+    assert plugins[0].__name__ == 'MyPlugin'
