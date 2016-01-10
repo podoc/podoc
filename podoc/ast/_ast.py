@@ -83,7 +83,7 @@ class ASTNode(Node):
                     assert not child.is_block()  # pragma: no cover
 
     def to_pandoc(self):
-        return PodocToPandoc().transform(self)
+        return PodocToPandoc().transform_main(self)
 
 
 #------------------------------------------------------------------------------
@@ -110,17 +110,10 @@ def _split_spaces(text):
     return out
 
 
-class PodocToPandoc(object):
-    def __init__(self):
-        self.transformer = TreeTransformer()
-        self.transformer.set_fold(lambda _, node=None: _)
-        for m in dir(self):
-            if m.startswith('transform_'):
-                self.transformer.register(getattr(self, m))
-
+class PodocToPandoc(TreeTransformer):
     def transform_Node(self, node):
         return _node_dict(node,
-                          self.transformer.transform_children(node))
+                          self.transform_children(node))
 
     def transform_str(self, text):
         """Split on spaces and insert Space elements for pandoc."""
@@ -130,7 +123,7 @@ class PodocToPandoc(object):
 
     def transform_Header(self, node):
         children = [node.level, ['', [], []],
-                    self.transformer.get_inner_contents(node)]
+                    self.transform_children(node)]
         return _node_dict(node, children)
 
     def transform_CodeBlock(self, node):
@@ -140,7 +133,7 @@ class PodocToPandoc(object):
 
     def transform_OrderedList(self, node):
         # NOTE: we remove the ListItem node for pandoc
-        items = [_['c'] for _ in self.transformer.get_inner_contents(node)]
+        items = [_['c'] for _ in self.transform_children(node)]
         children = [[node.start,
                     {"t": node.style, "c": []},
                     {"t": node.delim, "c": []}], items]
@@ -148,16 +141,16 @@ class PodocToPandoc(object):
 
     def transform_BulletList(self, node):
         # NOTE: we remove the ListItem node for pandoc
-        items = [_['c'] for _ in self.transformer.get_inner_contents(node)]
+        items = [_['c'] for _ in self.transform_children(node)]
         return _node_dict(node, items)
 
     def transform_Link(self, node):
-        children = [self.transformer.get_inner_contents(node),
+        children = [self.transform_children(node),
                     [node.url, '']]
         return _node_dict(node, children)
 
     def transform_Image(self, node):
-        children = [self.transformer.get_inner_contents(node),
+        children = [self.transform_children(node),
                     [node.url, '']]
         return _node_dict(node, children)
 
@@ -166,13 +159,13 @@ class PodocToPandoc(object):
         children = [['', [], []], node.children[0]]
         return _node_dict(node, children)
 
-    def transform(self, ast):
-        blocks = self.transformer.transform(ast)['c']
+    def transform_main(self, ast):
+        blocks = self.transform(ast)['c']
         return [{'unMeta': {}}, blocks]
 
 
 def ast_from_pandoc(d):
-    return PandocToPodoc().transform_root(d)
+    return PandocToPodoc().transform_main(d)
 
 
 def _merge_str(l):
@@ -187,8 +180,17 @@ def _merge_str(l):
     return out
 
 
-class PandocToPodoc(object):
-    def transform_root(self, obj):
+class PandocToPodoc(TreeTransformer):
+    def get_node_name(self, node):
+        return node['t']
+
+    def get_node_children(self, node):
+        return node['c']
+
+    def set_next_child(self, child, next_child):
+        pass
+
+    def transform_main(self, obj):
         assert isinstance(obj, list)
         # Check that this is really the root.
         assert len(obj) == 2
@@ -199,21 +201,19 @@ class PandocToPodoc(object):
         children = [self.transform(block) for block in obj[1]]
         return ASTNode('root', children=children)
 
-    def transform(self, obj):
-        # if isinstance(obj, list):
-        #     return [self.transform(_) for _ in obj]
-        if isinstance(obj, string_types):
-            return obj
-        # For normal nodes, obj is a dict.
-        name, c = obj['t'], obj['c']
-        # The transform_* functions take the 'c' attribute and the newly-
-        # created node, and return the list of children dicts to process.
-        func = getattr(self, 'transform_%s' % name, self.transform_Node)
-        node = ASTNode(name)
-        # Create the node and return the list of children that have yet
-        # to be processed.
-        children = func(c, node)
-        # Handle string nodes.
+    def transform_children(self, children):
+        if isinstance(children, string_types):
+            return children
+        out = super(PandocToPodoc, self).transform_children(children)
+        out = _merge_str(out)
+        return out
+
+    def transform(self, d):
+        if isinstance(d, string_types):
+            return d
+        c = self.get_node_children(d)
+        node = ASTNode(self.get_node_name(d))
+        children = self.get_transform_func(d)(c, node)
         if isinstance(children, string_types):
             return children
         assert isinstance(children, list)

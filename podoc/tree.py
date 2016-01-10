@@ -64,7 +64,11 @@ class TreeTransformer(object):
         for child, next_child in zip_longest(children, children[1:]):
             # Double-linked list for children.
             self.set_next_child(child, next_child)
-            out.append(self.transform(child))
+            transformed_children = self.transform(child)
+            if isinstance(transformed_children, list):
+                out.extend(transformed_children)
+            else:
+                out.append(transformed_children)
         return out
 
     def transform_str(self, contents):
