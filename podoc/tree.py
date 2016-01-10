@@ -22,7 +22,12 @@ logger = logging.getLogger(__name__)
 #------------------------------------------------------------------------------
 
 class TreeTransformer(object):
-    """Transform any kind of tree."""
+    """Transform any kind of tree.
+
+    By default, this object acts on Node instances. However, derived
+    classes can act on other types of trees, for example nested dictionaries.
+
+    """
 
     # To override
     # -------------------------------------------------------------------------
@@ -68,12 +73,15 @@ class TreeTransformer(object):
     def transform_Node(self, node):
         return node
 
-    def transform(self, node):
-        """Transform a node and the tree below it."""
+    def get_transform_func(self, node):
         assert node is not None
         name = ('str' if isinstance(node, string_types)
                 else self.get_node_name(node))
-        return getattr(self, 'transform_' + name, self.transform_Node)(node)
+        return getattr(self, 'transform_' + name, self.transform_Node)
+
+    def transform(self, node):
+        """Transform a node and the tree below it."""
+        return self.get_transform_func(node)(node)
 
 
 #------------------------------------------------------------------------------
