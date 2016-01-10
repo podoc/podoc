@@ -13,7 +13,7 @@ import logging
 import os.path as op
 
 from .utils import Bunch, open_text, save_text
-from .plugin import _load_all_native_plugins
+from .plugin import get_plugins
 
 logger = logging.getLogger(__name__)
 
@@ -84,18 +84,27 @@ class Podoc(object):
         target = target or _get_annotation(func, 'target')
         assert source
         assert target
+        if (source, target) in self._funcs:
+            logger.warn("Conversion `%s -> %s` already registered, skipping.",
+                        source, target)
+            return
+        logger.debug("Register conversion `%s -> %s`.", source, target)
         self._funcs[(source, target)] = func
 
     def register_lang(self, name, file_ext=None,
-                      open_func=None, save_func=None):
+                      open_func=None, save_func=None, **kwargs):
         """Register a language with a file extension and open/save
         functions."""
         if file_ext:
             assert file_ext.startswith('.')
+        if name in self._langs:
+            logger.warn("Language `%s` already registered, skipping.", name)
+            return
+        logger.debug("Register language `%s`.", name)
         self._langs[name] = Bunch(file_ext=file_ext,
                                   open_func=open_func or open_text,
                                   save_func=save_func or save_text,
-                                  )
+                                  **kwargs)
 
     def convert(self, obj, lang_list):
         """Convert an object by passing it through a chain of conversion
@@ -119,6 +128,12 @@ class Podoc(object):
     def languages(self):
         """List of all registered languages."""
         return sorted(self._langs)
+
+    @property
+    def languages_nopandoc(self):
+        """List of all registered languages."""
+        return sorted(_ for _ in self._langs
+                      if not self._langs[_].get('pandoc', None))
 
     @property
     def conversion_pairs(self):
@@ -170,6 +185,7 @@ class Podoc(object):
 
 def create_podoc():
     podoc = Podoc()
-    for p in _load_all_native_plugins():
+    plugins = get_plugins()
+    for p in plugins:
         p().attach(podoc)
     return podoc

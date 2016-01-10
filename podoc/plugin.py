@@ -49,6 +49,14 @@ def get_plugin(name):
     raise ValueError("The plugin %s cannot be found." % name)
 
 
+def get_plugins():
+    plugins = IPluginRegistry.plugins.copy()
+    from .ast import PandocPlugin
+    plugins.remove(PandocPlugin)
+    plugins = plugins + [PandocPlugin]
+    return plugins
+
+
 #------------------------------------------------------------------------------
 # Plugins discovery
 #------------------------------------------------------------------------------
@@ -76,7 +84,7 @@ def discover_plugins(dirs):
         for subdir, dirs, files in os.walk(plugin_dir):
             # Skip test folders.
             base = op.basename(subdir)
-            if 'test' in base or '__' in base:
+            if 'test' in base or '__' in base:  # pragma: no cover
                 continue
             logger.debug("Scanning %s.", subdir)
             for filename in files:
@@ -92,14 +100,3 @@ def discover_plugins(dirs):
                     # IPluginRegistry
                     mod = imp.load_module(modname, file, path, descr)  # noqa
     return IPluginRegistry.plugins
-
-
-def _load_all_native_plugins():
-    """Load all native plugins when importing the library."""
-    curdir = op.dirname(op.realpath(__file__))
-    # The default plugins are subfolders within podoc/podoc.
-    # List of subdirs that do not start with _.
-    subdirs = [d for d in os.listdir(curdir) if op.isdir(op.join(curdir, d))]
-    dirs = [op.join(curdir, subdir) for subdir in subdirs
-            if not subdir.startswith('_')]
-    return discover_plugins(dirs)

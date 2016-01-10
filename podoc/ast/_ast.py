@@ -16,6 +16,7 @@ from six import string_types
 
 from podoc.tree import Node, TreeTransformer
 from podoc.plugin import IPlugin
+from podoc.utils import has_pandoc, pandoc, get_pandoc_formats
 
 logger = logging.getLogger(__name__)
 
@@ -263,6 +264,56 @@ class PandocToPodoc(TreeTransformer):
         node.url = c[1][0]
         children = c[0]
         return children
+
+
+#------------------------------------------------------------------------------
+# pandoc plugin
+#------------------------------------------------------------------------------
+
+class PandocPlugin(IPlugin):
+    def attach(self, podoc):
+        if not has_pandoc():  # pragma: no cover
+            logger.debug("pandoc is not available.")
+            return
+
+        source_langs, target_langs = get_pandoc_formats()
+
+        # From pandoc source formats to AST.
+        def _make_source_func(lang):
+            def conv(doc):
+                """Convert a document from `lang` to the podoc AST, via
+                pandoc."""
+                d = pandoc(doc, 'json', format=lang)
+                # Convert the
+                ast = ast_from_pandoc(json.loads(d))
+                return ast
+            return conv
+
+        # podoc_langs = podoc.languages
+        for source in source_langs:
+            # if source in podoc_langs:
+            #     continue
+            func = _make_source_func(source)
+            podoc.register_lang(source, pandoc=True)
+            podoc.register_func(source=source, target='ast', func=func)
+
+        # From AST to pandoc target formats.
+        def _make_target_func(lang):
+            def conv(ast):
+                """Convert a document from the podoc AST to `lang`, via
+                pandoc."""
+                d = json.dumps(ast.to_pandoc())
+                out = pandoc(d, lang, format='json')
+                return out
+            return conv
+
+        # podoc_langs = podoc.languages
+        for target in target_langs:
+            # if target in podoc_langs:
+            #     continue
+            func = _make_target_func(target)
+            podoc.register_lang(target, pandoc=True)
+            podoc.register_func(source='ast', target=target, func=func)
 
 
 #------------------------------------------------------------------------------

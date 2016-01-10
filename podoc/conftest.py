@@ -43,4 +43,4 @@ def pytest_generate_tests(metafunc):
     """Generate the fixtures to test all format test files."""
     if 'lang' in metafunc.fixturenames:
         podoc = create_podoc()
-        metafunc.parametrize('lang', podoc.languages)
+        metafunc.parametrize('lang', podoc.languages_nopandoc)

@@ -10,7 +10,8 @@
 import os.path as op
 
 from ..plugin import (IPluginRegistry, IPlugin, discover_plugins,
-                      _load_all_native_plugins, get_plugin)
+                      # _load_all_native_plugins,
+                      get_plugin, get_plugins)
 from ..utils import save_text
 
 from pytest import yield_fixture, raises
@@ -33,6 +34,11 @@ def no_native_plugins():
 # Tests
 #------------------------------------------------------------------------------
 
+def test_plugins():
+    from podoc.ast import ASTPlugin
+    assert ASTPlugin in get_plugins()
+
+
 def test_plugin_registration(no_native_plugins):
     class MyPlugin(IPlugin):
         pass
@@ -51,7 +57,3 @@ def test_discover_plugins(tempdir, no_native_plugins):
     plugins = discover_plugins([tempdir])
     assert plugins
     assert plugins[0].__name__ == 'MyPlugin'
-
-
-def test_load_all_native_plugins(no_native_plugins):
-    _load_all_native_plugins()
