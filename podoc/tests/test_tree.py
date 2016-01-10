@@ -63,19 +63,11 @@ def test_show_tree_2(root):
     assert out.getvalue().strip() == dedent(expected).strip()
 
 
-def test_transform_0(root):
-    t = TreeTransformer()
-    assert t.transform(root) == ''
-
-
 def test_transform_1(root):
 
-    t = TreeTransformer()
-    t.set_fold(lambda l, node=None: '\n'.join(l))
-
-    @t.register
-    def transform_Node(node):
-        return node.name + '\n' + t.get_inner_contents(node)
+    class MyTreeTransformer(TreeTransformer):
+        def transform_Node(self, node):
+            return node.name + '\n' + '\n'.join(self.transform_children(node))
 
     expected = '''
         root
@@ -86,18 +78,16 @@ def test_transform_1(root):
         1.2
         2
         '''
-    assert t.transform(root) == dedent(expected).strip()
+    assert MyTreeTransformer().transform(root) == dedent(expected).strip()
 
 
 def test_transform_2(root):
 
-    t = TreeTransformer()
-    t.set_fold(lambda _, node=None: _)
+    class MyTreeTransformer(TreeTransformer):
+        def transform_Node(self, node):
+            return {'t': node.name, 'c': self.transform_children(node)}
 
-    @t.register
-    def transform_Node(node):
-        return {'t': node.name, 'c': t.get_inner_contents(node)}
-
+    t = MyTreeTransformer()
     assert t.transform(root) == {'t': 'root',
                                  'c': [{'t': '1',
                                         'c': [{'t': '1.1',

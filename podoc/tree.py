@@ -18,10 +18,70 @@ logger = logging.getLogger(__name__)
 
 
 #------------------------------------------------------------------------------
+# Tree transformer
+#------------------------------------------------------------------------------
+
+class TreeTransformer(object):
+    """Transform any kind of tree."""
+
+    # To override
+    # -------------------------------------------------------------------------
+
+    def get_node_name(self, node):
+        """Return the name of a node.
+
+        Must be overriden.
+
+        """
+        return node.name
+
+    def get_node_children(self, node):
+        """Return the list of children of a node.
+
+        Must be overriden.
+
+        """
+        return node.children
+
+    def set_next_child(self, child, next_child):
+        """To be overriden. Set the next and previous children."""
+        if child is not None and not isinstance(child, string_types):
+            child.nxt = next_child
+        if next_child is not None and not isinstance(next_child, string_types):
+            next_child.prv = child
+
+    # Transformation methods
+    # -------------------------------------------------------------------------
+
+    def transform_children(self, node):
+        out = []
+        children = self.get_node_children(node)
+        for child, next_child in zip_longest(children, children[1:]):
+            # Double-linked list for children.
+            self.set_next_child(child, next_child)
+            out.append(self.transform(child))
+        return out
+
+    def transform_str(self, contents):
+        return contents
+
+    def transform_Node(self, node):
+        return node
+
+    def transform(self, node):
+        """Transform a node and the tree below it."""
+        assert node is not None
+        name = ('str' if isinstance(node, string_types)
+                else self.get_node_name(node))
+        return getattr(self, 'transform_' + name, self.transform_Node)(node)
+
+
+#------------------------------------------------------------------------------
 # Node
 #------------------------------------------------------------------------------
 
 class Node(Bunch):
+    """Generic node type, represents a tree."""
     def __init__(self, name='Node', children=None, **kwargs):
         super(Node, self).__init__(**kwargs)
         assert isinstance(name, string_types)
@@ -38,122 +98,47 @@ class Node(Bunch):
     def __repr__(self):
         return '<Node %s with %d children>' % (self.name, len(self.children))
 
-    @property
-    def ascii_tree(self):
-        """Return an ASCII representation of the tree under the current node.
-        """
-        t = TreeTransformer()
-        t.set_fold(lambda l, node=None: '\n'.join(l))
-
-        @t.register
-        def transform_Node(node):
-            """This function is called on every node. It generates an ASCII
-            tree.
-            """
-            prefix_t = u('├─ ')
-            prefix_l = u('└─ ')
-            prefix_d = u('│  ')
-            out = ''
-            l = t.get_inner_contents(node).splitlines()
-            n = len(l)
-            for i, _ in enumerate(l):
-                # Choose the prefix.
-                prefix = prefix_t if i < n - 1 else prefix_l
-                prefix = (prefix_d if (prefix_t in _ or prefix_l in _)
-                          else prefix)
-                out += prefix + _ + '\n'
-            out = out.strip()
-            if out:
-                out = '\n' + out
-            return node.name + out
-
-        s = t.transform(self)
-        return s
-
     def show(self):
-        print(self.ascii_tree)
+        print(show_tree(self, lambda node: node.name,
+                        lambda node: node.children))
 
 
 #------------------------------------------------------------------------------
-# Tree transformer
+# Show tree
 #------------------------------------------------------------------------------
 
-class TreeTransformer(object):
-    def __init__(self):
-        self._funcs = {'str': self.transform_str,
-                       'Node': self.transform_Node}
-        self._fold = lambda l: ''.join(l)
+class TreePrinter(TreeTransformer):
+    prefix_t = u('├─ ')
+    prefix_l = u('└─ ')
+    prefix_d = u('│  ')
 
-    def set_fold(self, func):
-        """The fold function is used in AST -> format transformation.
+    def __init__(self, get_node_name, get_node_children):
+        self._get_node_name = get_node_name
+        self._get_node_children = get_node_children
 
-        It is a function that takes a list of children and returns a single
-        object.
+    def get_node_name(self, node):
+        return self._get_node_name(node)
 
-        For every node, a conversion function is called on the children, and
-        the results are reduced by the fold function. This process is applied
-        recursively up to the root. The output is then the converted document.
-
-        By default, this is lambda children: ''.join(children) (only valid on
-        text formats).
-
-        """
-        self._fold = func
-
-    def register(self, func):
-        """Register a transformer function for a given node type.
-
-        The function's name must be `transform_NodeName`.
-        It arguments must be `node`.
-        The function can call `self.get_inner_contents(node)` to get the
-        transformed output of all of the node's children.
-
-        Generally, this method should return a string. The fold function should
-        return an object of the same type.
-
-        """
-        name = func.__name__
-        prefix = 'transform_'
-        assert name.startswith(prefix)
-        name = name[len(prefix):]
-        self._funcs[name] = func
-
-    def transform_children(self, node):
-        out = []
-        for child, next_child in zip_longest(node.children, node.children[1:]):
-            # Double-linked list for children.
-            # TODO: do this when creating the tree, in setattr children maybe?
-            if isinstance(child, Node):
-                child.nxt = next_child
-            if isinstance(next_child, Node):
-                next_child.prv = child
-            child_t = self.transform(child)
-            # If a transform function returns a list, we take this into
-            # account.
-            if isinstance(child_t, list):
-                out.extend(child_t)
-            else:
-                out.append(child_t)
-        return out
-
-    def get_inner_contents(self, node):
-        return self._fold(self.transform_children(node), node=node)
-
-    def transform_str(self, contents):
-        return contents
+    def get_node_children(self, node):
+        return self._get_node_children(node)
 
     def transform_Node(self, node):
-        """Fallback transform functions when no function is registered
-        for the given node."""
-        return ''
+        pt, pl, pd = self.prefix_t, self.prefix_l, self.prefix_d
+        out = ''
+        l = '\n'.join(self.transform_children(node)).splitlines()
+        n = len(l)
+        for i, _ in enumerate(l):
+            # Choose the prefix.
+            prefix = pt if i < n - 1 else pl
+            prefix = (pd if (pt in _ or pl in _)
+                      else prefix)
+            out += prefix + _ + '\n'
+        out = out.strip()
+        if out:
+            out = '\n' + out
+        return node.name + out
 
-    def transform(self, node):
-        """Transform a node and the tree below it."""
-        if isinstance(node, string_types) and 'str' in self._funcs:
-            return self._funcs['str'](node)
-        assert isinstance(node, Node)
-        # Get the registered function for that name.
-        func = self._funcs.get(node.name, self._funcs['Node'])
-        # Call the function.
-        assert func
-        return func(node)
+
+def show_tree(node, get_node_name, get_children_name):
+    tp = TreePrinter(get_node_name, get_children_name)
+    return tp.transform(node)
