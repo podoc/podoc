@@ -8,4 +8,4 @@
 # Imports
 #------------------------------------------------------------------------------
 
-from ._ast import ASTNode
+from ._ast import ASTNode, ASTPlugin

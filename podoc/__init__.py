@@ -19,6 +19,8 @@ import pytest
 from .core import Podoc, create_podoc  # noqa
 from .plugin import (IPlugin, discover_plugins, get_plugin,
                      _load_all_native_plugins)  # noqa
+from .ast import ASTPlugin
+from .markdown import Markdown
 
 
 #------------------------------------------------------------------------------
@@ -84,7 +86,7 @@ if '--debug' in sys.argv:  # pragma: no cover
 
 
 # Load all native plugins when importing the library.
-_load_all_native_plugins()
+# _load_all_native_plugins()
 
 
 def test():  # pragma: no cover
