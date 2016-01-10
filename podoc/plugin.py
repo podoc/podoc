@@ -50,7 +50,7 @@ def get_plugin(name):
 
 
 def get_plugins():
-    plugins = IPluginRegistry.plugins.copy()
+    plugins = list(IPluginRegistry.plugins)
     from .ast import PandocPlugin
     plugins.remove(PandocPlugin)
     plugins = plugins + [PandocPlugin]
