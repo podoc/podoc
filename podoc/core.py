@@ -106,9 +106,15 @@ class Podoc(object):
                                   save_func=save_func or save_text,
                                   **kwargs)
 
-    def convert(self, obj, lang_list):
+    def convert(self, obj, source=None, target=None, lang_list=None):
         """Convert an object by passing it through a chain of conversion
         functions."""
+        if lang_list is None:
+            # Find the shortest path from source to target in the conversion
+            # graph.
+            assert source and target
+            lang_list = _find_path(self.conversion_pairs,
+                                   source, target)
         assert isinstance(lang_list, (tuple, list))
         # Iterate over all successive pairs.
         for t0, t1 in zip(lang_list, lang_list[1:]):

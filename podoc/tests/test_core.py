@@ -57,10 +57,10 @@ def test_find_path():
 def test_podoc_fail():
     p = Podoc()
     with raises(ValueError):
-        p.convert('hello', ['a', 'b'])
+        p.convert('hello', lang_list=['a', 'b'])
 
 
-def test_podoc_convert():
+def test_podoc_convert_1():
     p = Podoc()
 
     p.register_lang('lower')
@@ -74,8 +74,12 @@ def test_podoc_convert():
     def tolower(text):
         return text.lower()
 
+    # Conversion with explicit path.
     assert p.conversion_pairs == [('lower', 'upper'), ('upper', 'lower')]
-    assert p.convert('Hello', ['lower', 'upper', 'lower']) == 'hello'
+    assert p.convert('Hello', lang_list=['lower', 'upper', 'lower']) == 'hello'
+
+    # Conversion with shortest path between source and target.
+    assert p.convert('hello', source='lower', target='upper') == 'HELLO'
 
 
 def test_podoc_file(tempdir):
