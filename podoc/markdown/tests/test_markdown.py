@@ -162,6 +162,7 @@ def test_markdown_math_inline():
 
 def test_markdown_math_block():
     _test_renderer(r'$$\int_a^b f_0(x) dx$$')
+    _test_renderer(r'$$\begin{eqnarray}\nx &= y\n\end{eqnarray}$$')
 
 
 # TODO: compare Markdown -> AST with Markdown -> pandoc -> AST

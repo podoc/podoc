@@ -245,10 +245,9 @@ class ASTToMarkdown(TreeTransformer):
 
 
 # TODO: this might be improved. For example, the $ char is not accepted within
-# equations currently.
+# equations currently. Also, there cannot be a space after the opening $ or $$.
 # Similar heuristic as in pandoc
 # http://talk.commonmark.org/t/mathjax-extension-for-latex-equations/698/7
-# _MATH_BLOCK_REGEX = r'((?<!\$)\${2}\S[^\$]+\S\${2}(?!\d))'
 _MATH_REGEX = r'((?<!\$)\${1,2}(?!\s))([^\$]+)((?<!\s)\${1,2}(?!\d))'
 
 
