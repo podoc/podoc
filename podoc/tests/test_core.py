@@ -81,6 +81,9 @@ def test_podoc_convert_1():
     # Conversion with shortest path between source and target.
     assert p.convert('hello', source='lower', target='upper') == 'HELLO'
 
+    with raises(ValueError):
+        p.convert('hello', source='lower', target='unknown')
+
 
 def test_podoc_file(tempdir):
     p = Podoc()

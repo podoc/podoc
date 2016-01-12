@@ -115,6 +115,9 @@ class Podoc(object):
             assert source and target
             lang_list = _find_path(self.conversion_pairs,
                                    source, target)
+            if not lang_list:
+                raise ValueError("No path found from `{}` to `{}`.".format(
+                                 source, target))
         assert isinstance(lang_list, (tuple, list))
         # Iterate over all successive pairs.
         for t0, t1 in zip(lang_list, lang_list[1:]):
