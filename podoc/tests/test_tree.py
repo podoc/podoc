@@ -66,7 +66,7 @@ def test_show_tree_2(root):
 def test_show_tree_3():
     tree = Node('root')
     tree.add_child('-' * 50)
-    assert '---------- ... ----------' in show_tree(tree)
+    assert '(...)' in show_tree(tree)
 
 
 def test_transform_1(root):

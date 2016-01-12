@@ -88,6 +88,15 @@ class ASTNode(Node):
     def to_pandoc(self):
         return PodocToPandoc().transform_main(self)
 
+    def __repr__(self):
+        if self.name == 'Header':
+            return '{} {}'.format(self.name, self.level)
+        elif hasattr(self, 'url'):
+            return '{} <{}>'.format(self.name, self.url)
+        elif self.name == 'OrderedList':
+            return '{} ({})'.format(self.name, self.start)
+        return self.name
+
 
 #------------------------------------------------------------------------------
 # AST <-> pandoc
