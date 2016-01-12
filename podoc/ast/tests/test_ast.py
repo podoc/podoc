@@ -153,15 +153,10 @@ def test_pandoc_ast_bullet_list():
     _test_pandoc_ast('* a b\n* c *d*\n    * e f\n    * g\n* h')
 
 
-def test_pandoc_ast_ordered_list_simple():
+def test_pandoc_ast_ordered_list():
     _test_pandoc_ast('1. a')
     _test_pandoc_ast('2. a')
     _test_pandoc_ast('1. a b')
-    _test_pandoc_ast('1. a b\n2. c d')
+    _test_pandoc_ast('1) a b\n2) c d')
     _test_pandoc_ast('1. a\n    2. b')
     _test_pandoc_ast('1. a b\n2. c *d*\n    3. e f\n    4. g\n* h')
-
-
-def test_pandoc_ast_ordered_list_style():
-    _test_pandoc_ast('(i) a')
-    _test_pandoc_ast('(ii) a\n1. b\n    (A)  c')

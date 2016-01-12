@@ -148,7 +148,8 @@ class PodocToPandoc(TreeTransformer):
         items = [_['c'] for _ in self.transform_children(node)]
         children = [[node.start,
                     {"t": node.style, "c": []},
-                    {"t": node.delim, "c": []}], items]
+                    {"t": 'OneParen' if node.delimiter == ')' else 'Period',
+                     "c": []}], items]
         return _node_dict(node, children)
 
     def transform_BulletList(self, node):
@@ -246,16 +247,20 @@ class PandocToPodoc(TreeTransformer):
         return [c[1]]
 
     def transform_OrderedList(self, c, node):
-        (node.start, style, delim), children = c
+        (node.start, style, delimiter), children = c
+        # NOTE: CommonMark doesn't support bullet styles
+        node.style = style['t']
+        node.delimiter = ')' if delimiter['t'] == 'OneParen' else '.'
         # NOTE: create a ListItem node that contains the elements under
         # the list item.
         children = [{'t': 'ListItem', 'c': child} for child in children]
-        node.style = style['t']
-        node.delim = delim['t']
         return children
 
     def transform_BulletList(self, c, node):
         children = c
+        # NOTE: pandoc doesn't appear to support bullet styles
+        node.bullet_char = '*'
+        node.delimiter = ' '
         # NOTE: create a ListItem node that contains the elements under
         # the list item.
         children = [{'t': 'ListItem', 'c': child} for child in children]
