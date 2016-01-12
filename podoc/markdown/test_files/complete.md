@@ -6,9 +6,10 @@ a [*b **c** d*](url)
 ![e`f`g](image)
 
 > quote
-> ```lang
-> code
-> ```
+
+```lang
+code
+```
 
 $$\int_a^b f(x) dx
 x=y$$

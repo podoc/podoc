@@ -30,7 +30,8 @@ class MarkdownRenderer(object):
         return self.text(('#' * level) + ' ' + text)
 
     def code(self, code, lang=None):
-        return self.text('```{}\n{}```'.format(lang or '', code))
+        return self.text('```{}\n{}\n```'.format(lang or '',
+                         code.rstrip('\n')))
 
     def quote(self, text):
         # Add quote '>' at the beginning of each line when quote is activated.
