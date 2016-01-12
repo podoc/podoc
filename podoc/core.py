@@ -106,9 +106,17 @@ class Podoc(object):
                                   save_func=save_func or save_text,
                                   **kwargs)
 
-    def convert(self, obj, source=None, target=None, lang_list=None):
+    def convert(self, obj, source=None, target=None,
+                lang_list=None, output=None):
         """Convert an object by passing it through a chain of conversion
         functions."""
+        if source is None and lang_list is None:
+            # Convert a file to a target format.
+            path = obj
+            assert target
+            assert op.exists(path)
+            obj = self.open(path)
+            source = self.get_lang_for_file_ext(op.splitext(path)[1])
         if lang_list is None:
             # Find the shortest path from source to target in the conversion
             # graph.
@@ -128,6 +136,8 @@ class Podoc(object):
                                  format(t0, t1))
             # Perform the conversion.
             obj = f(obj)
+        if output:
+            self.save(output, obj, lang=target)
         return obj
 
     # Properties
@@ -175,19 +185,19 @@ class Podoc(object):
         """Return the file extension registered for a given language."""
         return self._langs[lang].file_ext
 
-    def open(self, path):
+    def open(self, path, lang=None):
         """Open a file which has a registered file extension."""
         # Find the language corresponding to the file's extension.
         file_ext = op.splitext(path)[1]
-        lang = self.get_lang_for_file_ext(file_ext)
+        lang = lang or self.get_lang_for_file_ext(file_ext)
         # Open the file using the function registered for the language.
         return self._langs[lang].open_func(path)
 
-    def save(self, path, contents):
+    def save(self, path, contents, lang=None):
         """Save an object to a file."""
         # Find the language corresponding to the file's extension.
         file_ext = op.splitext(path)[1]
-        lang = self.get_lang_for_file_ext(file_ext)
+        lang = lang or self.get_lang_for_file_ext(file_ext)
         # Save the file using the function registered for the language.
         return self._langs[lang].save_func(path, contents)
 

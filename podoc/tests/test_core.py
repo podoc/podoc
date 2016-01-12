@@ -60,11 +60,11 @@ def test_podoc_fail():
         p.convert('hello', lang_list=['a', 'b'])
 
 
-def test_podoc_convert_1():
+def test_podoc_convert_1(tempdir):
     p = Podoc()
 
     p.register_lang('lower')
-    p.register_lang('upper')
+    p.register_lang('upper', file_ext='.up')
 
     @p.register_func(source='lower', target='upper')
     def toupper(text):
@@ -83,6 +83,15 @@ def test_podoc_convert_1():
 
     with raises(ValueError):
         p.convert('hello', source='lower', target='unknown')
+
+    # Convert a file.
+    path = op.join(tempdir, 'test.up')
+    path2 = op.join(tempdir, 'test.low')
+    with open(path, 'w') as f:
+        f.write('HELLO')
+    assert p.convert(path, target='lower', output=path2) == 'hello'
+    with open(path2, 'r') as f:
+        assert f.read() == 'hello'
 
 
 def test_podoc_file(tempdir):
