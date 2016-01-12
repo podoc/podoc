@@ -13,7 +13,7 @@ from six import u
 from pytest import fixture
 
 from ..utils import captured_output
-from ..tree import Node, TreeTransformer
+from ..tree import Node, TreeTransformer, show_tree
 
 
 #------------------------------------------------------------------------------
@@ -61,6 +61,12 @@ def test_show_tree_2(root):
         └─ 2
         ''')
     assert out.getvalue().strip() == dedent(expected).strip()
+
+
+def test_show_tree_3():
+    tree = Node('root')
+    tree.add_child('-' * 50)
+    assert '---------- ... ----------' in show_tree(tree)
 
 
 def test_transform_1(root):

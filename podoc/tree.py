@@ -124,9 +124,9 @@ class TreePrinter(TreeTransformer):
     prefix_l = u('└─ ')
     prefix_d = u('│  ')
 
-    def __init__(self, get_node_name, get_node_children):
-        self._get_node_name = get_node_name
-        self._get_node_children = get_node_children
+    def __init__(self, get_node_name=None, get_node_children=None):
+        self._get_node_name = get_node_name or (lambda n: n.name)
+        self._get_node_children = get_node_children or (lambda n: n.children)
 
     def get_node_name(self, node):
         return self._get_node_name(node)
@@ -137,7 +137,12 @@ class TreePrinter(TreeTransformer):
     def transform_Node(self, node):
         pt, pl, pd = self.prefix_t, self.prefix_l, self.prefix_d
         out = ''
-        l = '\n'.join(self.transform_children(node)).splitlines()
+        l = '\n'.join(self.transform_children(node))
+        l = l.splitlines()
+        # Split long strings in the tree representation.
+        if len(l) == 1:
+            l = [l[0] if len(l[0]) <= 20
+                 else (l[0][:10] + ' ... ' + l[0][-10:])]
         n = len(l)
         for i, _ in enumerate(l):
             # Choose the prefix.
@@ -151,6 +156,6 @@ class TreePrinter(TreeTransformer):
         return node.name + out
 
 
-def show_tree(node, get_node_name, get_children_name):
+def show_tree(node, get_node_name=None, get_children_name=None):
     tp = TreePrinter(get_node_name, get_children_name)
     return tp.transform(node)
