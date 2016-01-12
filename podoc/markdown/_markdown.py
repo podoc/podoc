@@ -129,7 +129,7 @@ class CommonMarkToAST(TreeTransformer):
     def transform_OrderedList(self, obj, node):
         node.start = obj.list_data['start']
         assert node.start >= 0
-        node.delimiter = obj.list_data['delimiter'] or ' '
+        node.delimiter = obj.list_data['delimiter']
         return self.get_node_children(obj)
 
 
@@ -188,7 +188,9 @@ class ASTToMarkdown(TreeTransformer):
             suffix = node.delimiter
         elif list_type == 'ordered':
             bullet = node.start
-            suffix = node.delimiter
+            # NOTE: CommonMark doesn't appear to support non-decimal bullets
+            # node.style is not used
+            suffix = ')' if node.delimiter == 'OneParen' else '.'
             if not suffix.endswith(' '):
                 suffix += ' '
         # This is a list of processed items.
