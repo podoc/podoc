@@ -87,10 +87,11 @@ class CommonMarkToAST(TreeTransformer):
 
     def transform_Code(self, obj, node):
         contents = obj.literal
+        contents_strip = contents.strip()
         # Detect math inline elements.
-        if contents[0] == contents[-1] == '$':
+        if contents_strip[0] == contents_strip[-1] == '$':
             node.name = 'Math'
-            contents = contents[1:-1]
+            contents = contents_strip[1:-1].strip()
         return [contents]
 
     def transform_Text(self, obj, node):
@@ -108,9 +109,9 @@ class CommonMarkToAST(TreeTransformer):
         node.lang = obj.info
         contents = obj.literal
         # Detect math block elements.
-        if contents[:2] == contents.strip()[-2:] == '$$':
+        if node.lang == 'math':
             node.name = 'MathBlock'
-            contents = contents.strip()[2:-2]
+            contents = contents.strip()
         return [contents]
 
     def transform_BlockQuote(self, obj, node):
@@ -243,19 +244,31 @@ class ASTToMarkdown(TreeTransformer):
                                    node.url)
 
 
-# TODO: this might be improved. For example, $ char is not accepted within
+# TODO: this might be improved. For example, the $ char is not accepted within
 # equations currently.
 # Similar heuristic as in pandoc
 # http://talk.commonmark.org/t/mathjax-extension-for-latex-equations/698/7
-_MATH_INLINE_REGEX = r'(\$\S[^\$\n]+\S\$(?!\d))'
-_MATH_BLOCK_REGEX = r'(\${2}\S[^\$\n]+\S\${2}(?!\d))'
+# _MATH_BLOCK_REGEX = r'((?<!\$)\${2}\S[^\$]+\S\${2}(?!\d))'
+_MATH_REGEX = r'((?<!\$)\${1,2}(?!\s))([^\$]+)((?<!\s)\${1,2}(?!\d))'
+
+
+def _repl_math(m):
+    """Callback function for sub regex."""
+    n = len(m.group(1))
+    contents = m.group(2)
+    assert n in (1, 2)
+    if n == 1:
+        # Math inline.
+        return '`${}$`'.format(contents)
+    elif n == 2:
+        # Math block (code with `math` language).
+        return '```math\n{}\n```'.format(contents)
 
 
 def _parse_math(contents):
     """Enclose math equations within code elements to prevent
     them from being incorrectly parsed."""
-    contents = re.sub(_MATH_INLINE_REGEX, r'`\1`', contents)
-    contents = re.sub(_MATH_BLOCK_REGEX, r'```\n\1\n```', contents)
+    contents = re.sub(_MATH_REGEX, _repl_math, contents)
     return contents
 
 
