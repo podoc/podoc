@@ -85,8 +85,8 @@ class Podoc(object):
         assert source
         assert target
         if (source, target) in self._funcs:
-            logger.warn("Conversion `%s -> %s` already registered, skipping.",
-                        source, target)
+            logger.debug("Conversion `%s -> %s` already registered, skipping.",
+                         source, target)
             return
         logger.log(5, "Register conversion `%s -> %s`.", source, target)
         self._funcs[(source, target)] = func

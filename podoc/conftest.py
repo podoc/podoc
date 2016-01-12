@@ -33,6 +33,7 @@ def podoc():
     return create_podoc()
 
 
+# List of test files to test.
 @fixture(params=['hello'])
 def test_file(request):
     name = request.param
@@ -43,7 +44,8 @@ def pytest_generate_tests(metafunc):
     """Generate the fixtures to test all format test files."""
     if 'lang' in metafunc.fixturenames:
         podoc = create_podoc(with_pandoc=False)
-        metafunc.parametrize('lang', podoc.languages, ids=podoc.languages)
+        langs = podoc.languages
+        metafunc.parametrize('lang', langs, ids=langs)
     if 'source_target' in metafunc.fixturenames:
         podoc = create_podoc(with_pandoc=False)
         metafunc.parametrize('source_target', podoc.conversion_pairs,

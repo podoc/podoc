@@ -11,6 +11,7 @@ import logging
 import os.path as op
 
 from pytest import raises
+from six import string_types
 
 from ..core import Podoc, _find_path, _get_annotation, create_podoc
 from ..utils import open_text
@@ -32,9 +33,16 @@ def get_test_file_path(podoc, lang, filename):
     return path
 
 
-def assert_text_files_equal(p0, p1):
-    # NOTE: included text files have a trailing `\n`.
-    assert open_text(p0).rstrip('\n') == open_text(p1).rstrip('\n')
+def assert_equal(p0, p1):
+    if isinstance(p0, string_types) and op.exists(p0):
+        # TODO: non text files
+        # NOTE: included text files have a trailing `\n`.
+        assert_equal(open_text(p0), open_text(p1))
+        return
+    if isinstance(p0, string_types):
+        assert p0.rstrip('\n') == p1.rstrip('\n')
+        return
+    assert p0 == p1
 
 
 #------------------------------------------------------------------------------
@@ -67,7 +75,7 @@ def test_podoc_fail():
 def test_podoc_convert_1(tempdir):
     p = Podoc()
 
-    p.register_lang('lower')
+    p.register_lang('lower', file_ext='.low')
     p.register_lang('upper', file_ext='.up')
 
     @p.register_func(source='lower', target='upper')
@@ -93,7 +101,7 @@ def test_podoc_convert_1(tempdir):
     path2 = op.join(tempdir, 'test.low')
     with open(path, 'w') as f:
         f.write('HELLO')
-    assert p.convert(path, target='lower', output=path2) == 'hello'
+    assert p.convert(path, output=path2) == 'hello'
     with open(path2, 'r') as f:
         assert f.read() == 'hello'
 
@@ -147,8 +155,11 @@ def test_all_open_save(tempdir, podoc, lang, test_file):
     contents = podoc.open(path)
     to_path = op.join(tempdir, test_file + podoc.get_file_ext(lang))
     podoc.save(to_path, contents)
-    # TODO: non-text formats
-    assert_text_files_equal(path, to_path)
+    if lang == 'ast':
+        assert_equal(podoc.open(path), podoc.open(to_path))
+    else:
+        # TODO: non-text formats
+        assert_equal(path, to_path)
 
 
 def test_all_convert(tempdir, podoc, source_target, test_file):
@@ -157,9 +168,10 @@ def test_all_convert(tempdir, podoc, source_target, test_file):
     source_path = get_test_file_path(podoc, source, test_file)
     target_path = get_test_file_path(podoc, target, test_file)
     # Output file.
-    path = op.join(tempdir, op.basename(target_path))
-    podoc.convert(source_path, output=path)
-    # expected = podoc.open(target_path)
+    # path = op.join(tempdir, op.basename(target_path))
+    converted = podoc.convert(source_path, target=target)
+    expected = podoc.open(target_path)
     # TODO: non-text formats
-    assert_text_files_equal(path, target_path)
-    logger.debug("{} and {} are equal.".format(path, target_path))
+    # assert_text_files_equal(path, target_path)
+    assert_equal(converted, expected)
+    # logger.debug("{} and {} are equal.".format(path, target_path))
