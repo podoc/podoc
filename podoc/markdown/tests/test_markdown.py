@@ -156,4 +156,12 @@ def test_markdown_renderer_ordered_bullet():
     _test_renderer('1. Item 1\n2. Item 2\n\n* Bullet\n\n3. Item 3')
 
 
+def test_markdown_math_inline():
+    _test_renderer('a $x*x=y*y$ b')
+
+
+def test_markdown_math_block():
+    _test_renderer(r'$$\int_a^b f_0(x) dx$$')
+
+
 # TODO: compare Markdown -> AST with Markdown -> pandoc -> AST

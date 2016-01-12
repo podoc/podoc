@@ -36,6 +36,9 @@ class MarkdownRenderer(object):
         # Add quote '>' at the beginning of each line when quote is activated.
         return self.text('\n'.join('> ' + l for l in text.splitlines()))
 
+    def math_block(self, contents):
+        return self.text('$${0}$$'.format(contents))
+
     # Inline methods
     # -------------------------------------------------------------------------
 
@@ -53,6 +56,9 @@ class MarkdownRenderer(object):
 
     def strong(self, text):
         return self.text('**{0}**'.format(text))
+
+    def math(self, contents):
+        return self.text('${0}$'.format(contents))
 
     def text(self, text):
         return text

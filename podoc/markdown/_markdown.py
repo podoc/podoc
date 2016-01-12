@@ -8,6 +8,7 @@
 #------------------------------------------------------------------------------
 
 import logging
+import re
 
 from CommonMark import Parser
 from six import string_types
@@ -82,43 +83,53 @@ class CommonMarkToAST(TreeTransformer):
         return node
 
     def transform_Node(self, obj, node):
-        return list(_iter_child(obj))
+        return self.get_node_children(obj)
 
     def transform_Code(self, obj, node):
-        return [obj.literal]
+        contents = obj.literal
+        # Detect math inline elements.
+        if contents[0] == contents[-1] == '$':
+            node.name = 'Math'
+            contents = contents[1:-1]
+        return [contents]
 
     def transform_Text(self, obj, node):
         return obj.literal
 
     def transform_Link(self, obj, node):
         node.url = obj.destination
-        return list(_iter_child(obj))
+        return self.get_node_children(obj)
 
     def transform_Image(self, obj, node):
         node.url = obj.destination
-        return list(_iter_child(obj))
+        return self.get_node_children(obj)
 
     def transform_CodeBlock(self, obj, node):
         node.lang = obj.info
-        return [obj.literal]
+        contents = obj.literal
+        # Detect math block elements.
+        if contents[:2] == contents.strip()[-2:] == '$$':
+            node.name = 'MathBlock'
+            contents = contents.strip()[2:-2]
+        return [contents]
 
     def transform_BlockQuote(self, obj, node):
-        return list(_iter_child(obj))
+        return self.get_node_children(obj)
 
     def transform_Header(self, obj, node):
         node.level = obj.level
-        return list(_iter_child(obj))
+        return self.get_node_children(obj)
 
     def transform_BulletList(self, obj, node):
         node.bullet_char = obj.list_data['bullet_char']
         node.delimiter = obj.list_data['delimiter'] or ' '
-        return list(_iter_child(obj))
+        return self.get_node_children(obj)
 
     def transform_OrderedList(self, obj, node):
         node.start = obj.list_data['start']
         assert node.start >= 0
         node.delimiter = obj.list_data['delimiter'] or ' '
-        return list(_iter_child(obj))
+        return self.get_node_children(obj)
 
 
 #------------------------------------------------------------------------------
@@ -165,6 +176,9 @@ class ASTToMarkdown(TreeTransformer):
 
     def transform_BlockQuote(self, node):
         return self.renderer.quote(self.get_inner_contents(node))
+
+    def transform_MathBlock(self, node):
+        return self.renderer.math_block(self.get_inner_contents(node))
 
     def _write_list(self, node, list_type):
         assert list_type in ('bullet', 'ordered')
@@ -217,6 +231,9 @@ class ASTToMarkdown(TreeTransformer):
     def transform_LineBreak(self, node):
         return self.renderer.linebreak()
 
+    def transform_Math(self, node):
+        return self.renderer.math(self.get_inner_contents(node))
+
     def transform_Link(self, node):
         return self.renderer.link(self.get_inner_contents(node),
                                   node.url)
@@ -224,6 +241,22 @@ class ASTToMarkdown(TreeTransformer):
     def transform_Image(self, node):
         return self.renderer.image(self.get_inner_contents(node),
                                    node.url)
+
+
+# TODO: this might be improved. For example, $ char is not accepted within
+# equations currently.
+# Similar heuristic as in pandoc
+# http://talk.commonmark.org/t/mathjax-extension-for-latex-equations/698/7
+_MATH_INLINE_REGEX = r'(\$\S[^\$\n]+\S\$(?!\d))'
+_MATH_BLOCK_REGEX = r'(\${2}\S[^\$\n]+\S\${2}(?!\d))'
+
+
+def _parse_math(contents):
+    """Enclose math equations within code elements to prevent
+    them from being incorrectly parsed."""
+    contents = re.sub(_MATH_INLINE_REGEX, r'`\1`', contents)
+    contents = re.sub(_MATH_BLOCK_REGEX, r'```\n\1\n```', contents)
+    return contents
 
 
 #------------------------------------------------------------------------------
@@ -240,6 +273,7 @@ class Markdown(IPlugin):
 
     def read_markdown(self, contents):
         parser = Parser()
+        contents = _parse_math(contents)
         cm = parser.parse(contents)
         ast = CommonMarkToAST().transform_main(cm)
         return ast
