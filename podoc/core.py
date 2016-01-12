@@ -88,7 +88,7 @@ class Podoc(object):
             logger.warn("Conversion `%s -> %s` already registered, skipping.",
                         source, target)
             return
-        logger.debug("Register conversion `%s -> %s`.", source, target)
+        logger.log(5, "Register conversion `%s -> %s`.", source, target)
         self._funcs[(source, target)] = func
 
     def register_lang(self, name, file_ext=None,
@@ -98,9 +98,9 @@ class Podoc(object):
         if file_ext:
             assert file_ext.startswith('.')
         if name in self._langs:
-            logger.warn("Language `%s` already registered, skipping.", name)
+            logger.log(5, "Language `%s` already registered, skipping.", name)
             return
-        logger.debug("Register language `%s`.", name)
+        logger.log(5, "Register language `%s`.", name)
         self._langs[name] = Bunch(file_ext=file_ext,
                                   open_func=open_func or open_text,
                                   save_func=save_func or save_text,
@@ -110,6 +110,8 @@ class Podoc(object):
                 lang_list=None, output=None):
         """Convert an object by passing it through a chain of conversion
         functions."""
+        if target is None and output is not None:
+            target = self.get_lang_for_file_ext(op.splitext(output)[1])
         if source is None and lang_list is None:
             # Convert a file to a target format.
             path = obj
@@ -147,12 +149,6 @@ class Podoc(object):
     def languages(self):
         """List of all registered languages."""
         return sorted(self._langs)
-
-    @property
-    def languages_nopandoc(self):
-        """List of all registered languages."""
-        return sorted(_ for _ in self._langs
-                      if not self._langs[_].get('pandoc', None))
 
     @property
     def conversion_pairs(self):
@@ -202,9 +198,12 @@ class Podoc(object):
         return self._langs[lang].save_func(path, contents)
 
 
-def create_podoc():
+def create_podoc(with_pandoc=True):
     podoc = Podoc()
     plugins = get_plugins()
     for p in plugins:
+        # Skip pandoc plugin.
+        if not with_pandoc and p.__name__ == 'PandocPlugin':
+            continue
         p().attach(podoc)
     return podoc

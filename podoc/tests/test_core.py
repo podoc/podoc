@@ -7,12 +7,15 @@
 # Imports
 #------------------------------------------------------------------------------
 
+import logging
 import os.path as op
 
 from pytest import raises
 
 from ..core import Podoc, _find_path, _get_annotation, create_podoc
 from ..utils import open_text
+
+logger = logging.getLogger(__name__)
 
 
 #------------------------------------------------------------------------------
@@ -30,7 +33,8 @@ def get_test_file_path(podoc, lang, filename):
 
 
 def assert_text_files_equal(p0, p1):
-    assert open_text(p0) == open_text(p1)
+    # NOTE: included text files have a trailing `\n`.
+    assert open_text(p0).rstrip('\n') == open_text(p1).rstrip('\n')
 
 
 #------------------------------------------------------------------------------
@@ -132,6 +136,10 @@ def test_create_podoc():
     assert 'ast' in podoc.languages
 
 
+#------------------------------------------------------------------------------
+# Tests all languages
+#------------------------------------------------------------------------------
+
 def test_all_open_save(tempdir, podoc, lang, test_file):
     """For all languages and test files, check round-tripping of open
     and save."""
@@ -139,4 +147,19 @@ def test_all_open_save(tempdir, podoc, lang, test_file):
     contents = podoc.open(path)
     to_path = op.join(tempdir, test_file + podoc.get_file_ext(lang))
     podoc.save(to_path, contents)
+    # TODO: non-text formats
     assert_text_files_equal(path, to_path)
+
+
+def test_all_convert(tempdir, podoc, source_target, test_file):
+    source, target = source_target
+    # Get the source and target file names.
+    source_path = get_test_file_path(podoc, source, test_file)
+    target_path = get_test_file_path(podoc, target, test_file)
+    # Output file.
+    path = op.join(tempdir, op.basename(target_path))
+    podoc.convert(source_path, output=path)
+    # expected = podoc.open(target_path)
+    # TODO: non-text formats
+    assert_text_files_equal(path, target_path)
+    logger.debug("{} and {} are equal.".format(path, target_path))
