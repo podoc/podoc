@@ -27,8 +27,9 @@ logger = logging.getLogger(__name__)
 
 # TODO: ensure there are no Spaces or Str in the AST (exclude list)
 
-# List of allowed Pandoc block names.
-PANDOC_BLOCK_NAMES = (
+# List of allowed block names.
+BLOCK_NAMES = (
+    # The following are pandoc block names:
     'Plain',
     'Para',
     'Header',
@@ -36,7 +37,8 @@ PANDOC_BLOCK_NAMES = (
     'BlockQuote',
     'BulletList',
     'OrderedList',
-    # The following are not supported yet in podoc.
+
+    # The following pandoc block names are not supported yet in podoc:
     # 'RawBlock',
     # 'DefinitionList',
     # 'HorizontalRule',
@@ -45,38 +47,38 @@ PANDOC_BLOCK_NAMES = (
 )
 
 
-# List of allowed Pandoc inline names.
-PANDOC_INLINE_NAMES = (
-    # 'Str',
+# List of allowed inline names.
+INLINE_NAMES = (
+    # The following are pandoc inline names:
     'Emph',
     'Strong',
     'Code',
     'Link',
     'Image',
     'LineBreak',
-    # The following are not supported yet in podoc.
-    # 'Math',
+    'Math',
+
+    # The following are not supported yet in podoc:
     # 'Strikeout',
+
+    # The following are forbidden in podoc:
+    # 'Str',
     # 'Space',
 )
 
 
 class ASTNode(Node):
-    # TODO: uncomment this: there are no Str elements in the podoc AST
-    # def __init__(self, name, *args, **kwargs):
-    #     super(ASTNode, self).__init__(name, *args, **kwargs)
-    #     # NOTE: there is no such things as String Nodes in podoc AST:
-    #     # children of a node can be non-string nodes or actual Python
-    #     # strings.
-    #     assert name not in ('Str', 'String', 'str')
-
     def is_block(self):
-        return self.name in PANDOC_BLOCK_NAMES
+        return self.name in BLOCK_NAMES
 
     def is_inline(self):
-        return self.name in PANDOC_INLINE_NAMES
+        return self.name in INLINE_NAMES
 
-    def validate(self):
+    def check_is_native(self):
+        """Check that an element is native."""
+        # Excluded list.
+        assert self.name not in ('Str', 'String', 'Space', 'str')
+        assert self.is_block() or self.is_inline()
         if self.is_inline():
             # The children of an Inline node cannot be blocks.
             for child in self.children:

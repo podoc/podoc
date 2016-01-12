@@ -50,11 +50,11 @@ def ast():
 
     assert block.is_block()
     assert not block.is_inline()
-    inline.validate()
+    inline.check_is_native()
 
     assert not inline.is_block()
     assert inline.is_inline()
-    inline.validate()
+    inline.check_is_native()
 
     # Second block
     block = ASTNode(name='Para',
