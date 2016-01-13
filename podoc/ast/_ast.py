@@ -146,11 +146,13 @@ class PodocToPandoc(TreeTransformer):
     def transform_OrderedList(self, node):
         # NOTE: we remove the ListItem node for pandoc
         items = [_['c'] for _ in self.transform_children(node)]
-        # NOTE: we only support OneParen and Period for now, following
-        # the CommonMark spec.
+        # NOTE: we only support OneParen and Period delimiter for now,
+        # following the CommonMark spec.
+        style = node.get('style', 'Decimal')
+        delimiter = node.get('delimiter', ')')
         children = [[node.start,
-                    {"t": node.style, "c": []},
-                    {"t": 'OneParen' if node.delimiter == ')' else 'Period',
+                    {"t": style, "c": []},
+                    {"t": 'OneParen' if delimiter == ')' else 'Period',
                      "c": []}], items]
         return _node_dict(node, children)
 
