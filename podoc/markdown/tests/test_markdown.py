@@ -110,7 +110,8 @@ def _test_renderer(s, *contains_nodes):
     assert contents.strip() == s
 
     # markdown =(podoc)=> AST =(pandoc)=> markdown
-    markdown_pandoc = pandoc(json.dumps(ast.to_pandoc()),
+    pandoc_json = json.dumps(ast.to_pandoc(), indent=2)
+    markdown_pandoc = pandoc(pandoc_json,
                              PANDOC_MARKDOWN_FORMAT, format='json')
     # NOTE: the pandoc-converted Markdown is not guaranteed to
     # be equal to the original Markdown document. For example * List
@@ -194,6 +195,3 @@ def test_markdown_math_block():
     _test_renderer(r'$$\int_a^b f_0(x) dx$$', 'MathBlock')
     _test_renderer(r'$$\begin{eqnarray}\nx &= y\n\end{eqnarray}$$',
                    'MathBlock')
-
-
-# TODO: compare Markdown -> AST with Markdown -> pandoc -> AST

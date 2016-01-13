@@ -74,9 +74,16 @@ class CommonMarkToAST(TreeTransformer):
             func = getattr(self, 'transform_%s' % name, self.transform_Node)
 
         node = ASTNode(name)
-        children = func(obj, node)
-        if isinstance(children, string_types):
-            return children
+        out = func(obj, node)
+        # NOTE: if the function returns a node, we directly return it
+        # instead of assuming the output is a list of children.
+        if isinstance(out, ASTNode):
+            return out
+        # We directly return a string output.
+        elif isinstance(out, string_types):
+            return out
+        # Otherwise, the output is a list of non-processed children.
+        children = out
         assert isinstance(children, list)
         # Recursively transform all children and assign them to the node.
         node.children = [self.transform(child) for child in children]
@@ -110,8 +117,10 @@ class CommonMarkToAST(TreeTransformer):
         contents = obj.literal
         # Detect math block elements.
         if node.lang == 'math':
-            node.name = 'MathBlock'
-            contents = contents.strip()
+            node.name = 'Para'
+            node.children = [ASTNode('MathBlock',
+                                     children=[contents.strip()])]
+            return node
         return [contents]
 
     def transform_BlockQuote(self, obj, node):
