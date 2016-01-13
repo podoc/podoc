@@ -88,7 +88,8 @@ class Path(object):
 PANDOC_MARKDOWN_FORMAT = ('markdown_strict+'
                           'fancy_lists+'
                           'startnum+'
-                          'backtick_code_blocks'
+                          'backtick_code_blocks+'
+                          'tex_math_dollars'
                           )
 
 

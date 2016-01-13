@@ -154,3 +154,11 @@ def test_pandoc_ast_ordered_list():
     _test_pandoc_ast('1) a b\n2) c d')
     _test_pandoc_ast('1. a\n    2. b')
     _test_pandoc_ast('1. a b\n2. c *d*\n    3. e f\n    4. g\n* h')
+
+
+def test_pandoc_math():
+    _test_pandoc_ast('$x$')
+    _test_pandoc_ast('$x$=y')
+    _test_pandoc_ast('$x=y$')
+    _test_pandoc_ast('$$x=y$$')
+    _test_pandoc_ast(r'$$\begin{eqnarray}\nx &= y\n\end{eqnarray}$$')

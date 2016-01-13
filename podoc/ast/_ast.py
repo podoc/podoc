@@ -38,6 +38,9 @@ BLOCK_NAMES = (
     'BulletList',
     'OrderedList',
 
+    # Special podoc names:
+    'MathBlock',
+
     # The following pandoc block names are not supported yet in podoc:
     # 'RawBlock',
     # 'DefinitionList',
@@ -138,6 +141,10 @@ class PodocToPandoc(TreeTransformer):
                     self.transform_children(node)]
         return _node_dict(node, children)
 
+    def transform_MathBlock(self, node):
+        contents = node.children[0]
+        return {'t': 'Math', 'c': [{'t': 'DisplayMath', 'c': []}, contents]}
+
     def transform_CodeBlock(self, node):
         # NOTE: node.children contains a single element, which is the code.
         children = [['', [node.lang], []], node.children[0]]
@@ -175,6 +182,10 @@ class PodocToPandoc(TreeTransformer):
         # NOTE: node.children contains a single element, which is the code.
         children = [['', [], []], node.children[0]]
         return _node_dict(node, children)
+
+    def transform_Math(self, node):
+        contents = node.children[0]
+        return {'t': 'Math', 'c': [{'t': 'InlineMath', 'c': []}, contents]}
 
     def transform_main(self, ast):
         blocks = self.transform(ast)['c']
@@ -271,6 +282,15 @@ class PandocToPodoc(TreeTransformer):
         # the list item.
         children = [{'t': 'ListItem', 'c': child} for child in children]
         return children
+
+    def transform_Math(self, c, node):
+        math_type = c[0]['t']
+        contents = c[1]
+        if math_type == 'InlineMath':
+            node.name = 'Math'
+        elif math_type == 'DisplayMath':
+            node.name = 'MathBlock'
+        return [contents]
 
     def transform_Code(self, c, node):
         code = c[1]
