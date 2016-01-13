@@ -13,7 +13,7 @@ from pytest import fixture
 
 from .._ast import (ASTNode, ast_from_pandoc,
                     _merge_str, _split_spaces)
-from podoc.utils import has_pandoc, pandoc
+from podoc.utils import has_pandoc, pandoc, PANDOC_MARKDOWN_FORMAT
 
 
 #------------------------------------------------------------------------------
@@ -97,12 +97,6 @@ def test_pandoc_conv(podoc):
 
 
 # We use strict Markdown, but we allow fancy lists.
-MARKDOWN_FORMAT = ('markdown_strict+'
-                   'fancy_lists+'
-                   'startnum+'
-                   'backtick_code_blocks'
-                   )
-
 
 def _test_pandoc_ast(s):
     """Check the compatibility of the podoc AST with pandoc.
@@ -114,7 +108,7 @@ def _test_pandoc_ast(s):
     if not has_pandoc():  # pragma: no cover
         raise ImportError("pypandoc is not available")
     # NOTE: we disable pandoc Markdown extensions.
-    ast_dict = json.loads(pandoc(s, 'json', format=MARKDOWN_FORMAT))
+    ast_dict = json.loads(pandoc(s, 'json', format=PANDOC_MARKDOWN_FORMAT))
     ast = ast_from_pandoc(ast_dict)
     # ast.show()
     assert ast.to_pandoc() == ast_dict

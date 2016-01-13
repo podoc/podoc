@@ -85,6 +85,13 @@ class Path(object):
 # pandoc wrapper
 #------------------------------------------------------------------------------
 
+PANDOC_MARKDOWN_FORMAT = ('markdown_strict+'
+                          'fancy_lists+'
+                          'startnum+'
+                          'backtick_code_blocks'
+                          )
+
+
 def pandoc(obj, to, **kwargs):
     """Convert a string or a file with pandoc."""
     import pypandoc

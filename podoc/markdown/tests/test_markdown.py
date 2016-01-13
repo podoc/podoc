@@ -7,11 +7,14 @@
 # Imports
 #------------------------------------------------------------------------------
 
+import json
+
 from pytest import fixture
 from CommonMark import Parser
 from six import string_types
 
 from podoc.ast import ASTNode
+from podoc.utils import pandoc, PANDOC_MARKDOWN_FORMAT
 from .._markdown import (CommonMarkToAST, ASTToMarkdown, Markdown)
 
 
@@ -105,6 +108,15 @@ def _test_renderer(s, *contains_nodes):
     # Render the AST to Markdown.
     contents = ASTToMarkdown().transform(ast)
     assert contents.strip() == s
+
+    # markdown =(podoc)=> AST =(pandoc)=> markdown
+    markdown_pandoc = pandoc(json.dumps(ast.to_pandoc()),
+                             PANDOC_MARKDOWN_FORMAT, format='json')
+    # NOTE: the pandoc-converted Markdown is not guaranteed to
+    # be equal to the original Markdown document. For example * List
+    # is transformed into - List, same with ATXHeader etc.
+    # However, we do test that the generated JSON is compatible with pandoc.
+    assert markdown_pandoc
 
 
 def test_markdown_renderer_simple():
