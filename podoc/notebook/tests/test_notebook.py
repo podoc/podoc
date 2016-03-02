@@ -8,7 +8,7 @@
 #------------------------------------------------------------------------------
 
 from podoc.markdown import Markdown
-from podoc.utils import get_test_file_path
+from podoc.utils import get_test_file_path, open_text, assert_equal
 from .._notebook import open_notebook, NotebookReader
 
 
@@ -40,5 +40,8 @@ def test_notebook_reader_code():
     # Convert it to an AST.
     ast = NotebookReader().read(notebook)
     ast.show()
-    # TODO: compare with markdown and pandoc AST (need to discard unknown
-    # nodes)
+
+    # Compare with the markdown version.
+    path = get_test_file_path('markdown', 'code.md')
+    markdown = open_text(path)
+    assert_equal(Markdown().write_markdown(ast), markdown)

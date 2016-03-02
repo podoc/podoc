@@ -155,12 +155,16 @@ class ASTToMarkdown(TreeTransformer):
         # Nested lists.
         self._lists = []
 
-    def fold(self, transformed_children, node=None):
-        delim = '\n\n' if node.name == 'root' else ''
-        return delim.join(transformed_children)
-
     def get_inner_contents(self, node):
-        return self.fold(self.transform_children(node), node)
+        delim = ''
+        # What is the delimiter between children? If the children are
+        # blocks, we should insert a new line between consecutive blocks.
+        # Otherwise we just concatenate the children.
+        if node.children:
+            child = node.children[0]
+            if isinstance(child, ASTNode) and child.is_block():
+                delim = '\n\n'
+        return delim.join(self.transform_children(node))
 
     def transform_str(self, text):
         return text

@@ -40,7 +40,7 @@ import logging
 import nbformat
 
 from podoc.markdown import Markdown
-from podoc.tree import Node  # , TreeTransformer
+from podoc.ast import ASTNode  # , TreeTransformer
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,9 @@ def open_notebook(path):
 
 class NotebookReader(object):
     def read(self, notebook):
-        self.tree = Node('root')
+        self.tree = ASTNode('root')
+        # Language of the notebook.
+        self.language = notebook.metadata.language_info.name
         for cell in notebook.cells:
             getattr(self, 'read_{}'.format(cell.cell_type))(cell)
         return self.tree
@@ -71,9 +73,11 @@ class NotebookReader(object):
         self.tree.children.append(ast.children[0])
 
     def read_code(self, cell):
-        node = Node('CodeCell')
+        node = ASTNode('CodeCell')
         # The first child is the source.
-        node.add_child(Node('CodeBlock', children=[cell.source]))
+        node.add_child(ASTNode('CodeBlock',
+                               lang=self.language,
+                               children=[cell.source]))
         # Then, we add one extra child per output.
         for output in cell.outputs:
             if output.output_type == 'stream':
@@ -84,10 +88,12 @@ class NotebookReader(object):
                 # Get the image, if any.
                 img_b64 = output.data.get('image/png', None)
                 if img_b64:
-                    child = Node('Image', children=[text])
+                    child = ASTNode('Image', children=[text])
                 else:
                     child = text
-            node.add_child(Node('CodeBlock', children=[child]))
+            node.add_child(ASTNode('CodeBlock',
+                                   lang='output',
+                                   children=[child]))
         self.tree.children.append(node)
 
     def read_raw(self, cell):
