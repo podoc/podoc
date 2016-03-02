@@ -7,9 +7,8 @@
 # Imports
 #------------------------------------------------------------------------------
 
-import os.path as op
-
 from podoc.markdown import Markdown
+from podoc.utils import get_test_file_path
 from .._notebook import open_notebook, NotebookReader
 
 
@@ -24,9 +23,7 @@ from .._notebook import open_notebook, NotebookReader
 
 def test_notebook_reader_1():
     # Open a test notebook with just 1 Markdown cell.
-    curdir = op.realpath(op.dirname(__file__))
-    dirname = op.realpath(op.join(curdir, '../'))
-    path = op.join(dirname, 'test_files', 'hello.ipynb')
+    path = get_test_file_path('notebook', 'hello.ipynb')
     notebook = open_notebook(path)
     # Convert it to an AST.
     ast = NotebookReader().read(notebook)

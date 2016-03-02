@@ -85,12 +85,11 @@ class Path(object):
 # Testing utils
 #------------------------------------------------------------------------------
 
-def get_test_file_path(podoc, lang, filename):
+def get_test_file_path(lang, filename):
     curdir = op.realpath(op.dirname(__file__))
-    file_ext = podoc.get_file_ext(lang)
     # Construct the directory name for the language and test filename.
     dirname = op.realpath(op.join(curdir, lang))
-    path = op.join(dirname, 'test_files', filename + file_ext)
+    path = op.join(dirname, 'test_files', filename)
     assert op.exists(path)
     return path
 

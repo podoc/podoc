@@ -124,9 +124,10 @@ def test_create_podoc():
 def test_all_open_save(tempdir, podoc, lang, test_file):
     """For all languages and test files, check round-tripping of open
     and save."""
-    path = get_test_file_path(podoc, lang, test_file)
+    filename = test_file + podoc.get_file_ext(lang)
+    path = get_test_file_path(lang, filename)
     contents = podoc.open(path)
-    to_path = op.join(tempdir, test_file + podoc.get_file_ext(lang))
+    to_path = op.join(tempdir, filename)
     podoc.save(to_path, contents)
     if lang == 'ast':
         assert_equal(podoc.open(path), podoc.open(to_path))
@@ -137,9 +138,11 @@ def test_all_open_save(tempdir, podoc, lang, test_file):
 
 def test_all_convert(tempdir, podoc, source_target, test_file):
     source, target = source_target
+    source_filename = test_file + podoc.get_file_ext(source)
+    target_filename = test_file + podoc.get_file_ext(target)
     # Get the source and target file names.
-    source_path = get_test_file_path(podoc, source, test_file)
-    target_path = get_test_file_path(podoc, target, test_file)
+    source_path = get_test_file_path(source, source_filename)
+    target_path = get_test_file_path(target, target_filename)
     # Output file.
     # path = op.join(tempdir, op.basename(target_path))
     converted = podoc.convert(source_path, target=target)
