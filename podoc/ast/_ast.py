@@ -70,6 +70,18 @@ INLINE_NAMES = (
 )
 
 
+NATIVE_NAMES = BLOCK_NAMES + INLINE_NAMES + (
+    'root',
+    'ListItem',
+    'Strikeout',
+    'RawBlock',
+    'DefinitionList',
+    'HorizontalRule',
+    'Table',
+    'Div',
+)
+
+
 class ASTNode(Node):
     def is_block(self):
         return self.name in BLOCK_NAMES
@@ -77,11 +89,14 @@ class ASTNode(Node):
     def is_inline(self):
         return self.name in INLINE_NAMES
 
-    def check_is_native(self):
-        """Check that an element is native."""
+    def is_native(self):
+        """Return whether the node type is one of the native AST types"""
+        return self.name in NATIVE_NAMES
+
+    def validate(self):
+        """Check that the tree is valid."""
         # Excluded list.
         assert self.name not in ('Str', 'String', 'Space', 'str')
-        assert self.is_block() or self.is_inline()
         if self.is_inline():
             # The children of an Inline node cannot be blocks.
             for child in self.children:
@@ -127,8 +142,14 @@ def _split_spaces(text):
 
 class PodocToPandoc(TreeTransformer):
     def transform_Node(self, node):
-        return _node_dict(node,
-                          self.transform_children(node))
+        if node.is_native():
+            return _node_dict(node,
+                              self.transform_children(node))
+        else:
+            # Skip the current unknown node and use the list of children
+            # instead.
+            # logger.debug("Unknown node `%s`.", node)
+            return self.transform_children(node)
 
     def transform_str(self, text):
         """Split on spaces and insert Space elements for pandoc."""

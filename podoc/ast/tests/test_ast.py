@@ -50,11 +50,11 @@ def ast():
 
     assert block.is_block()
     assert not block.is_inline()
-    inline.check_is_native()
+    inline.validate()
 
     assert not inline.is_block()
     assert inline.is_inline()
-    inline.check_is_native()
+    inline.validate()
 
     # Second block
     block = ASTNode(name='Para',
@@ -82,6 +82,18 @@ def test_to_pandoc(ast, ast_pandoc):
 
 def test_from_pandoc(ast, ast_pandoc):
     assert ast_from_pandoc(ast_pandoc) == ast
+
+
+def test_unknown_node():
+    ast = ASTNode('root')
+    ast.add_child(ASTNode('Para'))
+    ast.add_child(ASTNode('Unknown', children=[ASTNode('Para')]))
+
+    # AST -> pandoc -> AST should remove the Unknown node.
+    ast_trim = ast_from_pandoc(ast.to_pandoc())
+
+    ast_expected = ASTNode('root', children=[ASTNode('Para'), ASTNode('Para')])
+    assert ast_trim == ast_expected
 
 
 #------------------------------------------------------------------------------
