@@ -102,7 +102,7 @@ class ASTNode(Node):
 
 
 #------------------------------------------------------------------------------
-# AST <-> pandoc
+# AST -> pandoc
 #------------------------------------------------------------------------------
 
 def _node_dict(node, children=None):
@@ -191,6 +191,10 @@ class PodocToPandoc(TreeTransformer):
         blocks = self.transform(ast)['c']
         return [{'unMeta': {}}, blocks]
 
+
+#------------------------------------------------------------------------------
+# pandoc -> AST
+#------------------------------------------------------------------------------
 
 def ast_from_pandoc(d):
     return PandocToPodoc().transform_main(d)

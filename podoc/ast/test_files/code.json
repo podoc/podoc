@@ -1,0 +1,112 @@
+[
+    {
+        "unMeta": {}
+    },
+    [
+        {
+            "t": "Header",
+            "c": [
+                1,
+                [
+                    "text-and-code",
+                    [],
+                    []
+                ],
+                [
+                    {
+                        "t": "Str",
+                        "c": "Text"
+                    },
+                    {
+                        "t": "Space",
+                        "c": []
+                    },
+                    {
+                        "t": "Str",
+                        "c": "and"
+                    },
+                    {
+                        "t": "Space",
+                        "c": []
+                    },
+                    {
+                        "t": "Str",
+                        "c": "code"
+                    }
+                ]
+            ]
+        },
+        {
+            "t": "Para",
+            "c": [
+                {
+                    "t": "Str",
+                    "c": "Here"
+                },
+                {
+                    "t": "Space",
+                    "c": []
+                },
+                {
+                    "t": "Str",
+                    "c": "is"
+                },
+                {
+                    "t": "Space",
+                    "c": []
+                },
+                {
+                    "t": "Str",
+                    "c": "some"
+                },
+                {
+                    "t": "Space",
+                    "c": []
+                },
+                {
+                    "t": "Str",
+                    "c": "code:"
+                }
+            ]
+        },
+        {
+            "t": "CodeBlock",
+            "c": [
+                [
+                    "",
+                    [
+                        "python"
+                    ],
+                    []
+                ],
+                "print('hello *world*')\n2 * 3"
+            ]
+        },
+        {
+            "t": "CodeBlock",
+            "c": [
+                [
+                    "",
+                    [
+                        "output"
+                    ],
+                    []
+                ],
+                "hello *world*"
+            ]
+        },
+        {
+            "t": "CodeBlock",
+            "c": [
+                [
+                    "",
+                    [
+                        "output"
+                    ],
+                    []
+                ],
+                "6"
+            ]
+        }
+    ]
+]

@@ -21,7 +21,7 @@ from .._notebook import open_notebook, NotebookReader
 # Test Notebook
 #------------------------------------------------------------------------------
 
-def test_notebook_reader_1():
+def test_notebook_reader_hello():
     # Open a test notebook with just 1 Markdown cell.
     path = get_test_file_path('notebook', 'hello.ipynb')
     notebook = open_notebook(path)
@@ -31,3 +31,14 @@ def test_notebook_reader_1():
     # Check that the AST is equal to the one of a simple Mardown line.
     ast_1 = Markdown().read_markdown('hello *world*')
     assert ast == ast_1
+
+
+def test_notebook_reader_code():
+    # Open a test notebook with a code cell.
+    path = get_test_file_path('notebook', 'code.ipynb')
+    notebook = open_notebook(path)
+    # Convert it to an AST.
+    ast = NotebookReader().read(notebook)
+    ast.show()
+    # TODO: compare with markdown and pandoc AST (need to discard unknown
+    # nodes)
