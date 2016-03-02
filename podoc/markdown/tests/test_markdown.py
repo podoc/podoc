@@ -119,6 +119,11 @@ def _test_renderer(s, *contains_nodes):
     # However, we do test that the generated JSON is compatible with pandoc.
     assert markdown_pandoc
 
+    # Convert pandoc-flavored markdown to AST and compare
+    ast_pandoc = Markdown().read_markdown(markdown_pandoc)
+    ast_pandoc.show()
+    assert ast_pandoc == ast
+
 
 def test_markdown_renderer_simple():
     _test_renderer('hello')
@@ -156,9 +161,10 @@ def test_markdown_renderer_blockquote():
 
 
 def test_markdown_renderer_bullet_list():
-    _test_renderer('* Item 1')
-    _test_renderer('* Item 1\n* Item 2')
-    # _test_renderer('* Item 1\n  * Item 1.2')
+    _test_renderer('- Item 1')
+    _test_renderer('- Item 1\n- Item 2')
+    # TODO: fix the following test
+    # _test_renderer('- Item 1\n  - Item 1.2')
 
 
 def test_markdown_renderer_ordered_list():
@@ -176,14 +182,26 @@ def test_markdown_renderer_paras():
     _test_renderer('hello\n\nworld')
 
 
+def test_markdown_renderer_headers():
+    _test_renderer('# 1\n\n# 2')
+    _test_renderer('# 1\n\n## 2')
+    _test_renderer('## 2\n\n# 1')
+
+
+def test_markdown_renderer_codeblocks():
+    _test_renderer('```python\nhello world\n```\n\n```\nother\n```')
+
+
 def test_markdown_renderer_ordered_bullet():
-    _test_renderer('1. Item 1\n\n* Bullet',
+    # NOTE: we use `-` bullets instead of `*` to ensure stable round-trip
+    # with pandoc which uses - by default.
+    _test_renderer('1. Item 1\n\n- Bullet',
                    'BulletList', 'OrderedList')
-    _test_renderer('* Bullet\n\n1. Item 1',
+    _test_renderer('- Bullet\n\n1. Item 1',
                    'BulletList', 'OrderedList')
-    _test_renderer('1. Item 1\n2. Item 2\n\n* Bullet',
+    _test_renderer('1. Item 1\n2. Item 2\n\n- Bullet',
                    'BulletList', 'OrderedList')
-    _test_renderer('1. Item 1\n2. Item 2\n\n* Bullet\n\n3. Item 3',
+    _test_renderer('1. Item 1\n2. Item 2\n\n- Bullet\n\n3. Item 3',
                    'BulletList', 'OrderedList')
 
 

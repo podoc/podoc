@@ -37,6 +37,7 @@ class CommonMarkToAST(TreeTransformer):
         'Paragraph': 'Para',
         'Heading': 'Header',
         'Softbreak': 'LineBreak',
+        'Hardbreak': 'LineBreak',
         'Item': 'ListItem',
     }
 
