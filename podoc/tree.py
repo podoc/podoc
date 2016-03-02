@@ -96,7 +96,7 @@ def _remove_nxt_prv(node):
     """Recursively remove nxt and prv items in a tree."""
     if isinstance(node, list):
         return [_remove_nxt_prv(n) for n in node]
-    elif isinstance(node, string_types):
+    elif isinstance(node, (string_types, int)):
         return node
     assert isinstance(node, Node)
     return {k: _remove_nxt_prv(v)
