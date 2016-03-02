@@ -92,10 +92,24 @@ class TreeTransformer(object):
 # Node
 #------------------------------------------------------------------------------
 
+def _remove_nxt_prv(node):
+    """Recursively remove nxt and prv items in a tree."""
+    if isinstance(node, list):
+        return [_remove_nxt_prv(n) for n in node]
+    elif isinstance(node, string_types):
+        return node
+    assert isinstance(node, Node)
+    return {k: _remove_nxt_prv(v)
+            for k, v in node.items()
+            if k not in ('nxt', 'prv')}
+
+
 class Node(Bunch):
     """Generic node type, represents a tree."""
     def __init__(self, name='Node', children=None, **kwargs):
         super(Node, self).__init__(**kwargs)
+        # Empty names are forbidden.
+        assert name
         assert isinstance(name, string_types)
         self.name = name
         self.children = children or []
@@ -109,6 +123,11 @@ class Node(Bunch):
 
     def __repr__(self):
         return self.name
+
+    def __eq__(self, other):
+        """Ensure that nxt and prv items are discarded when testing
+        the equality of two trees."""
+        return _remove_nxt_prv(self) == _remove_nxt_prv(other)
 
     def show(self):
         print(show_tree(self, lambda node: node.name,
