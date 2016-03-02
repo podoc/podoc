@@ -11,38 +11,11 @@ import logging
 import os.path as op
 
 from pytest import raises
-from six import string_types
 
 from ..core import Podoc, _find_path, _get_annotation, create_podoc
-from ..utils import open_text
+from ..utils import get_test_file_path, assert_equal
 
 logger = logging.getLogger(__name__)
-
-
-#------------------------------------------------------------------------------
-# Testing utils
-#------------------------------------------------------------------------------
-
-def get_test_file_path(podoc, lang, filename):
-    curdir = op.realpath(op.dirname(__file__))
-    file_ext = podoc.get_file_ext(lang)
-    # Construct the directory name for the language and test filename.
-    dirname = op.realpath(op.join(curdir, '../', lang))
-    path = op.join(dirname, 'test_files', filename + file_ext)
-    assert op.exists(path)
-    return path
-
-
-def assert_equal(p0, p1):
-    if isinstance(p0, string_types) and op.exists(p0):
-        # TODO: non text files
-        # NOTE: included text files have a trailing `\n`.
-        assert_equal(open_text(p0), open_text(p1))
-        return
-    if isinstance(p0, string_types):
-        assert p0.rstrip('\n') == p1.rstrip('\n')
-        return
-    assert p0 == p1
 
 
 #------------------------------------------------------------------------------
