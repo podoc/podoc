@@ -53,14 +53,27 @@ logger = logging.getLogger(__name__)
 #------------------------------------------------------------------------------
 
 _OUTPUT_FILENAME_TEMPLATE = "{unique_key}_{cell_index}_{index}{extension}"
-_EXTRACT_OUTPUT_TYPES = {'image/png',
+_EXTRACT_OUTPUT_TYPES = ('image/png',
                          'image/jpeg',
                          'image/svg+xml',
-                         'application/pdf'}
+                         'application/pdf')
 
 
-def extract_outputs(outputs, cell_index=None, unique_key=None):
-    """Yield (filename, data).
+def output_filename(mime_type=None, unique_key=None,
+                    cell_index=None, output_index=None):
+    ext = guess_extension(mime_type)
+    ext = ".jpeg" if ext == ".jpe" else ext
+    ext = '.' + mime_type.rsplit('/')[-1] if ext is None else ext
+    args = dict(unique_key=unique_key or 'output',
+                cell_index=cell_index or 0,
+                index=output_index or 0,
+                extension=ext,
+                )
+    return _OUTPUT_FILENAME_TEMPLATE.format(**args)
+
+
+def extract_output(output):
+    """Return the output mime type and data for the first found mime type.
 
     https://github.com/jupyter/nbconvert/blob/master/nbconvert/preprocessors/extractoutput.py
 
@@ -68,45 +81,28 @@ def extract_outputs(outputs, cell_index=None, unique_key=None):
     Distributed under the terms of the Modified BSD License.
 
     """
-    for index, out in enumerate(outputs):
-        if out.output_type not in {'display_data', 'execute_result'}:
+    # Get the output in data formats that the template needs extracted.
+    for mime_type in _EXTRACT_OUTPUT_TYPES:
+        if mime_type not in output.data:
             continue
+        data = output.data[mime_type]
 
-        # Get the output in data formats that the template needs extracted.
-        for mime_type in _EXTRACT_OUTPUT_TYPES:
-            if mime_type not in out.data:
-                continue
-            data = out.data[mime_type]
+        # Binary files are base64-encoded, SVG is already XML.
+        if mime_type in {'image/png', 'image/jpeg', 'application/pdf'}:
+            # data is b64-encoded as text (str, unicode)
+            # decodestring only accepts bytes
 
-            # Binary files are base64-encoded, SVG is already XML.
-            if mime_type in {'image/png', 'image/jpeg', 'application/pdf'}:
-                # data is b64-encoded as text (str, unicode)
-                # decodestring only accepts bytes
+            # data = py3compat.cast_bytes(data)
+            if not isinstance(data, bytes):
+                data = data.encode('UTF-8', 'replace')
 
-                # data = py3compat.cast_bytes(data)
-                if not isinstance(data, bytes):
-                    data = data.encode('UTF-8', 'replace')
+            data = base64.decodestring(data)
+        elif sys.platform == 'win32':  # pragma: no cover
+            data = data.replace('\n', '\r\n').encode('UTF-8')
+        else:  # pragma: no cover
+            data = data.encode('UTF-8')
 
-                data = base64.decodestring(data)
-            elif sys.platform == 'win32':
-                data = data.replace('\n', '\r\n').encode('UTF-8')
-            else:
-                data = data.encode('UTF-8')
-
-            ext = guess_extension(mime_type)
-            if ext == ".jpe":
-                ext = ".jpeg"
-            if ext is None:
-                ext = '.' + mime_type.rsplit('/')[-1]
-
-            args = dict(unique_key=unique_key or 'output',
-                        cell_index=cell_index or 0,
-                        index=index,
-                        extension=ext,
-                        )
-            filename = _OUTPUT_FILENAME_TEMPLATE.format(**args)
-
-            yield filename, data
+        return mime_type, data
 
 
 #------------------------------------------------------------------------------
@@ -124,40 +120,48 @@ def open_notebook(path):
 class NotebookReader(object):
     def read(self, notebook):
         self.tree = ASTNode('root')
+        self.resources = {}  # Dictionary {filename: data}.
         # Language of the notebook.
         self.language = notebook.metadata.language_info.name
-        for cell in notebook.cells:
-            getattr(self, 'read_{}'.format(cell.cell_type))(cell)
+        for cell_index, cell in enumerate(notebook.cells):
+            getattr(self, 'read_{}'.format(cell.cell_type))(cell, cell_index)
         return self.tree
 
-    def read_markdown(self, cell):
+    def read_markdown(self, cell, cell_index=None):
         contents = cell.source
         ast = Markdown().read_markdown(contents)
         assert len(ast.children) == 1
         self.tree.children.append(ast.children[0])
 
-    def read_code(self, cell):
+    def read_code(self, cell, cell_index=None):
         node = ASTNode('CodeCell')
         # The first child is the source.
         node.add_child(ASTNode('CodeBlock',
                                lang=self.language,
                                children=[cell.source]))
         # Then, we add one extra child per output.
-        for output in cell.outputs:
+        for output_index, output in enumerate(cell.get('outputs', [])):
             if output.output_type == 'stream':
-                child = output.text
+                child = ASTNode('CodeBlock', lang='output',
+                                children=[output.text])
             elif output.output_type in ('display_data', 'execute_result'):
                 # Output text node.
-                text = output.data.get('text/plain', '')
-                # Get the image, if any.
-                img_b64 = output.data.get('image/png', None)
-                if img_b64:
-                    child = ASTNode('Image', children=[text])
+                text = output.data.get('text/plain', 'Output')
+                # Extract image output, if any.
+                out = extract_output(output)
+                if out is None:
+                    child = ASTNode('CodeBlock', lang='output',
+                                    children=[text])
                 else:
-                    child = text
-            node.add_child(ASTNode('CodeBlock',
-                                   lang='output',
-                                   children=[child]))
+                    mime_type, data = out
+                    fn = output_filename(mime_type=mime_type,
+                                         cell_index=cell_index,
+                                         output_index=output_index,
+                                         unique_key=None,  # TODO
+                                         )
+                    self.resources[fn] = data
+                    child = ASTNode('Image', url=fn, children=[text])
+            node.add_child(child)
         self.tree.children.append(node)
 
     def read_raw(self, cell):

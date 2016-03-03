@@ -9,7 +9,11 @@
 
 from podoc.markdown import Markdown
 from podoc.utils import get_test_file_path, open_text, assert_equal
-from .._notebook import extract_outputs, open_notebook, NotebookReader
+from .._notebook import (extract_output,
+                         output_filename,
+                         open_notebook,
+                         NotebookReader,
+                         )
 
 
 #------------------------------------------------------------------------------
@@ -21,14 +25,14 @@ from .._notebook import extract_outputs, open_notebook, NotebookReader
 # Test Notebook
 #------------------------------------------------------------------------------
 
-def test_extract_outputs():
+def test_extract_output():
     # Open a test notebook with a code cell containing an image.
     path = get_test_file_path('notebook', 'image.ipynb')
     notebook = open_notebook(path)
-    cell = notebook.cells[0]
-    outputs = cell.outputs
-    filename, data = list(extract_outputs(outputs))[0]
-    assert filename == 'output_0_0.png'
+    cell = notebook.cells[1]
+    mime_type, data = list(extract_output(cell.outputs[0]))
+    filename = output_filename(mime_type, cell_index=1, output_index=0)
+    assert filename == 'output_1_0.png'
 
     # Open the image file in the markdown directory.
     image_path = get_test_file_path('markdown', filename)
@@ -63,3 +67,20 @@ def test_notebook_reader_code():
     path = get_test_file_path('markdown', 'code.md')
     markdown = open_text(path)
     assert_equal(Markdown().write_markdown(ast), markdown)
+
+
+def test_notebook_reader_image():
+    # Open a test notebook with a code cell.
+    path = get_test_file_path('notebook', 'image.ipynb')
+    notebook = open_notebook(path)
+    # Convert it to an AST.
+    reader = NotebookReader()
+    ast = reader.read(notebook)
+    ast.show()
+
+    # Compare with the markdown version.
+    path = get_test_file_path('markdown', 'image.md')
+    markdown = open_text(path)
+    assert_equal(Markdown().write_markdown(ast), markdown)
+
+    assert 'output_1_0.png' in reader.resources
