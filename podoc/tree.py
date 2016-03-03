@@ -154,6 +154,10 @@ class TreePrinter(TreeTransformer):
     def get_node_children(self, node):
         return self._get_node_children(node)
 
+    def transform_str(self, contents):
+        # Escape new lines in strings.
+        return contents.replace('\n', '\\n')
+
     def transform_Node(self, node):
         pt, pl, pd = self.prefix_t, self.prefix_l, self.prefix_d
         out = ''
