@@ -9,7 +9,7 @@
 
 from podoc.markdown import Markdown
 from podoc.utils import get_test_file_path, open_text, assert_equal
-from .._notebook import open_notebook, NotebookReader
+from .._notebook import extract_outputs, open_notebook, NotebookReader
 
 
 #------------------------------------------------------------------------------
@@ -20,6 +20,24 @@ from .._notebook import open_notebook, NotebookReader
 #------------------------------------------------------------------------------
 # Test Notebook
 #------------------------------------------------------------------------------
+
+def test_extract_outputs():
+    # Open a test notebook with a code cell containing an image.
+    path = get_test_file_path('notebook', 'image.ipynb')
+    notebook = open_notebook(path)
+    cell = notebook.cells[0]
+    outputs = cell.outputs
+    filename, data = list(extract_outputs(outputs))[0]
+    assert filename == 'output_0_0.png'
+
+    # Open the image file in the markdown directory.
+    image_path = get_test_file_path('markdown', filename)
+    with open(image_path, 'rb') as f:
+        data_expected = f.read()
+
+    # The two image contents should be identical.
+    assert data == data_expected
+
 
 def test_notebook_reader_hello():
     # Open a test notebook with just 1 Markdown cell.

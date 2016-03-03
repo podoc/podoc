@@ -35,7 +35,10 @@ This all could (and should) be improved...
 # Imports
 #------------------------------------------------------------------------------
 
+import base64
 import logging
+from mimetypes import guess_extension
+import sys
 
 import nbformat
 
@@ -43,6 +46,67 @@ from podoc.markdown import Markdown
 from podoc.ast import ASTNode  # , TreeTransformer
 
 logger = logging.getLogger(__name__)
+
+
+#------------------------------------------------------------------------------
+# Extract cell outputs
+#------------------------------------------------------------------------------
+
+_OUTPUT_FILENAME_TEMPLATE = "{unique_key}_{cell_index}_{index}{extension}"
+_EXTRACT_OUTPUT_TYPES = {'image/png',
+                         'image/jpeg',
+                         'image/svg+xml',
+                         'application/pdf'}
+
+
+def extract_outputs(outputs, cell_index=None, unique_key=None):
+    """Yield (filename, data).
+
+    https://github.com/jupyter/nbconvert/blob/master/nbconvert/preprocessors/extractoutput.py
+
+    Copyright (c) IPython Development Team.
+    Distributed under the terms of the Modified BSD License.
+
+    """
+    for index, out in enumerate(outputs):
+        if out.output_type not in {'display_data', 'execute_result'}:
+            continue
+
+        # Get the output in data formats that the template needs extracted.
+        for mime_type in _EXTRACT_OUTPUT_TYPES:
+            if mime_type not in out.data:
+                continue
+            data = out.data[mime_type]
+
+            # Binary files are base64-encoded, SVG is already XML.
+            if mime_type in {'image/png', 'image/jpeg', 'application/pdf'}:
+                # data is b64-encoded as text (str, unicode)
+                # decodestring only accepts bytes
+
+                # data = py3compat.cast_bytes(data)
+                if not isinstance(data, bytes):
+                    data = data.encode('UTF-8', 'replace')
+
+                data = base64.decodestring(data)
+            elif sys.platform == 'win32':
+                data = data.replace('\n', '\r\n').encode('UTF-8')
+            else:
+                data = data.encode('UTF-8')
+
+            ext = guess_extension(mime_type)
+            if ext == ".jpe":
+                ext = ".jpeg"
+            if ext is None:
+                ext = '.' + mime_type.rsplit('/')[-1]
+
+            args = dict(unique_key=unique_key or 'output',
+                        cell_index=cell_index or 0,
+                        index=index,
+                        extension=ext,
+                        )
+            filename = _OUTPUT_FILENAME_TEMPLATE.format(**args)
+
+            yield filename, data
 
 
 #------------------------------------------------------------------------------
