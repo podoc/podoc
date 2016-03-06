@@ -96,6 +96,8 @@ def test_wrap_code_cells():
     ast_wrapped = wrap_code_cells(ast)
     ast_wrapped.show()
 
+    assert len(ast_wrapped.children) == 3
     cell = ast_wrapped.children[2]
     assert cell.name == 'CodeCell'
-    assert cell.children[0] == ast.children[2]
+    for i in range(3):
+        assert cell.children[i] == ast.children[i + 2]

@@ -173,14 +173,35 @@ def wrap_code_cells(ast):
     """Take an AST and wrap top-level CodeBlocks within CodeCells."""
     out = ast.copy()
     out.children = []
+    current_cell = None
     for i, child in enumerate(ast.children):
+        # Notebook code cell.
         if child.name == 'CodeBlock' and child.lang == 'python':
-            # TODO: parametrizable language
+            current_cell = current_cell or ASTNode('CodeCell')
+            # TODO: parameterizable language
             # Wrap CodeBlocks within CodeCells.
-            cell = ASTNode('CodeCell')
-            cell.add_child(child)
-            # TODO: output
-            out.add_child(cell)
+            current_cell.add_child(child)
         else:
-            out.add_child(child)
+            # Decide whether we're part of the current cell.
+            name = child.name
+            children = child.children
+            # Case 1: we're a code block with `output` language.
+            is_output = (name == 'CodeBlock') and (child.lang == 'output')
+            # Case 2: we're just an image.
+            is_image = ((name == 'Para') and
+                        (len(children) == 1) and
+                        (isinstance(children[0], ASTNode)) and
+                        (children[0].name == 'Image'))
+            if is_output or is_image:
+                # Add the current block to the cell's outputs.
+                current_cell.add_child(child)
+            elif current_cell:
+                # We're no longer part of the current cell.
+                out.add_child(current_cell)
+                current_cell = None
+            else:
+                out.add_child(child)
+    # Add the last current cell (if it had no output).
+    if current_cell:
+        out.add_child(current_cell)
     return out
