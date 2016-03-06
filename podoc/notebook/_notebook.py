@@ -167,3 +167,20 @@ class NotebookReader(object):
     def read_raw(self, cell):
         # TODO
         pass
+
+
+def wrap_code_cells(ast):
+    """Take an AST and wrap top-level CodeBlocks within CodeCells."""
+    out = ast.copy()
+    out.children = []
+    for i, child in enumerate(ast.children):
+        if child.name == 'CodeBlock' and child.lang == 'python':
+            # TODO: parametrizable language
+            # Wrap CodeBlocks within CodeCells.
+            cell = ASTNode('CodeCell')
+            cell.add_child(child)
+            # TODO: output
+            out.add_child(cell)
+        else:
+            out.add_child(child)
+    return out

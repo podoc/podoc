@@ -9,10 +9,12 @@
 
 from podoc.markdown import Markdown
 from podoc.utils import get_test_file_path, open_text, assert_equal
+from podoc.ast import ASTPlugin
 from .._notebook import (extract_output,
                          output_filename,
                          open_notebook,
                          NotebookReader,
+                         wrap_code_cells,
                          )
 
 
@@ -84,3 +86,16 @@ def test_notebook_reader_image():
     assert_equal(Markdown().write_markdown(ast), markdown)
 
     assert 'output_1_0.png' in reader.resources
+
+
+def test_wrap_code_cells():
+    path = get_test_file_path('ast', 'code.json')
+    ast = ASTPlugin().open(path)
+    ast.show()
+
+    ast_wrapped = wrap_code_cells(ast)
+    ast_wrapped.show()
+
+    cell = ast_wrapped.children[2]
+    assert cell.name == 'CodeCell'
+    assert cell.children[0] == ast.children[2]

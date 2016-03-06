@@ -113,6 +113,8 @@ class ASTNode(Node):
             return '{} <{}>'.format(self.name, self.url)
         elif self.name == 'OrderedList':
             return '{} ({})'.format(self.name, self.start)
+        elif self.name == 'CodeBlock':
+            return '{} ({})'.format(self.name, self.lang)
         return self.name
 
 

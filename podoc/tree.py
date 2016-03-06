@@ -129,6 +129,11 @@ class Node(Bunch):
         the equality of two trees."""
         return _remove_nxt_prv(self) == _remove_nxt_prv(other)
 
+    def copy(self):
+        node = super(Node, self).copy()
+        node = self.__class__(**node)
+        return node
+
     def show(self):
         print(show_tree(self, lambda node: node.name,
                         lambda node: node.children))
