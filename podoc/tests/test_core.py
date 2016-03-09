@@ -13,7 +13,7 @@ import os.path as op
 from pytest import raises
 
 from ..core import Podoc, _find_path, _get_annotation, create_podoc
-from ..utils import get_test_file_path, assert_equal
+from ..utils import get_test_file_path, assert_equal, open_text
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +133,8 @@ def test_all_open_save(tempdir, podoc, lang, test_file):
         assert_equal(podoc.open(path), podoc.open(to_path))
     else:
         # TODO: non-text formats
-        assert_equal(path, to_path)
+
+        assert_equal(open_text(path), open_text(to_path))
 
 
 def test_all_convert(tempdir, podoc, source_target, test_file):
