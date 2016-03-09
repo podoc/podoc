@@ -13,7 +13,7 @@ from pytest import fixture
 from CommonMark import Parser
 from six import string_types
 
-from podoc.ast import ASTNode
+from podoc.ast import ASTNode, ast_from_pandoc
 from podoc.utils import pandoc, PANDOC_MARKDOWN_FORMAT
 from .._markdown import (CommonMarkToAST, ASTToMarkdown, Markdown)
 
@@ -101,15 +101,18 @@ def _test_renderer(s, *contains_nodes):
     """Test the renderer on a string."""
     # Parse the string with CommonMark-py.
     ast = Markdown().read_markdown(s)
+    print()
+    print('****** PODOC AST ******')
     ast.show()
     # Check that the tree contains a node.
     if contains_nodes:
         assert _tree_contains_nodes(ast, contains_nodes)
-    # Render the AST to Markdown.
+
+    # Check markdown =(podoc)=> AST =(podoc)=> markdown.
     contents = ASTToMarkdown().transform(ast)
     assert contents.strip() == s
 
-    # markdown =(podoc)=> AST =(pandoc)=> markdown
+    # Check markdown =(podoc)=> AST =(pandoc)=> markdown.
     pandoc_json = json.dumps(ast.to_pandoc(), indent=2)
     markdown_pandoc = pandoc(pandoc_json,
                              PANDOC_MARKDOWN_FORMAT, format='json')
@@ -119,10 +122,21 @@ def _test_renderer(s, *contains_nodes):
     # However, we do test that the generated JSON is compatible with pandoc.
     assert markdown_pandoc
 
-    # Convert pandoc-flavored markdown to AST and compare
-    ast_pandoc = Markdown().read_markdown(markdown_pandoc)
-    ast_pandoc.show()
-    assert ast_pandoc == ast
+    # Check markdown_pandoc =(podoc)=> (AST_pandoc == AST_podoc).
+    ast_0 = Markdown().read_markdown(markdown_pandoc)
+    print('****** PODOC AST (from markdown_pandoc) ******')
+    ast_0.show()
+    assert ast_0 == ast
+
+    # Check markdown =(pandoc)=> (AST_pandoc == AST_podoc).
+    p = pandoc(s, 'json', format=PANDOC_MARKDOWN_FORMAT)
+    # NOTE: we use the '-' bullet char in the tests, for better compatibility
+    # with pandoc.
+    ast_1 = ast_from_pandoc(json.loads(p),
+                            bullet_char='-')
+    print('****** PODOC AST (via pandoc) ******')
+    ast_1.show()
+    assert ast_1 == ast
 
 
 def test_markdown_renderer_simple():
