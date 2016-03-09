@@ -177,7 +177,7 @@ def wrap_code_cells(ast):
     for i, child in enumerate(ast.children):
         # Notebook code cell.
         if child.name == 'CodeBlock' and child.lang == 'python':
-            current_cell = current_cell or ASTNode('CodeCell')
+            current_cell = ASTNode('CodeCell')
             # TODO: parameterizable language
             # Wrap CodeBlocks within CodeCells.
             current_cell.add_child(child)
@@ -199,7 +199,10 @@ def wrap_code_cells(ast):
                     current_cell.add_child(child)
                 else:
                     # We're no longer part of the current cell.
+                    # First, we add the cell that has just finished.
                     out.add_child(current_cell)
+                    # Then, we add the current block.
+                    out.add_child(child)
                     current_cell = None
             else:
                 out.add_child(child)

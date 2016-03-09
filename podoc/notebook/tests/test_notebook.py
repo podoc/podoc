@@ -9,7 +9,7 @@
 
 from podoc.markdown import Markdown
 from podoc.utils import get_test_file_path, open_text, assert_equal
-from podoc.ast import ASTPlugin
+from podoc.ast import ASTPlugin, ASTNode
 from .._notebook import (extract_output,
                          output_filename,
                          open_notebook,
@@ -111,8 +111,10 @@ def test_wrap_code_cells_2():
     ast_wrapped = wrap_code_cells(ast)
     ast_wrapped.show()
 
-    # assert len(ast_wrapped.children) == 3
-    # cell = ast_wrapped.children[2]
-    # assert cell.name == 'CodeCell'
-    # for i in range(3):
-    #     assert cell.children[i] == ast.children[i + 2]
+    # The blocks 1 and 2 should be wrapped: one input cell and one output
+    # cell with an image.
+    ast_expected = ASTNode('root')
+    ast_expected.add_child(ast.children[0])
+    ast_expected.children.append(ASTNode('CodeCell',
+                                         children=ast.children[1:3]))
+    ast_expected.add_child(ast.children[-1])
