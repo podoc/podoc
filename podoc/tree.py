@@ -12,7 +12,7 @@ import logging
 from six import string_types, u
 from six.moves import zip_longest
 
-from .utils import Bunch
+from .utils import Bunch, _are_dict_equal
 
 logger = logging.getLogger(__name__)
 
@@ -51,9 +51,9 @@ class TreeTransformer(object):
     def set_next_child(self, child, next_child):
         """To be overriden. Set the next and previous children."""
         if child is not None and not isinstance(child, string_types):
-            child.nxt = next_child
+            child._visit_meta['nxt'] = next_child
         if next_child is not None and not isinstance(next_child, string_types):
-            next_child.prv = child
+            next_child._visit_meta['prv'] = child
 
     # Transformation methods
     # -------------------------------------------------------------------------
@@ -92,22 +92,11 @@ class TreeTransformer(object):
 # Node
 #------------------------------------------------------------------------------
 
-def _remove_nxt_prv(node):
-    """Recursively remove nxt and prv items in a tree."""
-    if isinstance(node, list):
-        return [_remove_nxt_prv(n) for n in node]
-    elif isinstance(node, (string_types, int)):
-        return node
-    assert isinstance(node, Node)
-    return {k: _remove_nxt_prv(v)
-            for k, v in node.items()
-            if k not in ('nxt', 'prv')}
-
-
 class Node(Bunch):
     """Generic node type, represents a tree."""
     def __init__(self, name='Node', children=None, **kwargs):
         super(Node, self).__init__(**kwargs)
+        self._visit_meta = {}
         # Empty names are forbidden.
         assert name
         assert isinstance(name, string_types)
@@ -128,7 +117,7 @@ class Node(Bunch):
     def __eq__(self, other):
         """Ensure that nxt and prv items are discarded when testing
         the equality of two trees."""
-        return _remove_nxt_prv(self) == _remove_nxt_prv(other)
+        return _are_dict_equal(self, other)
 
     def copy(self):
         node = super(Node, self).copy()
