@@ -186,7 +186,8 @@ def wrap_code_cells(ast):
             name = child.name
             children = child.children
             # Case 1: we're a code block with `output` language.
-            is_output = (name == 'CodeBlock') and (child.lang == 'output')
+            is_output = ((name == 'CodeBlock') and
+                         (child.lang in (None, '', 'output')))
             # Case 2: we're just an image.
             is_image = ((name == 'Para') and
                         (len(children) == 1) and

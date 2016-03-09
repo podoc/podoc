@@ -4,105 +4,112 @@
     },
     [
         {
-            "t": "Header",
             "c": [
                 1,
                 [
-                    "h1",
+                    "",
                     [],
                     []
                 ],
                 [
                     {
-                        "t": "Str",
-                        "c": "H1"
+                        "c": "H1",
+                        "t": "Str"
                     }
                 ]
-            ]
+            ],
+            "t": "Header"
         },
         {
-            "t": "Header",
             "c": [
                 3,
                 [
-                    "h3",
+                    "",
                     [],
                     []
                 ],
                 [
                     {
-                        "t": "Str",
-                        "c": "H3"
+                        "c": "H3",
+                        "t": "Str"
                     }
                 ]
-            ]
+            ],
+            "t": "Header"
         },
         {
-            "t": "Para",
             "c": [
                 {
-                    "t": "Str",
-                    "c": "a"
+                    "c": "a",
+                    "t": "Str"
                 },
                 {
-                    "t": "Space",
-                    "c": []
+                    "c": [],
+                    "t": "Space"
                 },
                 {
-                    "t": "Link",
                     "c": [
                         [
+                            "",
+                            [],
+                            []
+                        ],
+                        [
                             {
-                                "t": "Emph",
                                 "c": [
                                     {
-                                        "t": "Str",
-                                        "c": "b"
+                                        "c": "b",
+                                        "t": "Str"
                                     },
                                     {
-                                        "t": "Space",
-                                        "c": []
+                                        "c": [],
+                                        "t": "Space"
                                     },
                                     {
-                                        "t": "Strong",
                                         "c": [
                                             {
-                                                "t": "Str",
-                                                "c": "c"
+                                                "c": "c",
+                                                "t": "Str"
                                             }
-                                        ]
+                                        ],
+                                        "t": "Strong"
                                     },
                                     {
-                                        "t": "Space",
-                                        "c": []
+                                        "c": [],
+                                        "t": "Space"
                                     },
                                     {
-                                        "t": "Str",
-                                        "c": "d"
+                                        "c": "d",
+                                        "t": "Str"
                                     }
-                                ]
+                                ],
+                                "t": "Emph"
                             }
                         ],
                         [
                             "url",
                             ""
                         ]
-                    ]
+                    ],
+                    "t": "Link"
                 },
                 {
-                    "t": "Space",
-                    "c": []
+                    "c": [],
+                    "t": "LineBreak"
                 },
                 {
-                    "t": "Image",
                     "c": [
                         [
+                            "",
+                            [],
+                            []
+                        ],
+                        [
                             {
-                                "t": "Str",
-                                "c": "e"
+                                "c": "e",
+                                "t": "Str"
                             },
                             {
-                                "t": "Code",
                                 "c": [
                                     [
                                         "",
@@ -110,213 +117,216 @@
                                         []
                                     ],
                                     "f"
-                                ]
+                                ],
+                                "t": "Code"
                             },
                             {
-                                "t": "Str",
-                                "c": "g"
+                                "c": "g",
+                                "t": "Str"
                             }
                         ],
                         [
                             "image",
                             ""
                         ]
-                    ]
+                    ],
+                    "t": "Image"
                 }
-            ]
+            ],
+            "t": "Para"
         },
         {
-            "t": "BlockQuote",
             "c": [
                 {
-                    "t": "Para",
                     "c": [
                         {
-                            "t": "Str",
-                            "c": "quote"
+                            "c": "quote",
+                            "t": "Str"
                         }
-                    ]
-                },
-                {
-                    "t": "CodeBlock",
-                    "c": [
-                        [
-                            "",
-                            [
-                                "lang"
-                            ],
-                            []
-                        ],
-                        "code"
-                    ]
+                    ],
+                    "t": "Para"
                 }
-            ]
+            ],
+            "t": "BlockQuote"
         },
         {
-            "t": "Para",
+            "c": [
+                [
+                    "",
+                    [
+                        "lang"
+                    ],
+                    []
+                ],
+                "code"
+            ],
+            "t": "CodeBlock"
+        },
+        {
             "c": [
                 {
-                    "t": "Math",
                     "c": [
                         {
-                            "t": "DisplayMath",
-                            "c": []
+                            "c": [],
+                            "t": "DisplayMath"
                         },
                         "\\int_a^b f(x) dx\nx=y"
-                    ]
+                    ],
+                    "t": "Math"
                 }
-            ]
+            ],
+            "t": "Para"
         },
         {
-            "t": "BulletList",
             "c": [
                 [
                     {
-                        "t": "Plain",
                         "c": [
                             {
-                                "t": "Str",
-                                "c": "a"
+                                "c": "a",
+                                "t": "Str"
                             }
-                        ]
+                        ],
+                        "t": "Plain"
                     }
                 ],
                 [
                     {
-                        "t": "Plain",
                         "c": [
                             {
-                                "t": "Math",
                                 "c": [
                                     {
-                                        "t": "InlineMath",
-                                        "c": []
+                                        "c": [],
+                                        "t": "InlineMath"
                                     },
                                     "{}_0^1 b_2^3"
-                                ]
+                                ],
+                                "t": "Math"
                             }
-                        ]
+                        ],
+                        "t": "Plain"
                     }
                 ]
-            ]
+            ],
+            "t": "BulletList"
         },
         {
-            "t": "OrderedList",
             "c": [
                 [
                     1,
                     {
-                        "t": "Decimal",
-                        "c": []
+                        "c": [],
+                        "t": "Decimal"
                     },
                     {
-                        "t": "Period",
-                        "c": []
+                        "c": [],
+                        "t": "Period"
                     }
                 ],
                 [
                     [
                         {
-                            "t": "Plain",
                             "c": [
                                 {
-                                    "t": "Str",
-                                    "c": "c"
+                                    "c": "c",
+                                    "t": "Str"
                                 }
-                            ]
+                            ],
+                            "t": "Plain"
                         }
                     ],
                     [
                         {
-                            "t": "Plain",
                             "c": [
                                 {
-                                    "t": "Str",
-                                    "c": "d"
+                                    "c": "d",
+                                    "t": "Str"
                                 }
-                            ]
+                            ],
+                            "t": "Plain"
                         },
                         {
-                            "t": "OrderedList",
                             "c": [
                                 [
                                     10,
                                     {
-                                        "t": "Decimal",
-                                        "c": []
+                                        "c": [],
+                                        "t": "Decimal"
                                     },
                                     {
-                                        "t": "Period",
-                                        "c": []
+                                        "c": [],
+                                        "t": "Period"
                                     }
                                 ],
                                 [
                                     [
                                         {
-                                            "t": "Plain",
                                             "c": [
                                                 {
-                                                    "t": "Str",
-                                                    "c": "e"
+                                                    "c": "e",
+                                                    "t": "Str"
                                                 }
-                                            ]
+                                            ],
+                                            "t": "Plain"
                                         }
                                     ]
                                 ]
-                            ]
+                            ],
+                            "t": "OrderedList"
                         }
                     ],
                     [
                         {
-                            "t": "Plain",
                             "c": [
                                 {
-                                    "t": "Str",
-                                    "c": "f"
+                                    "c": "f",
+                                    "t": "Str"
                                 }
-                            ]
+                            ],
+                            "t": "Plain"
                         }
                     ]
                 ]
-            ]
+            ],
+            "t": "OrderedList"
         },
         {
-            "t": "BulletList",
             "c": [
                 [
                     {
-                        "t": "Plain",
                         "c": [
                             {
-                                "t": "Str",
-                                "c": "g"
+                                "c": "g",
+                                "t": "Str"
                             }
-                        ]
+                        ],
+                        "t": "Plain"
                     }
                 ],
                 [
                     {
-                        "t": "Plain",
                         "c": [
                             {
-                                "t": "Str",
-                                "c": "h"
+                                "c": "h",
+                                "t": "Str"
                             }
-                        ]
+                        ],
+                        "t": "Plain"
                     }
                 ],
                 [
                     {
-                        "t": "Plain",
                         "c": [
                             {
-                                "t": "Str",
-                                "c": "i"
+                                "c": "i",
+                                "t": "Str"
                             }
-                        ]
+                        ],
+                        "t": "Plain"
                     }
                 ]
-            ]
+            ],
+            "t": "BulletList"
         }
     ]
 ]

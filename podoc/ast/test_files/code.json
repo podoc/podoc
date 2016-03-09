@@ -4,73 +4,72 @@
     },
     [
         {
-            "t": "Header",
             "c": [
                 1,
                 [
-                    "text-and-code",
+                    "",
                     [],
                     []
                 ],
                 [
                     {
-                        "t": "Str",
-                        "c": "Text"
+                        "c": "Text",
+                        "t": "Str"
                     },
                     {
-                        "t": "Space",
-                        "c": []
+                        "c": [],
+                        "t": "Space"
                     },
                     {
-                        "t": "Str",
-                        "c": "and"
+                        "c": "and",
+                        "t": "Str"
                     },
                     {
-                        "t": "Space",
-                        "c": []
+                        "c": [],
+                        "t": "Space"
                     },
                     {
-                        "t": "Str",
-                        "c": "code"
+                        "c": "code",
+                        "t": "Str"
                     }
                 ]
-            ]
+            ],
+            "t": "Header"
         },
         {
-            "t": "Para",
             "c": [
                 {
-                    "t": "Str",
-                    "c": "Here"
+                    "c": "Here",
+                    "t": "Str"
                 },
                 {
-                    "t": "Space",
-                    "c": []
+                    "c": [],
+                    "t": "Space"
                 },
                 {
-                    "t": "Str",
-                    "c": "is"
+                    "c": "is",
+                    "t": "Str"
                 },
                 {
-                    "t": "Space",
-                    "c": []
+                    "c": [],
+                    "t": "Space"
                 },
                 {
-                    "t": "Str",
-                    "c": "some"
+                    "c": "some",
+                    "t": "Str"
                 },
                 {
-                    "t": "Space",
-                    "c": []
+                    "c": [],
+                    "t": "Space"
                 },
                 {
-                    "t": "Str",
-                    "c": "code:"
+                    "c": "code:",
+                    "t": "Str"
                 }
-            ]
+            ],
+            "t": "Para"
         },
         {
-            "t": "CodeBlock",
             "c": [
                 [
                     "",
@@ -80,10 +79,10 @@
                     []
                 ],
                 "print('hello *world*')\n2 * 3"
-            ]
+            ],
+            "t": "CodeBlock"
         },
         {
-            "t": "CodeBlock",
             "c": [
                 [
                     "",
@@ -93,10 +92,10 @@
                     []
                 ],
                 "hello *world*"
-            ]
+            ],
+            "t": "CodeBlock"
         },
         {
-            "t": "CodeBlock",
             "c": [
                 [
                     "",
@@ -106,7 +105,8 @@
                     []
                 ],
                 "6"
-            ]
+            ],
+            "t": "CodeBlock"
         }
     ]
 ]

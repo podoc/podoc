@@ -4,7 +4,6 @@
     },
     [
         {
-            "t": "Header",
             "c": [
                 1,
                 [
@@ -14,83 +13,86 @@
                 ],
                 [
                     {
-                        "t": "Str",
-                        "c": "Code"
+                        "c": "Code",
+                        "t": "Str"
                     },
                     {
-                        "t": "Space",
-                        "c": []
+                        "c": [],
+                        "t": "Space"
                     },
                     {
-                        "t": "Str",
-                        "c": "and"
+                        "c": "and",
+                        "t": "Str"
                     },
                     {
-                        "t": "Space",
-                        "c": []
+                        "c": [],
+                        "t": "Space"
                     },
                     {
-                        "t": "Str",
-                        "c": "image"
+                        "c": "image",
+                        "t": "Str"
                     }
                 ]
-            ]
+            ],
+            "t": "Header"
         },
         {
-            "t": "Para",
+            "c": [
+                [
+                    "",
+                    [
+                        "python"
+                    ],
+                    []
+                ],
+                "import numpy as np\nimport matplotlib.pyplot as plt\n%matplotlib inline\nplt.imshow(np.random.rand(4, 4, 3), interpolation='none')\nplt.xticks([])\nplt.yticks([])\nplt.show()"
+            ],
+            "t": "CodeBlock"
+        },
+        {
             "c": [
                 {
-                    "t": "Code",
                     "c": [
                         [
                             "",
                             [],
                             []
                         ],
-                        "python import numpy as np import matplotlib.pyplot as plt %matplotlib inline plt.imshow(np.random.rand(4, 4, 3), interpolation='none') plt.xticks([]) plt.yticks([]) plt.show()"
-                    ]
-                }
-            ]
-        },
-        {
-            "t": "Para",
-            "c": [
-                {
-                    "t": "Image",
-                    "c": [
                         [
                             {
-                                "t": "RawInline",
                                 "c": [
                                     "html",
                                     "<matplotlib.figure.Figure at 0x7fe727fed7b8>"
-                                ]
+                                ],
+                                "t": "RawInline"
                             }
                         ],
                         [
                             "output_1_0.png",
                             ""
                         ]
-                    ]
+                    ],
+                    "t": "Image"
                 }
-            ]
+            ],
+            "t": "Para"
         },
         {
-            "t": "Para",
             "c": [
                 {
-                    "t": "Str",
-                    "c": "The"
+                    "c": "The",
+                    "t": "Str"
                 },
                 {
-                    "t": "Space",
-                    "c": []
+                    "c": [],
+                    "t": "Space"
                 },
                 {
-                    "t": "Str",
-                    "c": "end."
+                    "c": "end.",
+                    "t": "Str"
                 }
-            ]
+            ],
+            "t": "Para"
         }
     ]
 ]
