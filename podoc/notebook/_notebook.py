@@ -41,6 +41,7 @@ from mimetypes import guess_extension
 import sys
 
 import nbformat
+from nbformat import new_markdown_cell, new_code_cell, new_output
 
 from podoc.markdown import Markdown
 from podoc.ast import ASTNode  # , TreeTransformer
@@ -210,3 +211,43 @@ def wrap_code_cells(ast):
     if current_cell:
         out.add_child(current_cell)
     return out
+
+
+class NotebookWriter(object):
+    def write(self, ast):
+        # Add code cells in the AST.
+        ast = wrap_code_cells(ast)
+        # Create the notebook.
+        # new_output, new_code_cell, new_markdown_cell
+        nb = nbformat.new_notebook()
+        # Go through all top-level blocks.
+        for index, node in enumerate(ast.children):
+            # Determine the block type.
+            if node.name == 'CodeBlock':
+                node_type = 'code'
+            else:
+                node_type = 'markdown'
+            # Create the notebook cell.
+            cell = getattr(self, 'new_{}_cell'.format(node_type))(node, index)
+            # Add it to the notebook.
+            nb.cells.append(cell)
+        return nb
+
+    def new_markdown_cell(self, node, index=None):
+        return new_markdown_cell(node.children[0])
+
+    def new_code_cell(self, node, index=None):
+        # Get the code cell input: the first child of the CodeCell block.
+        input_block = node.children[0]
+        assert input_block.name == 'CodeBlock'
+        cell = new_code_cell(input_block.children[0])
+        # Next we need to add the output: the next children in the CodeCell.
+        for child in node.children[1:]:
+            # TODO: determine the output type and data from the AST node.
+            output = new_output(output_type, data=None)
+            cell.outputs.append(output)
+        return cell
+
+    def new_raw_cell(self, node, index=None):
+        # TODO
+        pass
