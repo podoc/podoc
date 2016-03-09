@@ -9,8 +9,8 @@ python:
 before_install:
   - pip install --upgrade pip
   - pip install codecov
-  - "[ ! -d ~/bin ] && mkdir ~/bin || true"
-  - "wget -q -O - https://github.com/yihui/crandalf/raw/master/inst/scripts/install-pandoc | bash"
+  - wget https://github.com/jgm/pandoc/releases/download/1.16.0.2/pandoc-1.16.0.2-1-amd64.deb
+  - sudo dpkg -i pandoc-1.16.0.2-1-amd64.deb
 install:
   - pip install -r requirements.txt
   - pip install -r requirements-dev.txt
