@@ -13,10 +13,11 @@ import re
 from CommonMark import Parser
 from six import string_types
 
-from podoc.plugin import IPlugin
-from podoc.tree import TreeTransformer
 from podoc.ast import ASTNode
 from podoc.markdown.renderer import MarkdownRenderer
+from podoc.plugin import IPlugin
+from podoc.tree import TreeTransformer
+from podoc.utils import _merge_str
 
 logger = logging.getLogger(__name__)
 
@@ -38,12 +39,12 @@ class CommonMarkPostProcessor(TreeTransformer):
         for child in node.children:
             if child.name == 'Para':
                 child.name = 'Plain'
-        return node
+        return self.transform_Node(node)
 
     def transform_Node(self, node):
         """Call the transformation methods recursively."""
         children = self.transform_children(node)
-        node.children = children
+        node.children = _merge_str(children)
         return node
 
 

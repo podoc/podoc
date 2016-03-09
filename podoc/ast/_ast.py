@@ -16,7 +16,7 @@ from six import string_types
 
 from podoc.tree import Node, TreeTransformer
 from podoc.plugin import IPlugin
-from podoc.utils import has_pandoc, pandoc, get_pandoc_formats
+from podoc.utils import has_pandoc, pandoc, get_pandoc_formats, _merge_str
 
 logger = logging.getLogger(__name__)
 
@@ -237,18 +237,6 @@ class PodocToPandoc(TreeTransformer):
 
 def ast_from_pandoc(d, **kwargs):
     return PandocToPodoc(**kwargs).transform_main(d)
-
-
-def _merge_str(l):
-    """Concatenate consecutive strings in a list of nodes."""
-    out = []
-    for node in l:
-        if (out and isinstance(out[-1], string_types) and
-                isinstance(node, string_types)):
-            out[-1] += node
-        else:
-            out.append(node)
-    return out
 
 
 class PandocToPodocPostProcessor(TreeTransformer):

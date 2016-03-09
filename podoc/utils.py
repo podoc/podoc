@@ -127,9 +127,23 @@ def assert_equal(p0, p1):
         assert p0.rstrip('\n') == p1.rstrip('\n')
     elif isinstance(p0, dict):
         if not _are_dict_equal(p0, p1):
+            # p0.show()
+            # p1.show()
             assert _remove_private(p0) == _remove_private(p1)
     else:
         assert p0 == p1
+
+
+def _merge_str(l):
+    """Concatenate consecutive strings in a list of nodes."""
+    out = []
+    for node in l:
+        if (out and isinstance(out[-1], string_types) and
+                isinstance(node, string_types)):
+            out[-1] += node
+        else:
+            out.append(node)
+    return out
 
 
 #------------------------------------------------------------------------------
@@ -137,7 +151,8 @@ def assert_equal(p0, p1):
 #------------------------------------------------------------------------------
 
 # TODO: commonmark instead
-PANDOC_MARKDOWN_FORMAT = ('markdown_strict+'
+PANDOC_MARKDOWN_FORMAT = ('markdown_strict'
+                          '-raw_html+'
                           'fancy_lists+'
                           'startnum+'
                           'backtick_code_blocks+'
