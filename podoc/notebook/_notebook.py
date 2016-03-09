@@ -192,13 +192,14 @@ def wrap_code_cells(ast):
                         (len(children) == 1) and
                         (isinstance(children[0], ASTNode)) and
                         (children[0].name == 'Image'))
-            if is_output or is_image:
-                # Add the current block to the cell's outputs.
-                current_cell.add_child(child)
-            elif current_cell:
-                # We're no longer part of the current cell.
-                out.add_child(current_cell)
-                current_cell = None
+            if current_cell:
+                if is_output or is_image:
+                    # Add the current block to the cell's outputs.
+                    current_cell.add_child(child)
+                else:
+                    # We're no longer part of the current cell.
+                    out.add_child(current_cell)
+                    current_cell = None
             else:
                 out.add_child(child)
     # Add the last current cell (if it had no output).

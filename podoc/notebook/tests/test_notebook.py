@@ -88,7 +88,7 @@ def test_notebook_reader_image():
     assert 'output_1_0.png' in reader.resources
 
 
-def test_wrap_code_cells():
+def test_wrap_code_cells_1():
     path = get_test_file_path('ast', 'code.json')
     ast = ASTPlugin().open(path)
     ast.show()
@@ -101,3 +101,18 @@ def test_wrap_code_cells():
     assert cell.name == 'CodeCell'
     for i in range(3):
         assert cell.children[i] == ast.children[i + 2]
+
+
+def test_wrap_code_cells_2():
+    path = get_test_file_path('ast', 'image.json')
+    ast = ASTPlugin().open(path)
+    ast.show()
+
+    ast_wrapped = wrap_code_cells(ast)
+    ast_wrapped.show()
+
+    # assert len(ast_wrapped.children) == 3
+    # cell = ast_wrapped.children[2]
+    # assert cell.name == 'CodeCell'
+    # for i in range(3):
+    #     assert cell.children[i] == ast.children[i + 2]
