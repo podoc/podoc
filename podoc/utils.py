@@ -114,6 +114,7 @@ PANDOC_MARKDOWN_FORMAT = ('markdown_strict+'
                           'fancy_lists+'
                           'startnum+'
                           'backtick_code_blocks+'
+                          'hard_line_breaks+'
                           'tex_math_dollars'
                           )
 

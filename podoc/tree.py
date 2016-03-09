@@ -121,7 +121,8 @@ class Node(Bunch):
         self.children.append(child)
         return child
 
-    def __repr__(self):
+    def display(self):
+        """Print-friendly representation of a node, used in tree show()."""
         return self.name
 
     def __eq__(self, other):
@@ -183,7 +184,11 @@ class TreePrinter(TreeTransformer):
         out = out.strip()
         if out:
             out = '\n' + out
-        return str(node) + out
+        # NOTE: the print-friendly representation of a node is available
+        # in node.display() if available, otherwise str(node).
+        # Overriding __repr__() leads to hard-to-debug equality assertions
+        # with py.test.
+        return getattr(node, 'display', lambda: str(node))() + out
 
 
 def show_tree(node, get_node_name=None, get_children_name=None):
