@@ -119,10 +119,9 @@ def _test_pandoc_ast(s):
     """
     if not has_pandoc():  # pragma: no cover
         raise ImportError("pypandoc is not available")
-    # NOTE: we disable pandoc Markdown extensions.
     ast_dict = json.loads(pandoc(s, 'json', format=PANDOC_MARKDOWN_FORMAT))
     ast = ast_from_pandoc(ast_dict)
-    # ast.show()
+    ast.show()
     assert ast.to_pandoc() == ast_dict
 
 

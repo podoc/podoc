@@ -8,4 +8,4 @@
 # Imports
 #------------------------------------------------------------------------------
 
-from ._ast import ASTNode, ASTPlugin, PandocPlugin
+from ._ast import ASTNode, ASTPlugin, PandocPlugin, ast_from_pandoc
