@@ -104,6 +104,7 @@ def test_notebook_writer_code():
     ast = ASTPlugin().open(path)
     nb = NotebookWriter().write(ast)
 
+    # Compare the notebooks.
     nb_expected = open_notebook(get_test_file_path('notebook', 'code.ipynb'))
     # Ignore some fields when comparing the notebooks.
     assert_equal(nb, nb_expected, ('metadata', 'kernelspec'))
@@ -113,13 +114,15 @@ def test_notebook_writer_image():
     path = get_test_file_path('ast', 'image.json')
     ast = ASTPlugin().open(path)
 
-    # TODO: automatically get the resource paths.
+    # Load the image.
     fn = get_test_file_path('markdown', 'output_1_0.png')
     with open(fn, 'rb') as f:
         img = f.read()
     resources = {op.basename(fn): img}
+    # Convert the AST to a notebook.
     nb = NotebookWriter().write(ast, resources=resources)
 
+    # Compare the notebooks.
     nb_expected = open_notebook(get_test_file_path('notebook', 'image.ipynb'))
     # Ignore some fields when comparing the notebooks.
     assert_equal(nb, nb_expected, ('metadata', 'kernelspec'))
