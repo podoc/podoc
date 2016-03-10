@@ -7,6 +7,8 @@
 # Imports
 #------------------------------------------------------------------------------
 
+import os.path as op
+
 from podoc.markdown import Markdown
 from podoc.utils import get_test_file_path, open_text, assert_equal
 from podoc.ast import ASTPlugin, ASTNode
@@ -14,6 +16,7 @@ from .._notebook import (extract_output,
                          output_filename,
                          open_notebook,
                          NotebookReader,
+                         NotebookWriter,
                          wrap_code_cells,
                          )
 
@@ -44,6 +47,10 @@ def test_extract_output():
     # The two image contents should be identical.
     assert data == data_expected
 
+
+#------------------------------------------------------------------------------
+# Test NotebookReader
+#------------------------------------------------------------------------------
 
 def test_notebook_reader_hello():
     # Open a test notebook with just 1 Markdown cell.
@@ -87,6 +94,37 @@ def test_notebook_reader_image():
 
     assert 'output_1_0.png' in reader.resources
 
+
+#------------------------------------------------------------------------------
+# Test NotebookWriter
+#------------------------------------------------------------------------------
+
+def test_notebook_writer_code():
+    path = get_test_file_path('ast', 'code.json')
+    ast = ASTPlugin().open(path)
+
+    nb = NotebookWriter().write(ast)
+    from pprint import pprint
+    pprint(nb)
+
+
+def test_notebook_writer_image():
+    path = get_test_file_path('ast', 'image.json')
+    ast = ASTPlugin().open(path)
+
+    # TODO: automatically get the resource paths.
+    fn = get_test_file_path('markdown', 'output_1_0.png')
+    with open(fn, 'rb') as f:
+        img = f.read()
+    resources = {op.basename(fn): img}
+    nb = NotebookWriter().write(ast, resources=resources)
+    from pprint import pprint
+    pprint(nb)
+
+
+#------------------------------------------------------------------------------
+# Test wrap code cells
+#------------------------------------------------------------------------------
 
 def test_wrap_code_cells_1():
     path = get_test_file_path('ast', 'code.json')

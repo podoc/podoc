@@ -37,11 +37,15 @@ This all could (and should) be improved...
 
 import base64
 import logging
-from mimetypes import guess_extension
+from mimetypes import guess_extension, guess_type
 import sys
 
 import nbformat
-from nbformat import new_markdown_cell, new_code_cell, new_output
+from nbformat.v4 import (new_notebook,
+                         new_markdown_cell,
+                         new_code_cell,
+                         new_output,
+                         )
 
 from podoc.markdown import Markdown
 from podoc.ast import ASTNode  # , TreeTransformer
@@ -137,13 +141,14 @@ class NotebookReader(object):
     def read_code(self, cell, cell_index=None):
         node = ASTNode('CodeCell')
         # The first child is the source.
+        # NOTE: the language of the code block is the notebook's language.
         node.add_child(ASTNode('CodeBlock',
                                lang=self.language,
                                children=[cell.source]))
         # Then, we add one extra child per output.
         for output_index, output in enumerate(cell.get('outputs', [])):
             if output.output_type == 'stream':
-                child = ASTNode('CodeBlock', lang='output',
+                child = ASTNode('CodeBlock', lang='stream',
                                 children=[output.text])
             elif output.output_type in ('display_data', 'execute_result'):
                 # Output text node.
@@ -186,9 +191,9 @@ def wrap_code_cells(ast):
             # Decide whether we're part of the current cell.
             name = child.name
             children = child.children
-            # Case 1: we're a code block with `output` language.
+            # Case 1: we're a code block with `output` or `stream` language.
             is_output = ((name == 'CodeBlock') and
-                         (child.lang in (None, '', 'output')))
+                         (child.lang in (None, '', 'output', 'stream')))
             # Case 2: we're just an image.
             is_image = ((name == 'Para') and
                         (len(children) == 1) and
@@ -214,16 +219,21 @@ def wrap_code_cells(ast):
 
 
 class NotebookWriter(object):
-    def write(self, ast):
+    def write(self, ast, resources=None):
+        # Mapping {filename: data}.
+        self.resources = resources or {}
+        self.execution_count = 1
+        self._md = Markdown()
         # Add code cells in the AST.
         ast = wrap_code_cells(ast)
+        ast.show()
         # Create the notebook.
         # new_output, new_code_cell, new_markdown_cell
-        nb = nbformat.new_notebook()
+        nb = new_notebook()
         # Go through all top-level blocks.
         for index, node in enumerate(ast.children):
             # Determine the block type.
-            if node.name == 'CodeBlock':
+            if node.name == 'CodeCell':
                 node_type = 'code'
             else:
                 node_type = 'markdown'
@@ -234,18 +244,55 @@ class NotebookWriter(object):
         return nb
 
     def new_markdown_cell(self, node, index=None):
-        return new_markdown_cell(node.children[0])
+        return new_markdown_cell(self._md.write_markdown(node))
+
+    def _get_b64_resource(self, fn):
+        """Return the base64 of a resource from its filename.
+
+        The mapping `resources={fn: data}` needs to be passed to the `write()`
+        method.
+
+        """
+        data = self.resources.get(fn, None)
+        return base64.b64encode(data).decode('utf8') if data else None
 
     def new_code_cell(self, node, index=None):
         # Get the code cell input: the first child of the CodeCell block.
         input_block = node.children[0]
         assert input_block.name == 'CodeBlock'
-        cell = new_code_cell(input_block.children[0])
+        cell = new_code_cell(input_block.children[0],
+                             execution_count=self.execution_count,
+                             )
         # Next we need to add the output: the next children in the CodeCell.
         for child in node.children[1:]:
             # TODO: determine the output type and data from the AST node.
-            output = new_output(output_type, data=None)
+            if child.name == 'CodeBlock':
+                output_type = {'output': 'execute_result'}.get(child.lang,
+                                                               child.lang)
+                contents = child.children[0]
+                if output_type == 'execute_result':
+                    kwargs = dict(execution_count=self.execution_count,
+                                  data={'text/plain': contents})
+                elif output_type == 'stream':
+                    kwargs = dict(text=contents)
+            elif child.name == 'Para':
+                img = child.children[0]
+                assert img.name == 'Image'
+                fn = img.url
+                caption = self._md.write_markdown(img.children[0])
+                output_type = 'display_data'
+                data = {}  # Dictionary {mimetype: data_buffer}.
+                # Infer the mime type of the file, from its filename and
+                # extension.
+                mime_type = guess_type(fn)[0]
+                assert mime_type  # unknown extension: this shouldn't happen!
+                data[mime_type] = self._get_b64_resource(fn)
+                assert data[mime_type] is not None  # TODO
+                data['plain/text'] = caption
+                kwargs = dict(data=data)
+            output = new_output(output_type, **kwargs)
             cell.outputs.append(output)
+        self.execution_count += 1
         return cell
 
     def new_raw_cell(self, node, index=None):

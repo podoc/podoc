@@ -7,7 +7,7 @@ print('hello *world*')
 2 * 3
 ```
 
-```output
+```stream
 hello *world*
 ```
 
