@@ -112,24 +112,24 @@ def _are_dict_equal(t0, t1):
     return all(_are_dict_equal(t0[k], t1[k]) for k in k0)
 
 
-def _remove_private(d):
+def _remove(d, to_remove=()):
+    to_remove = to_remove or ('_',)
     if isinstance(d, dict):
-        return {k: _remove_private(v)
+        return {k: _remove(v, to_remove)
                 for k, v in d.items()
-                if not k.startswith('_')}
+                if not k.startswith(to_remove)}
     elif isinstance(d, list):
-        return [_remove_private(c) for c in d]
+        return [_remove(c, to_remove) for c in d]
     return d
 
 
-def assert_equal(p0, p1):
+def assert_equal(p0, p1, to_remove=()):
     if isinstance(p0, string_types):
         assert p0.rstrip('\n') == p1.rstrip('\n')
     elif isinstance(p0, dict):
-        if not _are_dict_equal(p0, p1):
-            # p0.show()
-            # p1.show()
-            assert _remove_private(p0) == _remove_private(p1)
+        # p0.show()
+        # p1.show()
+        assert _remove(p0, to_remove) == _remove(p1, to_remove)
     else:
         assert p0 == p1
 

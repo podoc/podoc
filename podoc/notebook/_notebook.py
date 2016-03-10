@@ -219,6 +219,10 @@ def wrap_code_cells(ast):
     return out
 
 
+def _append_newlines(s):
+    return '\n'.join(s.rstrip().split('\n')) + '\n'
+
+
 class NotebookWriter(object):
     def write(self, ast, resources=None):
         # Mapping {filename: data}.
@@ -242,6 +246,7 @@ class NotebookWriter(object):
             cell = getattr(self, 'new_{}_cell'.format(node_type))(node, index)
             # Add it to the notebook.
             nb.cells.append(cell)
+        nbformat.validate(nb)
         return nb
 
     def new_markdown_cell(self, node, index=None):
@@ -275,6 +280,10 @@ class NotebookWriter(object):
                 output_type = child.lang or 'result'
                 assert output_type in ('stdout', 'stderr', 'result')
                 contents = child.children[0]
+                # NOTE: append new lines at the end of every line in stdout
+                # and stderr contents, to match with the Jupyter Notebook.
+                if output_type != 'result':
+                    contents = _append_newlines(contents)
                 if output_type == 'result':
                     kwargs = dict(execution_count=self.execution_count,
                                   data={'text/plain': contents})

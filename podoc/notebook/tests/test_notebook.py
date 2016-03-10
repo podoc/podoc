@@ -102,10 +102,11 @@ def test_notebook_reader_image():
 def test_notebook_writer_code():
     path = get_test_file_path('ast', 'code.json')
     ast = ASTPlugin().open(path)
-
     nb = NotebookWriter().write(ast)
-    from pprint import pprint
-    pprint(nb)
+
+    nb_expected = open_notebook(get_test_file_path('notebook', 'code.ipynb'))
+    # Ignore some fields when comparing the notebooks.
+    assert_equal(nb, nb_expected, ('metadata', 'kernelspec'))
 
 
 def test_notebook_writer_image():
