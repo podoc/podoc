@@ -1,0 +1,193 @@
+[
+    {
+        "unMeta": {}
+    },
+    [
+        {
+            "c": [
+                1,
+                [
+                    "",
+                    [],
+                    []
+                ],
+                [
+                    {
+                        "c": "A",
+                        "t": "Str"
+                    },
+                    {
+                        "c": [],
+                        "t": "Space"
+                    },
+                    {
+                        "c": "notebook",
+                        "t": "Str"
+                    }
+                ]
+            ],
+            "t": "Header"
+        },
+        {
+            "c": [
+                {
+                    "c": "First,",
+                    "t": "Str"
+                },
+                {
+                    "c": [],
+                    "t": "Space"
+                },
+                {
+                    "c": "some",
+                    "t": "Str"
+                },
+                {
+                    "c": [],
+                    "t": "Space"
+                },
+                {
+                    "c": "code:",
+                    "t": "Str"
+                }
+            ],
+            "t": "Para"
+        },
+        {
+            "c": [
+                [
+                    "",
+                    [
+                        "python"
+                    ],
+                    []
+                ],
+                "print('hello *world*')\n2 * 3"
+            ],
+            "t": "CodeBlock"
+        },
+        {
+            "c": [
+                [
+                    "",
+                    [
+                        "stdout"
+                    ],
+                    []
+                ],
+                "hello *world*"
+            ],
+            "t": "CodeBlock"
+        },
+        {
+            "c": [
+                [
+                    "",
+                    [
+                        "result"
+                    ],
+                    []
+                ],
+                "6"
+            ],
+            "t": "CodeBlock"
+        },
+        {
+            "c": [
+                {
+                    "c": "An",
+                    "t": "Str"
+                },
+                {
+                    "c": [],
+                    "t": "Space"
+                },
+                {
+                    "c": "image:",
+                    "t": "Str"
+                }
+            ],
+            "t": "Para"
+        },
+        {
+            "c": [
+                [
+                    "",
+                    [
+                        "python"
+                    ],
+                    []
+                ],
+                "import numpy as np\nimport matplotlib.pyplot as plt\n%matplotlib inline\nnp.random.seed(2016)\nplt.imshow(np.random.rand(4, 4, 3), interpolation='none')\nplt.xticks([])\nplt.yticks([])\nplt.show()"
+            ],
+            "t": "CodeBlock"
+        },
+        {
+            "c": [
+                [
+                    "",
+                    [
+                        "stderr"
+                    ],
+                    []
+                ],
+                "Vendor:  Continuum Analytics, Inc.\nPackage: mkl\nMessage: trial mode expires in 30 days"
+            ],
+            "t": "CodeBlock"
+        },
+        {
+            "c": [
+                {
+                    "c": [
+                        [
+                            "",
+                            [],
+                            []
+                        ],
+                        [
+                            {
+                                "c": "<matplotlib.figure.Figure",
+                                "t": "Str"
+                            },
+                            {
+                                "c": [],
+                                "t": "Space"
+                            },
+                            {
+                                "c": "at",
+                                "t": "Str"
+                            },
+                            {
+                                "c": [],
+                                "t": "Space"
+                            },
+                            {
+                                "c": "0x7f205474bf98>",
+                                "t": "Str"
+                            }
+                        ],
+                        [
+                            "output_4_1.png",
+                            ""
+                        ]
+                    ],
+                    "t": "Image"
+                }
+            ],
+            "t": "Para"
+        },
+        {
+            "c": [
+                [
+                    "",
+                    [
+                        "javascript"
+                    ],
+                    []
+                ],
+                "\"This is not part of the previous code cell's output, since it's not Python.\""
+            ],
+            "t": "CodeBlock"
+        }
+    ]
+]

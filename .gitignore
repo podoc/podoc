@@ -3,6 +3,7 @@ wiki
 .*fuse*
 *.orig
 .eggs
+.cache
 __pycache__
 
 *.py[cod]
@@ -16,6 +17,7 @@ __pycache__
 *.egg
 *.egg-info
 build
+dev
 dist
 eggs
 parts

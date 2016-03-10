@@ -6,12 +6,11 @@ python:
   - "2.7"
   - "3.4"
   - "3.5"
-addons:
-  apt_packages:
-    - pandoc
 before_install:
   - pip install --upgrade pip
   - pip install codecov
+  - wget https://github.com/jgm/pandoc/releases/download/1.16.0.2/pandoc-1.16.0.2-1-amd64.deb
+  - sudo dpkg -i pandoc-1.16.0.2-1-amd64.deb
 install:
   - pip install -r requirements.txt
   - pip install -r requirements-dev.txt

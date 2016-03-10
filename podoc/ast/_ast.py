@@ -16,7 +16,7 @@ from six import string_types
 
 from podoc.tree import Node, TreeTransformer
 from podoc.plugin import IPlugin
-from podoc.utils import has_pandoc, pandoc, get_pandoc_formats
+from podoc.utils import has_pandoc, pandoc, get_pandoc_formats, _merge_str
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +70,18 @@ INLINE_NAMES = (
 )
 
 
+NATIVE_NAMES = BLOCK_NAMES + INLINE_NAMES + (
+    'root',
+    'ListItem',
+    'Strikeout',
+    'RawBlock',
+    'DefinitionList',
+    'HorizontalRule',
+    'Table',
+    'Div',
+)
+
+
 class ASTNode(Node):
     def is_block(self):
         return self.name in BLOCK_NAMES
@@ -77,11 +89,14 @@ class ASTNode(Node):
     def is_inline(self):
         return self.name in INLINE_NAMES
 
-    def check_is_native(self):
-        """Check that an element is native."""
+    def is_native(self):
+        """Return whether the node type is one of the native AST types"""
+        return self.name in NATIVE_NAMES
+
+    def validate(self):
+        """Check that the tree is valid."""
         # Excluded list.
         assert self.name not in ('Str', 'String', 'Space', 'str')
-        assert self.is_block() or self.is_inline()
         if self.is_inline():
             # The children of an Inline node cannot be blocks.
             for child in self.children:
@@ -91,18 +106,23 @@ class ASTNode(Node):
     def to_pandoc(self):
         return PodocToPandoc().transform_main(self)
 
-    def __repr__(self):
+    def display(self):
+        """Print-friendly representation of a node, used in tree show()."""
         if self.name == 'Header':
             return '{} {}'.format(self.name, self.level)
         elif hasattr(self, 'url'):
             return '{} <{}>'.format(self.name, self.url)
         elif self.name == 'OrderedList':
             return '{} ({})'.format(self.name, self.start)
+        elif self.name == 'CodeBlock':
+            return '{} ({})'.format(self.name, self.lang)
+        elif self.name == 'BulletList':
+            return '{} ({})'.format(self.name, self.bullet_char)
         return self.name
 
 
 #------------------------------------------------------------------------------
-# AST <-> pandoc
+# AST -> pandoc
 #------------------------------------------------------------------------------
 
 def _node_dict(node, children=None):
@@ -125,10 +145,24 @@ def _split_spaces(text):
     return out
 
 
+class PodocToPandocPreProcessor(TreeTransformer):
+    def transform_Node(self, node):
+        """Call the transformation methods recursively."""
+        children = self.transform_children(node)
+        node.children = children
+        return node
+
+
 class PodocToPandoc(TreeTransformer):
     def transform_Node(self, node):
-        return _node_dict(node,
-                          self.transform_children(node))
+        if node.is_native():
+            return _node_dict(node,
+                              self.transform_children(node))
+        else:
+            # Skip the current unknown node and use the list of children
+            # instead.
+            # logger.debug("Unknown node `%s`.", node)
+            return self.transform_children(node)
 
     def transform_str(self, text):
         """Split on spaces and insert Space elements for pandoc."""
@@ -147,7 +181,8 @@ class PodocToPandoc(TreeTransformer):
 
     def transform_CodeBlock(self, node):
         # NOTE: node.children contains a single element, which is the code.
-        children = [['', [node.lang], []], node.children[0]]
+        code = node.children[0]
+        children = [['', [node.lang], []], code]
         return _node_dict(node, children)
 
     def transform_OrderedList(self, node):
@@ -169,12 +204,14 @@ class PodocToPandoc(TreeTransformer):
         return _node_dict(node, items)
 
     def transform_Link(self, node):
-        children = [self.transform_children(node),
+        children = [['', [], []],
+                    self.transform_children(node),
                     [node.url, '']]
         return _node_dict(node, children)
 
     def transform_Image(self, node):
-        children = [self.transform_children(node),
+        children = [['', [], []],
+                    self.transform_children(node),
                     [node.url, '']]
         return _node_dict(node, children)
 
@@ -188,27 +225,33 @@ class PodocToPandoc(TreeTransformer):
         return {'t': 'Math', 'c': [{'t': 'InlineMath', 'c': []}, contents]}
 
     def transform_main(self, ast):
+        ast = PodocToPandocPreProcessor().transform(ast)
+        ast.show()
         blocks = self.transform(ast)['c']
         return [{'unMeta': {}}, blocks]
 
 
-def ast_from_pandoc(d):
-    return PandocToPodoc().transform_main(d)
+#------------------------------------------------------------------------------
+# pandoc -> AST
+#------------------------------------------------------------------------------
+
+def ast_from_pandoc(d, **kwargs):
+    return PandocToPodoc(**kwargs).transform_main(d)
 
 
-def _merge_str(l):
-    """Concatenate consecutive strings in a list of nodes."""
-    out = []
-    for node in l:
-        if (out and isinstance(out[-1], string_types) and
-                isinstance(node, string_types)):
-            out[-1] += node
-        else:
-            out.append(node)
-    return out
+class PandocToPodocPostProcessor(TreeTransformer):
+    def transform_Node(self, node):
+        """Call the transformation methods recursively."""
+        children = self.transform_children(node)
+        node.children = children
+        return node
 
 
 class PandocToPodoc(TreeTransformer):
+    def __init__(self, bullet_char=None):
+        super(TreeTransformer, self).__init__()
+        self.bullet_char = bullet_char or '*'
+
     def get_node_name(self, node):
         return node['t']
 
@@ -227,7 +270,9 @@ class PandocToPodoc(TreeTransformer):
         # Process the root: obj is a list, and the second item
         # is a list of blocks to process.
         children = [self.transform(block) for block in obj[1]]
-        return ASTNode('root', children=children)
+        out = ASTNode('root', children=children)
+        out = PandocToPodocPostProcessor().transform(out)
+        return out
 
     def transform(self, d):
         if isinstance(d, string_types):
@@ -257,9 +302,11 @@ class PandocToPodoc(TreeTransformer):
         return children
 
     def transform_CodeBlock(self, c, node):
-        node.lang = c[0][1][0]
+        d = c[0][1]
+        node.lang = d[0] if d else ''
         # NOTE: code has one child: a string with the code.
-        return [c[1]]
+        code = c[1]
+        return [code]
 
     def transform_OrderedList(self, c, node):
         (node.start, style, delimiter), children = c
@@ -274,13 +321,12 @@ class PandocToPodoc(TreeTransformer):
         return children
 
     def transform_BulletList(self, c, node):
-        children = c
         # NOTE: pandoc doesn't appear to support bullet styles
-        node.bullet_char = '*'
+        node.bullet_char = self.bullet_char
         node.delimiter = ' '
         # NOTE: create a ListItem node that contains the elements under
         # the list item.
-        children = [{'t': 'ListItem', 'c': child} for child in children]
+        children = [{'t': 'ListItem', 'c': child} for child in c]
         return children
 
     def transform_Math(self, c, node):
@@ -302,9 +348,8 @@ class PandocToPodoc(TreeTransformer):
         return self.transform_Link(c, node)
 
     def transform_Link(self, c, node):
-        assert len(c) == 2
-        node.url = c[1][0]
-        children = c[0]
+        node.url = c[-1][0]
+        children = c[-2]
         return children
 
 

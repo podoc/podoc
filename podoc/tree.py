@@ -12,7 +12,7 @@ import logging
 from six import string_types, u
 from six.moves import zip_longest
 
-from .utils import Bunch
+from .utils import Bunch, _are_dict_equal
 
 logger = logging.getLogger(__name__)
 
@@ -51,9 +51,9 @@ class TreeTransformer(object):
     def set_next_child(self, child, next_child):
         """To be overriden. Set the next and previous children."""
         if child is not None and not isinstance(child, string_types):
-            child.nxt = next_child
+            child._visit_meta['nxt'] = next_child
         if next_child is not None and not isinstance(next_child, string_types):
-            next_child.prv = child
+            next_child._visit_meta['prv'] = child
 
     # Transformation methods
     # -------------------------------------------------------------------------
@@ -96,6 +96,9 @@ class Node(Bunch):
     """Generic node type, represents a tree."""
     def __init__(self, name='Node', children=None, **kwargs):
         super(Node, self).__init__(**kwargs)
+        self._visit_meta = {}
+        # Empty names are forbidden.
+        assert name
         assert isinstance(name, string_types)
         self.name = name
         self.children = children or []
@@ -107,8 +110,19 @@ class Node(Bunch):
         self.children.append(child)
         return child
 
-    def __repr__(self):
+    def display(self):
+        """Print-friendly representation of a node, used in tree show()."""
         return self.name
+
+    def __eq__(self, other):
+        """Ensure that nxt and prv items are discarded when testing
+        the equality of two trees."""
+        return _are_dict_equal(self, other)
+
+    def copy(self):
+        node = super(Node, self).copy()
+        node = self.__class__(**node)
+        return node
 
     def show(self):
         print(show_tree(self, lambda node: node.name,
@@ -135,6 +149,10 @@ class TreePrinter(TreeTransformer):
     def get_node_children(self, node):
         return self._get_node_children(node)
 
+    def transform_str(self, contents):
+        # Escape new lines in strings.
+        return contents.replace('\n', '\\n')
+
     def transform_Node(self, node):
         pt, pl, pd = self.prefix_t, self.prefix_l, self.prefix_d
         out = ''
@@ -155,7 +173,11 @@ class TreePrinter(TreeTransformer):
         out = out.strip()
         if out:
             out = '\n' + out
-        return str(node) + out
+        # NOTE: the print-friendly representation of a node is available
+        # in node.display() if available, otherwise str(node).
+        # Overriding __repr__() leads to hard-to-debug equality assertions
+        # with py.test.
+        return getattr(node, 'display', lambda: str(node))() + out
 
 
 def show_tree(node, get_node_name=None, get_children_name=None):

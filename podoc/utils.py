@@ -3,7 +3,9 @@
 """Utility functions."""
 
 from contextlib import contextmanager
+import json
 import logging
+import os
 import os.path as op
 import sys
 
@@ -82,13 +84,79 @@ class Path(object):
 
 
 #------------------------------------------------------------------------------
+# Testing utils
+#------------------------------------------------------------------------------
+
+def get_test_file_path(lang, filename):
+    curdir = op.realpath(op.dirname(__file__))
+    # Construct the directory name for the language and test filename.
+    dirname = op.realpath(op.join(curdir, lang))
+    path = op.join(dirname, 'test_files', filename)
+    assert op.exists(path)
+    return path
+
+
+def _are_dict_equal(t0, t1):
+    """Assert the equality of nested dicts, removing all private fields."""
+    if isinstance(t0, list):
+        assert isinstance(t1, list)
+        return all(_are_dict_equal(c0, c1) for c0, c1 in zip(t0, t1))
+    elif isinstance(t0, (string_types, int)):
+        assert isinstance(t1, (string_types, int))
+        return t0 == t1
+    assert isinstance(t0, dict)
+    assert isinstance(t1, dict)
+    k0 = {k for k in t0.keys() if not k.startswith('_')}
+    k1 = {k for k in t1.keys() if not k.startswith('_')}
+    assert k0 == k1
+    return all(_are_dict_equal(t0[k], t1[k]) for k in k0)
+
+
+def _remove(d, to_remove=()):
+    to_remove = to_remove or ('_',)
+    if isinstance(d, dict):
+        return {k: _remove(v, to_remove)
+                for k, v in d.items()
+                if not k.startswith(to_remove)}
+    elif isinstance(d, list):
+        return [_remove(c, to_remove) for c in d]
+    return d
+
+
+def assert_equal(p0, p1, to_remove=()):
+    if isinstance(p0, string_types):
+        assert p0.rstrip('\n') == p1.rstrip('\n')
+    elif isinstance(p0, dict):
+        # p0.show()
+        # p1.show()
+        assert _remove(p0, to_remove) == _remove(p1, to_remove)
+    else:
+        assert p0 == p1
+
+
+def _merge_str(l):
+    """Concatenate consecutive strings in a list of nodes."""
+    out = []
+    for node in l:
+        if (out and isinstance(out[-1], string_types) and
+                isinstance(node, string_types)):
+            out[-1] += node
+        else:
+            out.append(node)
+    return out
+
+
+#------------------------------------------------------------------------------
 # pandoc wrapper
 #------------------------------------------------------------------------------
 
-PANDOC_MARKDOWN_FORMAT = ('markdown_strict+'
+# TODO: commonmark instead
+PANDOC_MARKDOWN_FORMAT = ('markdown_strict'
+                          '-raw_html+'
                           'fancy_lists+'
                           'startnum+'
                           'backtick_code_blocks+'
+                          'hard_line_breaks+'
                           'tex_math_dollars'
                           )
 
@@ -114,3 +182,20 @@ def has_pandoc():  # pragma: no cover
     except FileNotFoundError:
         logger.debug("pandoc is not installed.")
     return False
+
+
+def generate_json_test_files():  # pragma: no cover
+    """Regenerate all *.json files in ast/test_files."""
+    curdir = op.realpath(op.dirname(__file__))
+    directory = op.join(curdir, 'markdown', 'test_files')
+    files = os.listdir(directory)
+    for file in files:
+        if file.endswith('.md'):
+            path = op.join(directory, file)
+            out = pandoc(open_text(path), 'json',
+                         format=PANDOC_MARKDOWN_FORMAT)
+            base = op.splitext(file)[0]
+            path_json = op.join(curdir, 'ast', 'test_files', base + '.json')
+            with open(path_json, 'w') as fw:
+                d = json.loads(out)
+                json.dump(d, fw, sort_keys=True, indent=4)

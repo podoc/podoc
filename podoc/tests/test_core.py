@@ -11,38 +11,11 @@ import logging
 import os.path as op
 
 from pytest import raises
-from six import string_types
 
 from ..core import Podoc, _find_path, _get_annotation, create_podoc
-from ..utils import open_text
+from ..utils import get_test_file_path, assert_equal, open_text
 
 logger = logging.getLogger(__name__)
-
-
-#------------------------------------------------------------------------------
-# Testing utils
-#------------------------------------------------------------------------------
-
-def get_test_file_path(podoc, lang, filename):
-    curdir = op.realpath(op.dirname(__file__))
-    file_ext = podoc.get_file_ext(lang)
-    # Construct the directory name for the language and test filename.
-    dirname = op.realpath(op.join(curdir, '../', lang))
-    path = op.join(dirname, 'test_files', filename + file_ext)
-    assert op.exists(path)
-    return path
-
-
-def assert_equal(p0, p1):
-    if isinstance(p0, string_types) and op.exists(p0):
-        # TODO: non text files
-        # NOTE: included text files have a trailing `\n`.
-        assert_equal(open_text(p0), open_text(p1))
-        return
-    if isinstance(p0, string_types):
-        assert p0.rstrip('\n') == p1.rstrip('\n')
-        return
-    assert p0 == p1
 
 
 #------------------------------------------------------------------------------
@@ -151,22 +124,26 @@ def test_create_podoc():
 def test_all_open_save(tempdir, podoc, lang, test_file):
     """For all languages and test files, check round-tripping of open
     and save."""
-    path = get_test_file_path(podoc, lang, test_file)
+    filename = test_file + podoc.get_file_ext(lang)
+    path = get_test_file_path(lang, filename)
     contents = podoc.open(path)
-    to_path = op.join(tempdir, test_file + podoc.get_file_ext(lang))
+    to_path = op.join(tempdir, filename)
     podoc.save(to_path, contents)
     if lang == 'ast':
         assert_equal(podoc.open(path), podoc.open(to_path))
     else:
         # TODO: non-text formats
-        assert_equal(path, to_path)
+
+        assert_equal(open_text(path), open_text(to_path))
 
 
 def test_all_convert(tempdir, podoc, source_target, test_file):
     source, target = source_target
+    source_filename = test_file + podoc.get_file_ext(source)
+    target_filename = test_file + podoc.get_file_ext(target)
     # Get the source and target file names.
-    source_path = get_test_file_path(podoc, source, test_file)
-    target_path = get_test_file_path(podoc, target, test_file)
+    source_path = get_test_file_path(source, source_filename)
+    target_path = get_test_file_path(target, target_filename)
     # Output file.
     # path = op.join(tempdir, op.basename(target_path))
     converted = podoc.convert(source_path, target=target)

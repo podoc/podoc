@@ -13,10 +13,11 @@ import re
 from CommonMark import Parser
 from six import string_types
 
-from podoc.plugin import IPlugin
-from podoc.tree import TreeTransformer
 from podoc.ast import ASTNode
 from podoc.markdown.renderer import MarkdownRenderer
+from podoc.plugin import IPlugin
+from podoc.tree import TreeTransformer
+from podoc.utils import _merge_str
 
 logger = logging.getLogger(__name__)
 
@@ -32,11 +33,27 @@ def _iter_child(cm):
         child = child.nxt
 
 
+class CommonMarkPostProcessor(TreeTransformer):
+    def transform_ListItem(self, node):
+        """Replace Para by Plain among the ListItem children."""
+        for child in node.children:
+            if child.name == 'Para':
+                child.name = 'Plain'
+        return self.transform_Node(node)
+
+    def transform_Node(self, node):
+        """Call the transformation methods recursively."""
+        children = self.transform_children(node)
+        node.children = _merge_str(children)
+        return node
+
+
 class CommonMarkToAST(TreeTransformer):
     _name_mapping = {
         'Paragraph': 'Para',
         'Heading': 'Header',
         'Softbreak': 'LineBreak',
+        'Hardbreak': 'LineBreak',
         'Item': 'ListItem',
     }
 
@@ -51,7 +68,9 @@ class CommonMarkToAST(TreeTransformer):
         # TODO: should be def transform() for consistency with the other way
         children = [self.transform(block)
                     for block in self.get_node_children(cm)]
-        return ASTNode('root', children=children)
+        out = ASTNode('root', children=children)
+        out = CommonMarkPostProcessor().transform(out)
+        return out
 
     def transform(self, obj):
         if isinstance(obj, string_types):
@@ -97,6 +116,7 @@ class CommonMarkToAST(TreeTransformer):
         contents_strip = contents.strip()
         # Detect math inline elements.
         if contents_strip[0] == contents_strip[-1] == '$':
+            # Change the node from CodeBlock to Math.
             node.name = 'Math'
             contents = contents_strip[1:-1].strip()
         return [contents]
@@ -114,12 +134,15 @@ class CommonMarkToAST(TreeTransformer):
 
     def transform_CodeBlock(self, obj, node):
         node.lang = obj.info
-        contents = obj.literal
+        contents = obj.literal.strip()
         # Detect math block elements.
         if node.lang == 'math':
             node.name = 'Para'
+            # NOTE: Delete the language attribute of the old CodeBlock.
+            # This is to ensure compat with pandoc in tests.
+            del node['lang']
             node.children = [ASTNode('MathBlock',
-                                     children=[contents.strip()])]
+                                     children=[contents])]
             return node
         return [contents]
 
@@ -128,6 +151,9 @@ class CommonMarkToAST(TreeTransformer):
 
     def transform_Header(self, obj, node):
         node.level = obj.level
+        return self.get_node_children(obj)
+
+    def transform_ListItem(self, obj, node):
         return self.get_node_children(obj)
 
     def transform_BulletList(self, obj, node):
@@ -139,6 +165,8 @@ class CommonMarkToAST(TreeTransformer):
         node.start = obj.list_data['start']
         assert node.start >= 0
         node.delimiter = obj.list_data['delimiter']
+        # NOTE: used for compat with pandoc.
+        node.style = 'Decimal'
         return self.get_node_children(obj)
 
 
@@ -154,12 +182,16 @@ class ASTToMarkdown(TreeTransformer):
         # Nested lists.
         self._lists = []
 
-    def fold(self, transformed_children, node=None):
-        delim = '\n\n' if node.name == 'root' else ''
-        return delim.join(transformed_children)
-
     def get_inner_contents(self, node):
-        return self.fold(self.transform_children(node), node)
+        delim = ''
+        # What is the delimiter between children? If the children are
+        # blocks, we should insert a new line between consecutive blocks.
+        # Otherwise we just concatenate the children.
+        if node.children:
+            child = node.children[0]
+            if isinstance(child, ASTNode) and child.is_block():
+                delim = '\n\n'
+        return delim.join(self.transform_children(node))
 
     def transform_str(self, text):
         return text
