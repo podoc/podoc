@@ -260,7 +260,12 @@ class NotebookWriter(object):
 
         """
         data = self.resources.get(fn, None)
-        return base64.b64encode(data).decode('utf8') if data else None
+        out = base64.b64encode(data).decode('utf8') if data else None
+        # NOTE: split the output in multiple lines of 76 characters,
+        # to make easier the comparison with actual Jupyter Notebook files.
+        N = 76
+        out = '\n'.join([out[i:i + N] for i in range(0, len(out), N)]) + '\n'
+        return out
 
     def new_code_cell(self, node, index=None):
         # Get the code cell input: the first child of the CodeCell block.
@@ -307,7 +312,7 @@ class NotebookWriter(object):
                 assert mime_type  # unknown extension: this shouldn't happen!
                 data[mime_type] = self._get_b64_resource(fn)
                 assert data[mime_type] is not None  # TODO
-                data['plain/text'] = caption
+                data['text/plain'] = caption
                 kwargs = dict(data=data)
             output = new_output(output_type, **kwargs)
             cell.outputs.append(output)

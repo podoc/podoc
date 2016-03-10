@@ -119,8 +119,10 @@ def test_notebook_writer_image():
         img = f.read()
     resources = {op.basename(fn): img}
     nb = NotebookWriter().write(ast, resources=resources)
-    from pprint import pprint
-    pprint(nb)
+
+    nb_expected = open_notebook(get_test_file_path('notebook', 'image.ipynb'))
+    # Ignore some fields when comparing the notebooks.
+    assert_equal(nb, nb_expected, ('metadata', 'kernelspec'))
 
 
 #------------------------------------------------------------------------------
