@@ -148,7 +148,7 @@ class NotebookReader(object):
         # Then, we add one extra child per output.
         for output_index, output in enumerate(cell.get('outputs', [])):
             if output.output_type == 'stream':
-                child = ASTNode('CodeBlock', lang='stream',
+                child = ASTNode('CodeBlock', lang=output.name,  # stdout/stderr
                                 children=[output.text])
             elif output.output_type in ('display_data', 'execute_result'):
                 # Output text node.
@@ -156,7 +156,7 @@ class NotebookReader(object):
                 # Extract image output, if any.
                 out = extract_output(output)
                 if out is None:
-                    child = ASTNode('CodeBlock', lang='output',
+                    child = ASTNode('CodeBlock', lang='result',
                                     children=[text])
                 else:
                     mime_type, data = out
@@ -191,9 +191,10 @@ def wrap_code_cells(ast):
             # Decide whether we're part of the current cell.
             name = child.name
             children = child.children
-            # Case 1: we're a code block with `output` or `stream` language.
+            # Case 1: we're a code block with a notebook-specific language.
             is_output = ((name == 'CodeBlock') and
-                         (child.lang in (None, '', 'output', 'stream')))
+                         (child.lang in (None, '', 'stdout',
+                                         'stderr', 'result')))
             # Case 2: we're just an image.
             is_image = ((name == 'Para') and
                         (len(children) == 1) and
@@ -263,18 +264,27 @@ class NotebookWriter(object):
         cell = new_code_cell(input_block.children[0],
                              execution_count=self.execution_count,
                              )
-        # Next we need to add the output: the next children in the CodeCell.
+        # Next we need to add the outputs: the next children in the CodeCell.
         for child in node.children[1:]:
-            # TODO: determine the output type and data from the AST node.
+            # Outputs can be code blocks or Markdown paragraphs containing
+            # an image.
             if child.name == 'CodeBlock':
-                output_type = {'output': 'execute_result'}.get(child.lang,
-                                                               child.lang)
+                # The output is a code block.
+                # What is the output's type? It depends on the code block's
+                # name. It can be: `stdout`, `stderr`, `result`.
+                output_type = child.lang or 'result'
+                assert output_type in ('stdout', 'stderr', 'result')
                 contents = child.children[0]
-                if output_type == 'execute_result':
+                if output_type == 'result':
                     kwargs = dict(execution_count=self.execution_count,
                                   data={'text/plain': contents})
-                elif output_type == 'stream':
-                    kwargs = dict(text=contents)
+                    # Output type to pass to nbformat.
+                    output_type = 'execute_result'
+                elif output_type in ('stdout', 'stderr'):
+                    # Standard output or error.
+                    kwargs = dict(text=contents, name=output_type)
+                    # Output type to pass to nbformat.
+                    output_type = 'stream'
             elif child.name == 'Para':
                 img = child.children[0]
                 assert img.name == 'Image'

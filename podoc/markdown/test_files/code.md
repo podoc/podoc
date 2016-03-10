@@ -7,10 +7,10 @@ print('hello *world*')
 2 * 3
 ```
 
-```stream
+```stdout
 hello *world*
 ```
 
-```output
+```result
 6
 ```
