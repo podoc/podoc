@@ -120,6 +120,11 @@ class ASTNode(Node):
             return '{} ({})'.format(self.name, self.bullet_char)
         return self.name
 
+    def __repr__(self):
+        """Display the pandoc JSON representation of the tree."""
+        d = self.to_pandoc()
+        return json.dumps(d, separators=(',', ':'))
+
 
 #------------------------------------------------------------------------------
 # AST -> pandoc
@@ -226,7 +231,6 @@ class PodocToPandoc(TreeTransformer):
 
     def transform_main(self, ast):
         ast = PodocToPandocPreProcessor().transform(ast)
-        ast.show()
         blocks = self.transform(ast)['c']
         return [{'unMeta': {}}, blocks]
 

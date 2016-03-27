@@ -68,6 +68,10 @@ def ast():
 # Tests AST <-> pandoc
 #------------------------------------------------------------------------------
 
+def test_repr_ast():
+    assert str(ASTNode('Para')) == '[{"unMeta":{}},[]]'
+
+
 def test_merge_str():
     assert _merge_str(['a', 'b', None, 'c']) == ['ab', None, 'c']
 
