@@ -132,8 +132,10 @@ def _remove(d, to_remove=()):
 
 def assert_equal(p0, p1, to_remove=()):
     if isinstance(p0, string_types):
+        assert isinstance(p1, string_types)
         assert p0.rstrip('\n') == p1.rstrip('\n')
     elif isinstance(p0, dict):
+        assert isinstance(p1, dict)
         # p0.show()
         # p1.show()
         assert _remove(p0, to_remove) == _remove(p1, to_remove)

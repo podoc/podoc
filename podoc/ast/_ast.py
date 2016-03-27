@@ -417,7 +417,9 @@ class ASTPlugin(IPlugin):
     def attach(self, podoc):
         # An object in the language 'ast' is an instance of AST.
         podoc.register_lang('ast', file_ext='.json',
-                            load_func=self.load, dump_func=self.dump)
+                            load_func=self.load, dump_func=self.dump,
+                            loads_func=self.loads, dumps_func=self.dumps,
+                            )
 
     def load(self, file_or_path):
         """Load a JSON file and return an AST instance."""

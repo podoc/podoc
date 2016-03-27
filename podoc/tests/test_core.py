@@ -125,19 +125,22 @@ def test_podoc_load_dump(tempdir):
 #------------------------------------------------------------------------------
 
 def test_all_load_dump(tempdir, podoc, lang, test_file):
-    """For all languages and test files, check round-tripping of open
+    """For all languages and test files, check round-tripping of load
     and dump."""
+
+    # Test file.
     filename = test_file + podoc.get_file_ext(lang)
     path = get_test_file_path(lang, filename)
+
+    # Load the example file.
     contents = podoc.load(path)
     to_path = op.join(tempdir, filename)
+    # Save it again to a temporary file.
     podoc.dump(contents, to_path)
-    if lang == 'ast':
-        assert_equal(podoc.load(path), podoc.load(to_path))
-    else:
-        # TODO: non-text formats
 
-        assert_equal(load_text(path), load_text(to_path))
+    # TODO: non-text formats
+    assert_equal(contents, podoc.loads(load_text(path), lang))
+    assert_equal(load_text(to_path), podoc.dumps(contents, lang))
 
 
 def test_all_convert(tempdir, podoc, source_target, test_file):
