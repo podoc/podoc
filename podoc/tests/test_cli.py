@@ -24,6 +24,9 @@ def _podoc(cmd=None, stdin=None):
     runner = CliRunner()
     cmd = cmd.split(' ') if cmd else ''
     result = runner.invoke(podoc, cmd, input=stdin)
+    if result.exit_code != 0:
+        print(result.exception)
+    assert result.exit_code == 0
     return result.output
 
 

@@ -130,6 +130,12 @@ class Podoc(object):
                 lang_list=None, output=None):
         """Convert an object by passing it through a chain of conversion
         functions."""
+        # NOTE: 'json' is an alias for 'ast', to match with pandoc's
+        # terminology.
+        if source == 'json':
+            source = 'ast'
+        if target == 'json':
+            target = 'ast'
         if target is None and output is not None:
             target = self.get_lang_for_file_ext(op.splitext(output)[1])
         if source is None and lang_list is None:

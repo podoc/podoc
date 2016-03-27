@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 @click.argument('files', nargs=-1,
                 type=click.Path(exists=True, file_okay=True,
                                 dir_okay=True, resolve_path=True))
-@click.option('-f', '-r', '--from', '--read', default='commonmark')
+@click.option('-f', '-r', '--from', '--read', default='markdown')
 @click.option('-t', '-w', '--to', '--write', default='ast')
 @click.option('-o', '--output')
 @click.option('--data-dir')
@@ -43,7 +43,6 @@ def podoc(files=None,
     """Convert one or several files from a supported format to another."""
     # Create the Podoc instance.
     podoc = Podoc(with_pandoc=not(no_pandoc))
-
     # If no files are provided, read from the standard input (like pandoc).
     if not files:
         contents = ''.join(sys.stdin.readlines())

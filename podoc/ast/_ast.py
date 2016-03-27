@@ -430,7 +430,7 @@ class ASTPlugin(IPlugin):
 
     def save(self, path, ast):
         """Save an AST instance to a JSON file."""
-        # assert isinstance(ast, AST)
+        assert isinstance(ast, ASTNode)
         d = ast.to_pandoc()
         assert isinstance(d, list)
         logger.debug("Save JSON file `%s`.", path)

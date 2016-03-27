@@ -327,6 +327,7 @@ class Markdown(IPlugin):
                             func=self.write_markdown)
 
     def read_markdown(self, contents):
+        assert isinstance(contents, string_types)
         parser = Parser()
         contents = _parse_math(contents)
         cm = parser.parse(contents)
@@ -334,4 +335,5 @@ class Markdown(IPlugin):
         return ast
 
     def write_markdown(self, ast):
+        assert isinstance(ast, (ASTNode, string_types))
         return ASTToMarkdown().transform(ast)
