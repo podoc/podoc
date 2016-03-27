@@ -15,7 +15,7 @@ from six import string_types
 
 from podoc.ast import ASTNode, ast_from_pandoc
 from podoc.utils import pandoc, PANDOC_MARKDOWN_FORMAT
-from .._markdown import (CommonMarkToAST, ASTToMarkdown, Markdown)
+from .._markdown import (CommonMarkToAST, ASTToMarkdown, MarkdownPlugin)
 
 
 #------------------------------------------------------------------------------
@@ -75,11 +75,11 @@ def test_ast_to_markdown(ast, markdown):
 #------------------------------------------------------------------------------
 
 def test_markdown_read(ast, markdown):
-    assert Markdown().read_markdown(markdown) == ast
+    assert MarkdownPlugin().read(markdown) == ast
 
 
 def test_markdown_write(ast, markdown):
-    assert Markdown().write_markdown(ast) == markdown
+    assert MarkdownPlugin().write(ast) == markdown
 
 
 # -----------------------------------------------------------------------------
@@ -100,7 +100,7 @@ def _tree_contains_nodes(ast, names):
 def _test_renderer(s, *contains_nodes):
     """Test the renderer on a string."""
     # Parse the string with CommonMark-py.
-    ast = Markdown().read_markdown(s)
+    ast = MarkdownPlugin().read(s)
     print()
     print('****** PODOC AST ******')
     ast.show()
@@ -123,7 +123,7 @@ def _test_renderer(s, *contains_nodes):
     assert markdown_pandoc
 
     # Check markdown_pandoc =(podoc)=> (AST_pandoc == AST_podoc).
-    ast_0 = Markdown().read_markdown(markdown_pandoc)
+    ast_0 = MarkdownPlugin().read(markdown_pandoc)
     print('****** PODOC AST (from markdown_pandoc) ******')
     ast_0.show()
     assert ast_0 == ast

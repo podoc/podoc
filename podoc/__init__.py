@@ -20,7 +20,7 @@ from .core import Podoc  # noqa
 from .plugin import (IPlugin, discover_plugins,
                      get_plugin, get_plugins)  # noqa
 from .ast import ASTPlugin
-from .markdown import Markdown
+from .markdown import MarkdownPlugin
 
 
 #------------------------------------------------------------------------------

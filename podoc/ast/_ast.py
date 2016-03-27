@@ -16,7 +16,8 @@ from six import string_types
 
 from podoc.tree import Node, TreeTransformer
 from podoc.plugin import IPlugin
-from podoc.utils import has_pandoc, pandoc, get_pandoc_formats, _merge_str
+from podoc.utils import (has_pandoc, pandoc, get_pandoc_formats,
+                         _merge_str, _get_file,)
 
 logger = logging.getLogger(__name__)
 
@@ -418,24 +419,38 @@ class ASTPlugin(IPlugin):
         podoc.register_lang('ast', file_ext='.json',
                             load_func=self.load, dump_func=self.dump)
 
-    def load(self, path):
+    def load(self, file_or_path):
         """Load a .json file and return an AST instance."""
-        logger.debug("Load JSON file `%s`.", path)
-        with open(path, 'r') as f:
+        # logger.debug("Load JSON file `%s`.", path)
+        with _get_file(file_or_path, 'r') as f:
             d = json.load(f)
         assert isinstance(d, list)
         ast = ast_from_pandoc(d)
         assert isinstance(ast, ASTNode)
         return ast
 
-    def dump(self, path, ast):
+    def dump(self, file_or_path, ast):
         """Dump an AST instance to a JSON file."""
         assert isinstance(ast, ASTNode)
         d = ast.to_pandoc()
         assert isinstance(d, list)
-        logger.debug("Save JSON file `%s`.", path)
-        with open(path, 'w') as f:
+        # logger.debug("Save JSON file `%s`.", path)
+        with _get_file(file_or_path, 'w') as f:
             json.dump(d, f, sort_keys=True, indent=2,
                       separators=(',', ': '))  # avoid trailing whitespaces
             # Add a new line at the end.
             f.write('\n')
+
+    def loads(self, s):
+        d = json.loads(s)
+        assert isinstance(d, list)
+        ast = ast_from_pandoc(d)
+        assert isinstance(ast, ASTNode)
+        return ast
+
+    def dumps(self, ast):
+        assert isinstance(ast, ASTNode)
+        d = ast.to_pandoc()
+        assert isinstance(d, list)
+        return json.dumps(d, sort_keys=True, indent=2,
+                          separators=(',', ': ')) + '\n'

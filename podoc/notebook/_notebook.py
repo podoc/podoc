@@ -47,8 +47,10 @@ from nbformat.v4 import (new_notebook,
                          new_output,
                          )
 
-from podoc.markdown import Markdown
+from podoc.markdown import MarkdownPlugin
 from podoc.ast import ASTNode  # , TreeTransformer
+from podoc.plugin import IPlugin
+from podoc.utils import _get_file
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +136,7 @@ class NotebookReader(object):
 
     def read_markdown(self, cell, cell_index=None):
         contents = cell.source
-        ast = Markdown().read_markdown(contents)
+        ast = MarkdownPlugin().read(contents)
         assert len(ast.children) == 1
         self.tree.children.append(ast.children[0])
 
@@ -228,7 +230,7 @@ class NotebookWriter(object):
         # Mapping {filename: data}.
         self.resources = resources or {}
         self.execution_count = 1
-        self._md = Markdown()
+        self._md = MarkdownPlugin()
         # Add code cells in the AST.
         ast = wrap_code_cells(ast)
         ast.show()
@@ -250,7 +252,7 @@ class NotebookWriter(object):
         return nb
 
     def new_markdown_cell(self, node, index=None):
-        return new_markdown_cell(self._md.write_markdown(node))
+        return new_markdown_cell(self._md.write(node))
 
     def _get_b64_resource(self, fn):
         """Return the base64 of a resource from its filename.
@@ -303,7 +305,7 @@ class NotebookWriter(object):
                 img = child.children[0]
                 assert img.name == 'Image'
                 fn = img.url
-                caption = self._md.write_markdown(img.children[0])
+                caption = self._md.write(img.children[0])
                 output_type = 'display_data'
                 data = {}  # Dictionary {mimetype: data_buffer}.
                 # Infer the mime type of the file, from its filename and
@@ -322,3 +324,25 @@ class NotebookWriter(object):
     def new_raw_cell(self, node, index=None):
         # TODO
         pass
+
+
+class NotebookPlugin(IPlugin):
+    def load(self, file_or_path):
+        with _get_file(file_or_path, 'r') as f:
+            return nbformat.read(f, _NBFORMAT_VERSION)
+
+    def dump(self, file_or_path, nb):
+        with _get_file(file_or_path, 'w') as f:
+            nbformat.write(nb, f, _NBFORMAT_VERSION)
+
+    def loads(self, s):
+        return nbformat.reads(s, _NBFORMAT_VERSION)
+
+    def dumps(self, nb):
+        nbformat.writes(nb, _NBFORMAT_VERSION)
+
+    def read(self, nb):
+        return NotebookReader().read(nb)
+
+    def write(self, ast):
+        return NotebookWriter().write(ast)

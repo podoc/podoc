@@ -50,6 +50,13 @@ def save_text(path, contents):
         return f.write(contents)
 
 
+def _get_file(file_or_path, mode):
+    if isinstance(file_or_path, string_types):
+        return open(file_or_path, mode)
+    else:
+        return file_or_path
+
+
 @contextmanager
 def captured_output():
     new_out, new_err = StringIO(), StringIO()
