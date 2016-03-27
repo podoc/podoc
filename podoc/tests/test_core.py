@@ -89,7 +89,7 @@ def test_podoc_file(tempdir):
 
     p.register_lang('a', file_ext='.a',
                     load_func=lambda path: 'a',
-                    dump_func=lambda path, contents: None,
+                    dump_func=lambda contents, path: None,
                     )
     assert p.languages == ['a']
 
@@ -113,7 +113,7 @@ def test_podoc_load_dump(tempdir):
     p.register_lang('txt', file_ext='.txt')
     filename = 'test.txt'
     path = op.join(tempdir, filename)
-    p.dump(path, 'hello world')
+    p.dump('hello world', path)
     assert p.load(path) == 'hello world'
 
 
@@ -128,7 +128,7 @@ def test_all_load_dump(tempdir, podoc, lang, test_file):
     path = get_test_file_path(lang, filename)
     contents = podoc.load(path)
     to_path = op.join(tempdir, filename)
-    podoc.dump(to_path, contents)
+    podoc.dump(contents, to_path)
     if lang == 'ast':
         assert_equal(podoc.load(path), podoc.load(to_path))
     else:

@@ -331,7 +331,7 @@ class NotebookPlugin(IPlugin):
         with _get_file(file_or_path, 'r') as f:
             return nbformat.read(f, _NBFORMAT_VERSION)
 
-    def dump(self, file_or_path, nb):
+    def dump(self, nb, file_or_path):
         with _get_file(file_or_path, 'w') as f:
             nbformat.write(nb, f, _NBFORMAT_VERSION)
 

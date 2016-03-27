@@ -429,7 +429,7 @@ class ASTPlugin(IPlugin):
         assert isinstance(ast, ASTNode)
         return ast
 
-    def dump(self, file_or_path, ast):
+    def dump(self, ast, file_or_path):
         """Dump an AST instance to a JSON file."""
         assert isinstance(ast, ASTNode)
         d = ast.to_pandoc()

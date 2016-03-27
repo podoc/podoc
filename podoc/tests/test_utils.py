@@ -58,7 +58,7 @@ def test_assert_equal():
 
 def test_open_save_text(tempdir):
     path = op.join(tempdir, 'test.txt')
-    save_text(path, 'hello *world*')
+    save_text('hello *world*', path)
     assert open_text(path) == 'hello *world*'
 
 

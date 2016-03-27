@@ -57,7 +57,7 @@ def podoc(files=None,
         return
     # Save the output.
     path = output if not data_dir else op.join(data_dir, output)
-    podoc.dump(path, out, lang=write)
+    podoc.dump(out, path, lang=write)
 
 
 if __name__ == '__main__':  # pragma: no cover

@@ -53,7 +53,7 @@ def test_plugin_registration(no_native_plugins):
 def test_discover_plugins(tempdir, no_native_plugins):
     path = op.join(tempdir, 'my_plugin.py')
     contents = '''from podoc import IPlugin\nclass MyPlugin(IPlugin): pass'''
-    save_text(path, contents)
+    save_text(contents, path)
     plugins = discover_plugins([tempdir])
     assert plugins
     assert plugins[0].__name__ == 'MyPlugin'

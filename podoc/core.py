@@ -165,7 +165,7 @@ class Podoc(object):
             # Perform the conversion.
             obj = f(obj)
         if output:
-            self.dump(output, obj, lang=target)
+            self.dump(obj, output, lang=target)
         return obj
 
     # Properties
@@ -215,10 +215,10 @@ class Podoc(object):
         # Load the file using the function registered for the language.
         return self._langs[lang].load_func(path)
 
-    def dump(self, path, contents, lang=None):
+    def dump(self, contents, path, lang=None):
         """Dump an object to a file."""
         # Find the language corresponding to the file's extension.
         file_ext = op.splitext(path)[1]
         lang = lang or self.get_lang_for_file_ext(file_ext)
         # Dump the file using the function registered for the language.
-        return self._langs[lang].dump_func(path, contents)
+        return self._langs[lang].dump_func(contents, path)

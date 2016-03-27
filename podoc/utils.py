@@ -45,7 +45,7 @@ def open_text(path):
     return out
 
 
-def save_text(path, contents):
+def save_text(contents, path):
     with open(path, 'w') as f:
         return f.write(contents)
 
