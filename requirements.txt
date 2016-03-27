@@ -1,3 +1,4 @@
+six
 traitlets
 click
 nbformat

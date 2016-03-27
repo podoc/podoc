@@ -24,4 +24,4 @@ def test_cli():
     runner = CliRunner()
     result = runner.invoke(podoc, [])
     assert result.exit_code == 0
-    assert result.output == ''
+    assert result.output == '\n'
