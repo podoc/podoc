@@ -38,14 +38,14 @@ class Bunch(dict):
 # File I/O
 #------------------------------------------------------------------------------
 
-def open_text(path):
+def load_text(path):
     assert op.exists(path)
     with open(path, 'r') as f:
         out = f.read()
     return out
 
 
-def save_text(contents, path):
+def dump_text(contents, path):
     with open(path, 'w') as f:
         return f.write(contents)
 
@@ -199,7 +199,7 @@ def generate_json_test_files():  # pragma: no cover
     for file in files:
         if file.endswith('.md'):
             path = op.join(directory, file)
-            out = pandoc(open_text(path), 'json',
+            out = pandoc(load_text(path), 'json',
                          format=PANDOC_MARKDOWN_FORMAT)
             base = op.splitext(file)[0]
             path_json = op.join(curdir, 'ast', 'test_files', base + '.json')

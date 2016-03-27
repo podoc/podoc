@@ -12,7 +12,7 @@ import glob
 import logging
 import os.path as op
 
-from .utils import Bunch, open_text, save_text
+from .utils import Bunch, load_text, dump_text
 from .plugin import get_plugins
 
 logger = logging.getLogger(__name__)
@@ -122,8 +122,8 @@ class Podoc(object):
             return
         logger.log(5, "Register language `%s`.", name)
         self._langs[name] = Bunch(file_ext=file_ext,
-                                  load_func=load_func or open_text,
-                                  dump_func=dump_func or save_text,
+                                  load_func=load_func or load_text,
+                                  dump_func=dump_func or dump_text,
                                   **kwargs)
 
     def convert(self, obj, source=None, target=None,

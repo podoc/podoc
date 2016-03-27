@@ -10,7 +10,7 @@
 import os.path as op
 
 from podoc.markdown import MarkdownPlugin
-from podoc.utils import get_test_file_path, open_text, assert_equal
+from podoc.utils import get_test_file_path, load_text, assert_equal
 from podoc.ast import ASTPlugin, ASTNode
 from .._notebook import (extract_output,
                          output_filename,
@@ -89,7 +89,7 @@ def test_notebook_reader_notebook():
 
     # Compare with the markdown version.
     path = get_test_file_path('markdown', 'notebook.md')
-    markdown = open_text(path)
+    markdown = load_text(path)
     assert_equal(MarkdownPlugin().write(ast), markdown)
 
     assert 'output_4_1.png' in reader.resources
