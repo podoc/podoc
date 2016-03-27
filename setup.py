@@ -52,7 +52,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            # 'podoc=podoc.scripts.podoc_script:main',
+            'podoc=podoc.cli:podoc',
         ],
     },
     include_package_data=True,

@@ -1,4 +1,5 @@
 traitlets
+click
 nbformat
 CommonMark
 pypandoc
