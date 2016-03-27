@@ -12,7 +12,7 @@ import os.path as op
 
 from pytest import raises
 
-from ..core import Podoc, _find_path, _get_annotation, create_podoc
+from ..core import Podoc, _find_path, _get_annotation
 from ..utils import get_test_file_path, assert_equal, open_text
 
 logger = logging.getLogger(__name__)
@@ -39,14 +39,19 @@ def test_find_path():
 # Tests podoc
 #------------------------------------------------------------------------------
 
+def test_podoc_1():
+    podoc = Podoc(with_pandoc=False)
+    assert 'ast' in podoc.languages
+
+
 def test_podoc_fail():
-    p = Podoc()
+    p = Podoc(with_pandoc=False)
     with raises(ValueError):
         p.convert('hello', lang_list=['a', 'b'])
 
 
 def test_podoc_convert_1(tempdir):
-    p = Podoc()
+    p = Podoc(plugins=[], with_pandoc=False)
 
     p.register_lang('lower', file_ext='.low')
     p.register_lang('upper', file_ext='.up')
@@ -80,7 +85,7 @@ def test_podoc_convert_1(tempdir):
 
 
 def test_podoc_file(tempdir):
-    p = Podoc()
+    p = Podoc(plugins=[], with_pandoc=False)
 
     p.register_lang('a', file_ext='.a',
                     open_func=lambda path: 'a',
@@ -104,17 +109,12 @@ def test_podoc_file(tempdir):
 
 
 def test_podoc_open_save(tempdir):
-    p = Podoc()
+    p = Podoc(with_pandoc=False)
     p.register_lang('txt', file_ext='.txt')
     filename = 'test.txt'
     path = op.join(tempdir, filename)
     p.save(path, 'hello world')
     assert p.open(path) == 'hello world'
-
-
-def test_create_podoc():
-    podoc = create_podoc()
-    assert 'ast' in podoc.languages
 
 
 #------------------------------------------------------------------------------

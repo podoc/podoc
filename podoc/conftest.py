@@ -11,7 +11,7 @@ from .tempdir import TemporaryDirectory
 
 from pytest import fixture, yield_fixture
 
-from podoc import add_default_handler, create_podoc
+from podoc import add_default_handler, Podoc
 
 
 #------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ def tempdir():
 
 @fixture
 def podoc():
-    return create_podoc()
+    return Podoc(with_pandoc=False)
 
 
 # List of test files to test.
@@ -43,10 +43,10 @@ def test_file(request):
 def pytest_generate_tests(metafunc):
     """Generate the fixtures to test all format test files."""
     if 'lang' in metafunc.fixturenames:
-        podoc = create_podoc(with_pandoc=False)
+        podoc = Podoc(with_pandoc=False)
         langs = podoc.languages
         metafunc.parametrize('lang', langs, ids=langs)
     if 'source_target' in metafunc.fixturenames:
-        podoc = create_podoc(with_pandoc=False)
+        podoc = Podoc(with_pandoc=False)
         metafunc.parametrize('source_target', podoc.conversion_pairs,
                              ids=(lambda pair: '-to-'.join(pair)))

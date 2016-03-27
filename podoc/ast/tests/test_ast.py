@@ -13,6 +13,7 @@ from pytest import fixture
 
 from .._ast import (ASTNode, ast_from_pandoc,
                     _merge_str, _split_spaces)
+from podoc.core import Podoc
 from podoc.utils import has_pandoc, pandoc, PANDOC_MARKDOWN_FORMAT
 
 
@@ -100,7 +101,8 @@ def test_unknown_node():
 # Tests with pandoc
 #------------------------------------------------------------------------------
 
-def test_pandoc_conv(podoc):
+def test_pandoc_conv():
+    podoc = Podoc()
     html = '<p><a href="b">a</a></p>'
     assert podoc.convert(html,
                          lang_list=['html', 'ast', 'markdown']) == '[a](b)'

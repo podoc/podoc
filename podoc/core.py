@@ -66,10 +66,30 @@ class Podoc(object):
 
     This class implements the core conversion functionality of podoc.
 
+    Parameters
+    ----------
+
+    plugins : list of str (None)
+        List of plugins to load. By default, load all plugins found.
+    with_pandoc : bool (True)
+        Whether to load all pandoc conversion paths.
+
     """
-    def __init__(self):
+
+    def __init__(self, plugins=None, with_pandoc=True):
         self._funcs = {}  # mapping `(lang0, lang1) => func`
         self._langs = {}  # mapping `lang: Bunch()`
+        self._load_plugins(plugins, with_pandoc)
+
+    def _load_plugins(self, plugins=None, with_pandoc=True):
+        """Load plugins. By default (None), all plugins found are loaded."""
+        # Load plugins.
+        plugins = plugins if plugins is not None else get_plugins()
+        for p in plugins:
+            # Skip pandoc plugin.
+            if not with_pandoc and p.__name__ == 'PandocPlugin':
+                continue
+            p().attach(self)
 
     # Main methods
     # -------------------------------------------------------------------------
@@ -196,14 +216,3 @@ class Podoc(object):
         lang = lang or self.get_lang_for_file_ext(file_ext)
         # Save the file using the function registered for the language.
         return self._langs[lang].save_func(path, contents)
-
-
-def create_podoc(with_pandoc=True):
-    podoc = Podoc()
-    plugins = get_plugins()
-    for p in plugins:
-        # Skip pandoc plugin.
-        if not with_pandoc and p.__name__ == 'PandocPlugin':
-            continue
-        p().attach(podoc)
-    return podoc
