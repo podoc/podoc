@@ -8,7 +8,6 @@
 #------------------------------------------------------------------------------
 
 import logging
-import os.path as op
 import sys
 
 import click
@@ -23,7 +22,9 @@ logger = logging.getLogger(__name__)
 #------------------------------------------------------------------------------
 
 @click.command()
-@click.argument('files', nargs=-1,
+@click.argument('files',
+                # TODO: nargs=-1 for multiple files concat
+                required=False,
                 type=click.Path(exists=True, file_okay=True,
                                 dir_okay=True, resolve_path=True))
 @click.option('-f', '-r', '--from', '--read', default='markdown')
@@ -45,19 +46,25 @@ def podoc(files=None,
     podoc = Podoc(with_pandoc=not(no_pandoc))
     # If no files are provided, read from the standard input (like pandoc).
     if not files:
-        contents = ''.join(sys.stdin.readlines())
-        out = podoc.convert(contents, source=read, target=write)
+        logger.debug("Reading contents from stdin...")
+        contents_s = ''.join(sys.stdin.readlines())
+        # From string to object.
+        contents = podoc.loads(contents_s, read)
+        logger.debug("Converting %d chars from %s to %s in %s.",
+                     len(contents_s),
+                     read,
+                     write,
+                     output,
+                     )
+        out = podoc.convert(contents, source=read, target=write, output=output)
     else:
-        # TODO: concatenate non-string objects. For now we assume that
-        # output1 + output2 just works.
-        out = sum(podoc.convert(file, source=read, target=write)
-                  for file in files)
+        # TODO: multiple files
+        logger.debug("Converting file `%s` from %s to %s in %s.",
+                     files, read, write, output)
+        out = podoc.convert(files, source=read, target=write, output=output)
     if output is None:
-        click.echo(out)
+        click.echo(podoc.dumps(out, write))
         return
-    # Save the output.
-    path = output if not data_dir else op.join(data_dir, output)
-    podoc.dump(out, path, lang=write)
 
 
 if __name__ == '__main__':  # pragma: no cover

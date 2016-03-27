@@ -12,6 +12,8 @@ import glob
 import logging
 import os.path as op
 
+from six import string_types
+
 from .utils import Bunch, load_text, dump_text
 from .plugin import get_plugins
 
@@ -130,23 +132,36 @@ class Podoc(object):
                                   dumps_func=dumps_func or (lambda _: _),
                                   **kwargs)
 
-    def convert(self, obj, source=None, target=None,
+    def convert(self, obj_or_path, source=None, target=None,
                 lang_list=None, output=None):
         """Convert an object by passing it through a chain of conversion
         functions."""
+        obj = obj_or_path
         # NOTE: 'json' is an alias for 'ast', to match with pandoc's
         # terminology.
         source = source if source != 'json' else 'ast'
         target = target if target != 'json' else 'ast'
+        # If the output is specified and not the target, infer the target
+        # from the file extension.
         if target is None and output is not None:
             target = self.get_lang_for_file_ext(op.splitext(output)[1])
-        if source is None and lang_list is None:
+        # NOTE: decide whether the object is a path or contents string.
+        if (isinstance(obj_or_path, string_types) and
+                len(obj_or_path) <= 1024 and  # this is to avoid passing huge
+                                              # strings to op.exists(), which
+                                              # crashes sometimes.
+                op.exists(obj_or_path)):
             # Convert a file to a target format.
-            path = obj
+            path = obj_or_path
             assert target
-            assert op.exists(path)
-            obj = self.load(path)
-            source = self.get_lang_for_file_ext(op.splitext(path)[1])
+            # Get the source from the file extension
+            if source is None and lang_list is None:
+                source = self.get_lang_for_file_ext(op.splitext(path)[1])
+            assert source
+            # Load the object.
+            obj = self.load(path, source)
+        # At this point, we should have a non-empty object.
+        assert obj
         if lang_list is None:
             # Find the shortest path from source to target in the conversion
             # graph.
