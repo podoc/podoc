@@ -20,8 +20,12 @@ logger = logging.getLogger(__name__)
 # Tests
 #------------------------------------------------------------------------------
 
-def test_cli():
+def _podoc(cmd=None, stdin=None):
     runner = CliRunner()
-    result = runner.invoke(podoc, [])
-    assert result.exit_code == 0
-    assert result.output == '\n'
+    cmd = cmd.split(' ') if cmd else ''
+    result = runner.invoke(podoc, cmd, input=stdin)
+    return result.output
+
+
+def test_cli():
+    assert 'hello' in _podoc('--no-pandoc', stdin='hello')
