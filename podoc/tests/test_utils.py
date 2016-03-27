@@ -13,7 +13,7 @@ import os.path as op
 
 from pytest import mark, raises
 
-from ..utils import (Bunch, Path, load_text, dump_text,
+from ..utils import (Bunch, Path, load_text, dump_text, _get_file,
                      assert_equal,
                      pandoc, has_pandoc, get_pandoc_formats)
 
@@ -60,6 +60,9 @@ def test_open_dump_text(tempdir):
     path = op.join(tempdir, 'test.txt')
     dump_text('hello *world*', path)
     assert load_text(path) == 'hello *world*'
+    assert _get_file(path, 'r').read() == 'hello *world*'
+    with open(path, 'r') as f:
+        assert _get_file(f, 'r').read() == 'hello *world*'
 
 
 def test_pandoc():

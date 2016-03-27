@@ -327,6 +327,18 @@ class NotebookWriter(object):
 
 
 class NotebookPlugin(IPlugin):
+    # def attach(self, podoc):
+    #     podoc.register_lang('notebook', file_ext='.ipynb',
+    #                         load_func=self.load,
+    #                         dump_func=self.dump,
+    #                         loads_func=self.loads,
+    #                         dumps_func=self.dumps,
+    #                         )
+    #     podoc.register_func(source='notebook', target='ast',
+    #                         func=self.read)
+    #     podoc.register_func(source='ast', target='notebook',
+    #                         func=self.write)
+
     def load(self, file_or_path):
         with _get_file(file_or_path, 'r') as f:
             return nbformat.read(f, _NBFORMAT_VERSION)

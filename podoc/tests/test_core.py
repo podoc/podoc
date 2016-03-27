@@ -116,6 +116,9 @@ def test_podoc_load_dump(tempdir):
     p.dump('hello world', path)
     assert p.load(path) == 'hello world'
 
+    assert p.dumps('hello world', 'txt') == 'hello world'
+    assert p.loads('hello world', 'txt') == 'hello world'
+
 
 #------------------------------------------------------------------------------
 # Tests all languages

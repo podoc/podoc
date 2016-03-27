@@ -112,7 +112,9 @@ class Podoc(object):
         self._funcs[(source, target)] = func
 
     def register_lang(self, name, file_ext=None,
-                      load_func=None, dump_func=None, **kwargs):
+                      load_func=None, dump_func=None,
+                      loads_func=None, dumps_func=None,
+                      **kwargs):
         """Register a language with a file extension and load/dump
         functions."""
         if file_ext:
@@ -124,6 +126,8 @@ class Podoc(object):
         self._langs[name] = Bunch(file_ext=file_ext,
                                   load_func=load_func or load_text,
                                   dump_func=dump_func or dump_text,
+                                  loads_func=loads_func or (lambda _: _),
+                                  dumps_func=dumps_func or (lambda _: _),
                                   **kwargs)
 
     def convert(self, obj, source=None, target=None,
@@ -132,10 +136,8 @@ class Podoc(object):
         functions."""
         # NOTE: 'json' is an alias for 'ast', to match with pandoc's
         # terminology.
-        if source == 'json':
-            source = 'ast'
-        if target == 'json':
-            target = 'ast'
+        source = source if source != 'json' else 'ast'
+        target = target if target != 'json' else 'ast'
         if target is None and output is not None:
             target = self.get_lang_for_file_ext(op.splitext(output)[1])
         if source is None and lang_list is None:
@@ -222,3 +224,15 @@ class Podoc(object):
         lang = lang or self.get_lang_for_file_ext(file_ext)
         # Dump the file using the function registered for the language.
         return self._langs[lang].dump_func(contents, path)
+
+    def loads(self, s, lang=None):
+        """Load an object from its string representation."""
+        assert lang
+        # Load the string using the function registered for the language.
+        return self._langs[lang].loads_func(s)
+
+    def dumps(self, contents, lang=None):
+        """Dump an object to a string."""
+        assert lang
+        # Dump the string using the function registered for the language.
+        return self._langs[lang].dumps_func(contents)

@@ -420,7 +420,7 @@ class ASTPlugin(IPlugin):
                             load_func=self.load, dump_func=self.dump)
 
     def load(self, file_or_path):
-        """Load a .json file and return an AST instance."""
+        """Load a JSON file and return an AST instance."""
         # logger.debug("Load JSON file `%s`.", path)
         with _get_file(file_or_path, 'r') as f:
             d = json.load(f)
@@ -442,6 +442,7 @@ class ASTPlugin(IPlugin):
             f.write('\n')
 
     def loads(self, s):
+        """Load a JSON string and return an AST instance."""
         d = json.loads(s)
         assert isinstance(d, list)
         ast = ast_from_pandoc(d)
@@ -449,6 +450,7 @@ class ASTPlugin(IPlugin):
         return ast
 
     def dumps(self, ast):
+        """Dump an AST instance to a JSON string."""
         assert isinstance(ast, ASTNode)
         d = ast.to_pandoc()
         assert isinstance(d, list)
