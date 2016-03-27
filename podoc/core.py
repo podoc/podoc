@@ -112,8 +112,8 @@ class Podoc(object):
         self._funcs[(source, target)] = func
 
     def register_lang(self, name, file_ext=None,
-                      open_func=None, save_func=None, **kwargs):
-        """Register a language with a file extension and open/save
+                      load_func=None, dump_func=None, **kwargs):
+        """Register a language with a file extension and load/dump
         functions."""
         if file_ext:
             assert file_ext.startswith('.')
@@ -122,8 +122,8 @@ class Podoc(object):
             return
         logger.log(5, "Register language `%s`.", name)
         self._langs[name] = Bunch(file_ext=file_ext,
-                                  open_func=open_func or open_text,
-                                  save_func=save_func or save_text,
+                                  load_func=load_func or open_text,
+                                  dump_func=dump_func or save_text,
                                   **kwargs)
 
     def convert(self, obj, source=None, target=None,
@@ -143,7 +143,7 @@ class Podoc(object):
             path = obj
             assert target
             assert op.exists(path)
-            obj = self.open(path)
+            obj = self.load(path)
             source = self.get_lang_for_file_ext(op.splitext(path)[1])
         if lang_list is None:
             # Find the shortest path from source to target in the conversion
@@ -165,7 +165,7 @@ class Podoc(object):
             # Perform the conversion.
             obj = f(obj)
         if output:
-            self.save(output, obj, lang=target)
+            self.dump(output, obj, lang=target)
         return obj
 
     # Properties
@@ -207,18 +207,18 @@ class Podoc(object):
         """Return the file extension registered for a given language."""
         return self._langs[lang].file_ext
 
-    def open(self, path, lang=None):
-        """Open a file which has a registered file extension."""
+    def load(self, path, lang=None):
+        """Load a file which has a registered file extension."""
         # Find the language corresponding to the file's extension.
         file_ext = op.splitext(path)[1]
         lang = lang or self.get_lang_for_file_ext(file_ext)
-        # Open the file using the function registered for the language.
-        return self._langs[lang].open_func(path)
+        # Load the file using the function registered for the language.
+        return self._langs[lang].load_func(path)
 
-    def save(self, path, contents, lang=None):
-        """Save an object to a file."""
+    def dump(self, path, contents, lang=None):
+        """Dump an object to a file."""
         # Find the language corresponding to the file's extension.
         file_ext = op.splitext(path)[1]
         lang = lang or self.get_lang_for_file_ext(file_ext)
-        # Save the file using the function registered for the language.
-        return self._langs[lang].save_func(path, contents)
+        # Dump the file using the function registered for the language.
+        return self._langs[lang].dump_func(path, contents)

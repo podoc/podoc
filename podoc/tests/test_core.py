@@ -88,8 +88,8 @@ def test_podoc_file(tempdir):
     p = Podoc(plugins=[], with_pandoc=False)
 
     p.register_lang('a', file_ext='.a',
-                    open_func=lambda path: 'a',
-                    save_func=lambda path, contents: None,
+                    load_func=lambda path: 'a',
+                    dump_func=lambda path, contents: None,
                     )
     assert p.languages == ['a']
 
@@ -108,29 +108,29 @@ def test_podoc_file(tempdir):
     assert fn in files[0]
 
 
-def test_podoc_open_save(tempdir):
+def test_podoc_load_dump(tempdir):
     p = Podoc(with_pandoc=False)
     p.register_lang('txt', file_ext='.txt')
     filename = 'test.txt'
     path = op.join(tempdir, filename)
-    p.save(path, 'hello world')
-    assert p.open(path) == 'hello world'
+    p.dump(path, 'hello world')
+    assert p.load(path) == 'hello world'
 
 
 #------------------------------------------------------------------------------
 # Tests all languages
 #------------------------------------------------------------------------------
 
-def test_all_open_save(tempdir, podoc, lang, test_file):
+def test_all_load_dump(tempdir, podoc, lang, test_file):
     """For all languages and test files, check round-tripping of open
-    and save."""
+    and dump."""
     filename = test_file + podoc.get_file_ext(lang)
     path = get_test_file_path(lang, filename)
-    contents = podoc.open(path)
+    contents = podoc.load(path)
     to_path = op.join(tempdir, filename)
-    podoc.save(to_path, contents)
+    podoc.dump(to_path, contents)
     if lang == 'ast':
-        assert_equal(podoc.open(path), podoc.open(to_path))
+        assert_equal(podoc.load(path), podoc.load(to_path))
     else:
         # TODO: non-text formats
 
@@ -147,7 +147,7 @@ def test_all_convert(tempdir, podoc, source_target, test_file):
     # Output file.
     # path = op.join(tempdir, op.basename(target_path))
     converted = podoc.convert(source_path, target=target)
-    expected = podoc.open(target_path)
+    expected = podoc.load(target_path)
     # TODO: non-text formats
     # assert_text_files_equal(path, target_path)
     assert_equal(converted, expected)

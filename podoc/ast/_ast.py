@@ -416,11 +416,11 @@ class ASTPlugin(IPlugin):
     def attach(self, podoc):
         # An object in the language 'ast' is an instance of AST.
         podoc.register_lang('ast', file_ext='.json',
-                            open_func=self.open, save_func=self.save)
+                            load_func=self.load, dump_func=self.dump)
 
-    def open(self, path):
-        """Open a .json file and return an AST instance."""
-        logger.debug("Open JSON file `%s`.", path)
+    def load(self, path):
+        """Load a .json file and return an AST instance."""
+        logger.debug("Load JSON file `%s`.", path)
         with open(path, 'r') as f:
             d = json.load(f)
         assert isinstance(d, list)
@@ -428,8 +428,8 @@ class ASTPlugin(IPlugin):
         assert isinstance(ast, ASTNode)
         return ast
 
-    def save(self, path, ast):
-        """Save an AST instance to a JSON file."""
+    def dump(self, path, ast):
+        """Dump an AST instance to a JSON file."""
         assert isinstance(ast, ASTNode)
         d = ast.to_pandoc()
         assert isinstance(d, list)

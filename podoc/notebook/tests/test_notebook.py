@@ -101,7 +101,7 @@ def test_notebook_reader_notebook():
 
 def test_notebook_writer_hello():
     path = get_test_file_path('ast', 'hello.json')
-    ast = ASTPlugin().open(path)
+    ast = ASTPlugin().load(path)
     nb = NotebookWriter().write(ast)
 
     # Compare the notebooks.
@@ -112,7 +112,7 @@ def test_notebook_writer_hello():
 
 def test_notebook_writer_notebook():
     path = get_test_file_path('ast', 'notebook.json')
-    ast = ASTPlugin().open(path)
+    ast = ASTPlugin().load(path)
 
     # Load the image.
     fn = get_test_file_path('markdown', 'output_4_1.png')
