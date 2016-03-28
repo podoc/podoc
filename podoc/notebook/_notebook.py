@@ -262,7 +262,10 @@ class NotebookWriter(object):
 
         """
         data = self.resources.get(fn, None)
-        out = base64.b64encode(data).decode('utf8') if data else None
+        if not data:
+            logger.warn("Resource `%s` couldn't be found.", fn)
+            return ''
+        out = base64.b64encode(data).decode('utf8')
         # NOTE: split the output in multiple lines of 76 characters,
         # to make easier the comparison with actual Jupyter Notebook files.
         N = 76
@@ -313,7 +316,7 @@ class NotebookWriter(object):
                 mime_type = guess_type(fn)[0]
                 assert mime_type  # unknown extension: this shouldn't happen!
                 data[mime_type] = self._get_b64_resource(fn)
-                assert data[mime_type] is not None  # TODO
+                assert data[mime_type]  # TODO
                 data['text/plain'] = caption
                 kwargs = dict(data=data)
             output = new_output(output_type, **kwargs)
@@ -361,5 +364,5 @@ class NotebookPlugin(IPlugin):
     def read(self, nb):
         return NotebookReader().read(nb)
 
-    def write(self, ast):
-        return NotebookWriter().write(ast)
+    def write(self, ast, resources=None):
+        return NotebookWriter().write(ast, resources=resources)

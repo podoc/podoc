@@ -13,7 +13,7 @@ import os.path as op
 from pytest import raises
 
 from ..core import Podoc, _find_path, _get_annotation
-from ..utils import get_test_file_path, load_text
+from ..utils import get_test_file_path, load_text, _test_file_resources
 
 logger = logging.getLogger(__name__)
 
@@ -148,14 +148,22 @@ def test_all_convert(tempdir, podoc, source_target, test_file):
     source, target = source_target
     source_filename = test_file + podoc.get_file_ext(source)
     target_filename = test_file + podoc.get_file_ext(target)
+
     # Get the source and target file names.
     source_path = get_test_file_path(source, source_filename)
     target_path = get_test_file_path(target, target_filename)
-    # Output file.
-    # path = op.join(tempdir, op.basename(target_path))
-    converted = podoc.convert(source_path, target=target)
+
+    # Load the test file resources.
+    resources = _test_file_resources()
+
+    # Convert with pandoc.
+    converted = podoc.convert(source_path, target=target, resources=resources)
+    print('****** CONVERTED ******')
+    converted.show()
+
     expected = podoc.load(target_path)
-    # TODO: non-text formats
+    print('****** EXPECTED ******')
+    expected.show()
+
     # assert_text_files_equal(path, target_path)
     podoc.assert_equal(converted, expected, target)
-    # logger.debug("{} and {} are equal.".format(path, target_path))

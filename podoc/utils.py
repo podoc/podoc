@@ -103,6 +103,25 @@ def get_test_file_path(lang, filename):
     return path
 
 
+def _read_binary(path):
+    # Load a resource.
+    with open(path, 'rb') as f:
+        return f.read()
+
+
+def _test_file_resources():
+    """Return a dictionary of all test resources, which are stored in
+    markdown/test_files."""
+    file_exts = ('.png', '.jpg')
+    curdir = op.realpath(op.dirname(__file__))
+    # Construct the directory name for the language and test filename.
+    dirname = op.realpath(op.join(curdir, 'markdown'))
+    path = op.join(dirname, 'test_files')
+    return {op.basename(fn): _read_binary(op.join(path, fn))
+            for fn in os.listdir(path)
+            if fn.endswith(file_exts)}
+
+
 def _are_dict_equal(t0, t1):
     """Assert the equality of nested dicts, removing all private fields."""
     if isinstance(t0, list):
