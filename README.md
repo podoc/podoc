@@ -62,21 +62,21 @@ Here are a few common use-cases enabled by podoc.
 
 Download a notebook and convert to Markdown.
 
-![nbdocx](https://cloud.githubusercontent.com/assets/1942359/14083565/af0800d2-f516-11e5-8f3f-caf5eb0a8d56.png)
+![nbmd](https://cloud.githubusercontent.com/assets/1942359/14084014/098bb0c4-f519-11e5-94b1-577f4f406406.png)
 
 
 ### Converting a notebook to docx via pandoc
 
 We download a notebook, we convert to a JSON-based intermediate representation (`ast`), then we convert that to docx with pandoc:
 
-![nbmd](https://cloud.githubusercontent.com/assets/1942359/14083566/af07e912-f516-11e5-9b44-8764d6b217c6.png)
+![nbdocx](https://cloud.githubusercontent.com/assets/1942359/14084070/575b6024-f519-11e5-9ece-fe0bde1a28b4.png)
 
 
 ### Quickly creating a new Jupyter notebook from the command-line
 
 We generate a notebook from stdin:
 
-![stdinnb](https://cloud.githubusercontent.com/assets/1942359/14083567/af0b27a8-f516-11e5-8ee9-92fa2ab5ae65.png)
+![stdinnb](https://cloud.githubusercontent.com/assets/1942359/14084148/ace75b7e-f519-11e5-9f67-fa92f1b1f217.png)
 
 
 ### Writing Markdown documents in the Jupyter Notebook
