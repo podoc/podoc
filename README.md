@@ -86,19 +86,28 @@ We generate a notebook from stdin (we type the contents directly in the terminal
 You'll be able to use the Jupyter Notebook to edit documents in Markdown or any other format supported by pandoc: HTML, LaTeX, docx, etc.
 
 
-## Plugin ideas
+## Installation
 
-podoc features a simple plugin system that allows you to implement custom transformation functions. Here are a few plugin ideas (none is implemented yet!):
+The code is changing rapidly and there is no PyPI yet.
 
-* `ASCIIImage`: replace images by ASCII art to display documents with images in the console.
-* `Atlas`: filter replacing code blocks in a given language by executable `<pre>` HTML code blocks, and LaTeX equations by `<span>` HTML blocks. This is used by the O'Reilly Atlas platform.
-* `CodeEval`: evaluate some code elements and replace them by their output. This allows for **literate programming** using Python.
-* `Graph`: describe a graph or a tree in a human-readable format and have it converted automatically to an image (e.g. [mermaid](http://knsv.github.io/mermaid/))
-* `Include`: just include several documents in a single document.
-* `Macros`: perform regex substitutions. The macro substitutions can be listed in the `macros` metadata array in the document, or in `c.Macros.substitutions = [(regex, repl), ...]` in your `.podoc/podoc_config.py`.
-* `Prompt`: parse and write prompt prefix in an input code cell.
-* `SlideShow`: read and write slideshows
-* `UrlChecker`: find all broken hypertext links and generate a report.
+The main requirements are:
+
+* Python 2.7 or 3.4+
+* CommonMark
+* nbformat
+* click
+* pandoc and pypandoc (required for the test suite)
+
+To install the package:
+
+```bash
+$ git clone https://github.com/podoc/podoc.git
+$ cd podoc
+$ pip install -r requirements.txt
+$ pip install -r requirements-dev.txt
+$ python setup.py develop
+$ make test  # you need pandoc to run the test suite
+```
 
 
 ## Architecture overview
@@ -120,3 +129,18 @@ podoc features a simple plugin system that allows you to implement custom transf
   * To convert a notebook to Markdown, we parse every Markdown cell with the Markdown plugin, and we convert every code cell to a special `CodeCell` node. This custom AST node contains a `CodeBlock` with the source, and a list of `CodeBlock` (with `result`, `stdout`, or `stderr` "language") or `Para` (images) with the cell's outputs. Images are saved to external files and inserted in Markdown. We keep a `resources` dictionary mapping the external filenames to the data (binary string).
   * To convert a Markdown document to a notebook, we first convert it to an AST, then we loop through the top-level blocks to detect `CodeBlock` which should be wrapped within `CodeCell`s. There are a few heuristics to decide whether a `CodeBlock` is a `CodeCell` or a regular Markdown code block, and to find the list of outputs. These heuristics could certainly be improved. This logic is implemented in `podoc.notebook.wrap_code_cells()`. When converting a notebook to another podoc format (for example, HTML, although it is not yet implemented), the information about the `CodeCell`s can be used for custom styling. If the target format doesn't know about `CodeCell`s, it will just discard them and process the children recursively.
 * Every plugin comes with a set of test files in its own format. We automatically test all conversion paths on all test files as part of the test suite.
+
+
+## Plugin ideas
+
+podoc features a simple plugin system that allows you to implement custom transformation functions. Here are a few plugin ideas (none is implemented yet!):
+
+* `ASCIIImage`: replace images by ASCII art to display documents with images in the console.
+* `Atlas`: filter replacing code blocks in a given language by executable `<pre>` HTML code blocks, and LaTeX equations by `<span>` HTML blocks. This is used by the O'Reilly Atlas platform.
+* `CodeEval`: evaluate some code elements and replace them by their output. This allows for **literate programming** using Python.
+* `Graph`: describe a graph or a tree in a human-readable format and have it converted automatically to an image (e.g. [mermaid](http://knsv.github.io/mermaid/))
+* `Include`: just include several documents in a single document.
+* `Macros`: perform regex substitutions. The macro substitutions can be listed in the `macros` metadata array in the document, or in `c.Macros.substitutions = [(regex, repl), ...]` in your `.podoc/podoc_config.py`.
+* `Prompt`: parse and write prompt prefix in an input code cell.
+* `SlideShow`: read and write slideshows
+* `UrlChecker`: find all broken hypertext links and generate a report.
