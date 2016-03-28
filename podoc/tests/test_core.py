@@ -144,6 +144,7 @@ def test_all_load_dump(tempdir, podoc, lang, test_file):
 
 
 def test_all_convert(tempdir, podoc, source_target, test_file):
+    """Check all conversion paths on all test files."""
     source, target = source_target
     source_filename = test_file + podoc.get_file_ext(source)
     target_filename = test_file + podoc.get_file_ext(target)
