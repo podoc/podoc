@@ -7,62 +7,61 @@
 [![GitHub release](https://img.shields.io/github/release/podoc/podoc.svg)](https://github.com/podoc/podoc/releases/latest)
 [![Join the chat at https://gitter.im/podoc/podoc](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/podoc/podoc?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**This library is in a very early development stage and it's not ready for public use yet.**
+**podoc** is a document conversion library in Python. Natively, it supports Markdown and Jupyter Notebook. More formats will be added later.
 
-**podoc** will be a pure Python library for converting markup documents in a way that is **100% compatible with pandoc**. You'll be able to convert documents bidirectionally between the following formats:
+podoc will be able to convert documents on the fly in the Jupyter Notebook, so you can use the Notebook directly on Markdown documents. This feature was previously implemented in [**ipymd**](https://github.com/rossant/ipymd).
 
-* **Without pandoc installed**:
-  * CommonMark/Markdown
-  * Jupyter Notebook
-  * OpenDocument
-  * O'Reilly Atlas
-  * ReST (later?)
-  * LaTeX (later?)
-  * HTML (later?)
-* **With pandoc installed**:
-  * all formats above
-  * the dozens of formats supported by pandoc
 
-podoc implements no parser. Instead, it uses other parsing libraries like CommonMark-py, Jupyter, odfpy, etc.
+## Links with pandoc
 
-Conversion will be entirely customizable and will allow many use-cases (see the *Plugin ideas* section below).
+podoc has strong links with [**pandoc**](http://pandoc.org/), a universal document converted in Haskell. Both libraries use the same intermediate representation, so you can combine them seamlessly.
 
-## Plugins
+**You don't need pandoc to install and use podoc**. However, you'll have many more conversion options if pandoc is installed. Note that we systematically test the compatibility of podoc with the [latest release of pandoc](https://github.com/jgm/pandoc/releases/latest). If you want to use pandoc with podoc, make sure that you have the latest version installed.
 
-podoc implements a very light core. Most functionality is provided by built-in plugins, and you can implement your own plugins easily. Examples of included plugins are support for all natively supported formats like CommonMark, Notebook, AST, etc.
+The compatibility with pandoc enables many interesting use-cases.
 
-## AST
 
-podoc features a language-independent representation for documents, also known as **Abstract Syntax Tree** (AST). This structure is very close the the internal AST used by pandoc, and podoc provides 100% compatible import/export facilities to the pandoc AST JSON format.
+## Command-line tool
 
-## Custom AST nodes
+podoc provides a `podoc` command-line tool that is quite similar to `pandoc`.
 
-The AST supports a small set of built-in node types, like `Header`, `Para`, or `CodeBlock` (the same names as in pandoc). You can also implement your own custom node types which allow for a rich set of possibilities.
+```bash
+$ podoc --help
+Usage: podoc [OPTIONS] [FILES]
 
-For example, the Notebook plugin implements the `CodeCell` node. Its children are the input cell as a `CodeBlock` and output cells as `CodeBlock`s.
+  Convert one or several files from a supported format to another.
 
-When you define a custom node type, make sure that its children are native, such that writers that don't support the node type can still process sensible contents. This is because the default behavior for writers is to just skip unknown nodes and proceed with the children as usual, recursively. In the `CodeCell` example, you can see that the children are native `CodeBlock`s so that writers that don't support `CodeCell` will still render a list of code blocks. Writers that *do* support Notebook `CodeCell` will have a chance to render them in a specific way.
+Options:
+  -f, -r, --from, --read TEXT
+  -t, -w, --to, --write TEXT
+  -o, --output TEXT
+  --data-dir TEXT
+  --no-pandoc
+  --version                    Show the version and exit.
+  --help                       Show this message and exit.
+```
 
-## Formats
+Like `pandoc`, if no files are provided on the command line, podoc takes its input on stdin.
 
-In podoc, there is a list of formats which are nodes in a conversion (directed) graph, and a list of conversion functions which are edges in that graph. To go from one format to another, the shortest path is found and the conversion is performed. In practice, the conversion path is almost always `source -> AST -> target`, and most formats implement both readers (`source -> AST`) and writers (`AST -> target`).
 
-Some conversion paths don't require a full AST parsing, for example `notebook -> CommonMark` (since notebooks already contain Markdown cells), which is significantly faster than `notebook -> AST -> CommonMark`.
+## Use-cases
 
-## Filters
+### Writing Markdown documents in the Jupyter Notebook
 
-You can register *filters* that transform a document without changing the format. For example, prefilters that transform the source document or AST filters that implement custom features.
+### Quickly creating a new Jupyter notebook from the command-line
 
-See a list of possible filters below.
+
 
 ## Plugin ideas
+
+podoc features a simple plugin system that allows you to implement custom transformation functions. Here are a few plugin ideas:
 
 * `ASCIIImage`: replace images by ASCII art to display documents with images in the console.
 * `Atlas`: filter replacing code blocks in a given language by executable `<pre>` HTML code blocks, and LaTeX equations by `<span>` HTML blocks. This is used by the O'Reilly Atlas platform.
 * `CodeEval`: evaluate some code elements and replace them by their output. This allows for **literate programming** using Python.
 * `Graph`: describe a graph or a tree in a human-readable format and have it converted automatically to an image (e.g. [mermaid](http://knsv.github.io/mermaid/))
 * `Include`: just include several documents in a single document.
-* `Macros`: perform regex substitutions. The macro substitutions can be listed in the `macros` metadata array in the document, or in `c.Macros.substitutions = [(regex, repl), ...]` in your `.podoc/config.py`.
+* `Macros`: perform regex substitutions. The macro substitutions can be listed in the `macros` metadata array in the document, or in `c.Macros.substitutions = [(regex, repl), ...]` in your `.podoc/podoc_config.py`.
 * `Prompt`: parse and write prompt prefix in an input code cell.
-* `SlideShow`: convert Markdown documents or Jupyter notebooks to slideshows
+* `SlideShow`: read and write slideshows
 * `UrlChecker`: find all broken hypertext links and generate a report.
