@@ -76,7 +76,7 @@ $ wget -qO - https://raw.githubusercontent.com/ipython-books/minibook-2nd-code/m
 
 ### Quickly creating a new Jupyter notebook from the command-line
 
-```
+`````
 $ podoc -f markdown -t notebook > mynb.ipynb  # press enter and write the following in stdin
 # My new notebook
 
@@ -100,7 +100,7 @@ $ cat mynb.ipynb
   }
  ]
 }
-```
+`````
 
 ### Writing Markdown documents in the Jupyter Notebook
 
