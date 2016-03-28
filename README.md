@@ -12,11 +12,11 @@
 podoc will be able to convert documents on the fly in the Jupyter Notebook, so you can use the Notebook directly on Markdown documents. This feature was previously implemented in [**ipymd**](https://github.com/rossant/ipymd).
 
 
-## Links with pandoc
+## Relations with pandoc
 
-podoc has strong links with [**pandoc**](http://pandoc.org/), a universal document converted in Haskell. Both libraries use the same intermediate representation, so you can combine them seamlessly.
+podoc has strong relations with [**pandoc**](http://pandoc.org/), a universal document converted in Haskell. Both libraries use the same intermediate representation (JSON-serializable Abstract Syntax Tree, or AST), so you can combine them seamlessly.
 
-**You don't need pandoc to install and use podoc**. However, you'll have many more conversion options if pandoc is installed. Note that we systematically test the compatibility of podoc with the [latest release of pandoc](https://github.com/jgm/pandoc/releases/latest). If you want to use pandoc with podoc, make sure that you have the latest version installed.
+**You don't need pandoc to install and use podoc**, and you can convert between Markdown and Jupyter Notebook with pandoc. However, you'll have many more conversion options if pandoc is installed. Note that we systematically test the compatibility of podoc with the [latest release of pandoc](https://github.com/jgm/pandoc/releases/latest). If you want to use pandoc with podoc, make sure that you have the latest version installed.
 
 The compatibility with pandoc enables many interesting use-cases.
 
@@ -56,61 +56,28 @@ Like `pandoc`, if no files are provided on the command line, podoc takes its inp
 
 ## Use-cases
 
+Here are a few common use-cases enabled by podoc.
+
 ### Converting a notebook to Markdown
 
 Download a notebook and convert to Markdown.
 
-```bash
-$ wget -qO - http://bit.ly/1VQ5cnI | podoc -f notebook -t markdown | head
-## A crash course on Python
+![nbdocx](https://cloud.githubusercontent.com/assets/1942359/14083565/af0800d2-f516-11e5-8f3f-caf5eb0a8d56.png)
 
-> **This is a sample chapter from [Learning IPython for Interactive Computing and Data Visualization, second edition](http://ipython-books.github.io/minibook/).**
-
-If you don't know Python, read this section to learn the fundamentals. Python is a very accessible language and is even taught to school children. If you have ever programmed, it will only take you a few minutes to learn the basics.
-
-### Hello world
-
-Open a new notebook and type the following in the first cell:
-```
 
 ### Converting a notebook to docx via pandoc
 
-We download a notebook, we convert to a JSON-based intermediate representation (`ast`), then we convert that to docx with pandoc.
+We download a notebook, we convert to a JSON-based intermediate representation (`ast`), then we convert that to docx with pandoc:
 
-```bash
-$ wget -qO - http://bit.ly/1VQ5cnI | podoc -f notebook -t ast | pandoc -f json -t docx -o file.docx
-```
-
-![Convert a notebook to docx with podoc and pandoc](https://cloud.githubusercontent.com/assets/1942359/14082367/e2d3194e-f50f-11e5-997c-9da04b3cdf50.png)
+![nbmd](https://cloud.githubusercontent.com/assets/1942359/14083566/af07e912-f516-11e5-9b44-8764d6b217c6.png)
 
 
 ### Quickly creating a new Jupyter notebook from the command-line
 
-````bash
-$ podoc -f markdown -t notebook > mynb.ipynb  # press enter and write the following in stdin
-# My new notebook
+We generate a notebook from stdin:
 
-First code cell:
+![stdinnb](https://cloud.githubusercontent.com/assets/1942359/14083567/af0b27a8-f516-11e5-8ee9-92fa2ab5ae65.png)
 
-```python
-print("Hello world!")
-`` `
-^D  # press Control+D
-$ cat mynb.ipynb
-{
- "cells": [
-  {
-   "cell_type": "markdown",
-   "source": ["# My new notebook"]
-   ...
-  {
-   "cell_type": "code",
-   "outputs": [],
-   "source": ["print(\"Hello world!\")"]
-  }
- ]
-}
-````
 
 ### Writing Markdown documents in the Jupyter Notebook
 
