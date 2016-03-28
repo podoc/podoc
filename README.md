@@ -46,10 +46,65 @@ Like `pandoc`, if no files are provided on the command line, podoc takes its inp
 
 ## Use-cases
 
-### Writing Markdown documents in the Jupyter Notebook
+### Converting a notebook to Markdown
+
+Download a notebook and convert to Markdown.
+
+```bash
+$ wget -qO - https://raw.githubusercontent.com/ipython-books/minibook-2nd-code/master/chapter1/14-python.ipynb | podoc -f notebook -t markdown | head
+## A crash course on Python
+
+> **This is a sample chapter from [Learning IPython for Interactive Computing and Data Visualization, second edition](http://ipython-books.github.io/minibook/).**
+
+If you don't know Python, read this section to learn the fundamentals. Python is a very accessible language and is even taught to school children. If you have ever programmed, it will only take you a few minutes to learn the basics.
+
+### Hello world
+
+Open a new notebook and type the following in the first cell:
+```
+
+### Converting a notebook to docx via pandoc
+
+We download a notebook, we convert to a JSON-based intermediate representation (`ast`), then we convert that to docx with pandoc.
+
+```bash
+$ wget -qO - https://raw.githubusercontent.com/ipython-books/minibook-2nd-code/master/chapter1/14-python.ipynb | podoc -f notebook -t ast | pandoc -f json -t docx -o file.docx
+```
+
+![Convert a notebook to docx with podoc and pandoc](https://cloud.githubusercontent.com/assets/1942359/14082367/e2d3194e-f50f-11e5-997c-9da04b3cdf50.png)
+
 
 ### Quickly creating a new Jupyter notebook from the command-line
 
+```
+$ podoc -f markdown -t notebook > mynb.ipynb  # press enter and write the following in stdin
+# My new notebook
+
+First code cell:
+
+```python
+print("Hello world!")
+```
+^D  # press Control+D
+$ cat mynb.ipynb
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": ["# My new notebook"]
+   ...
+  {
+   "cell_type": "code",
+   "outputs": [],
+   "source": ["print(\"Hello world!\")"]
+  }
+ ]
+}
+```
+
+### Writing Markdown documents in the Jupyter Notebook
+
+Work in progress.
 
 
 ## Plugin ideas

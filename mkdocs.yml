@@ -1,8 +1,8 @@
 site_name: podoc
 pages:
 - Home: 'index.md'
-- Usage: 'cli.md'
-- Podoc class: 'podoc.md'
-- Tree utils: 'tree.md'
-- Plugin system: 'plugin.md'
+# - Usage: 'cli.md'
+# - Podoc class: 'podoc.md'
+# - Tree utils: 'tree.md'
+# - Plugin system: 'plugin.md'
 theme: readthedocs
