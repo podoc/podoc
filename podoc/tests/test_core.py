@@ -13,7 +13,7 @@ import os.path as op
 from pytest import raises
 
 from ..core import Podoc, _find_path, _get_annotation
-from ..utils import get_test_file_path, assert_equal, load_text
+from ..utils import get_test_file_path, load_text
 
 logger = logging.getLogger(__name__)
 
@@ -138,9 +138,9 @@ def test_all_load_dump(tempdir, podoc, lang, test_file):
     # Save it again to a temporary file.
     podoc.dump(contents, to_path)
 
-    # TODO: non-text formats
-    assert_equal(contents, podoc.loads(load_text(path), lang))
-    assert_equal(load_text(to_path), podoc.dumps(contents, lang))
+    # Assert equality.
+    podoc.assert_equal(contents, podoc.loads(load_text(path), lang), lang)
+    podoc.assert_equal(load_text(to_path), podoc.dumps(contents, lang), lang)
 
 
 def test_all_convert(tempdir, podoc, source_target, test_file):
@@ -157,5 +157,5 @@ def test_all_convert(tempdir, podoc, source_target, test_file):
     expected = podoc.load(target_path)
     # TODO: non-text formats
     # assert_text_files_equal(path, target_path)
-    assert_equal(converted, expected)
+    podoc.assert_equal(converted, expected, target)
     # logger.debug("{} and {} are equal.".format(path, target_path))

@@ -14,7 +14,7 @@ import os.path as op
 
 from six import string_types
 
-from .utils import Bunch, load_text, dump_text
+from .utils import Bunch, load_text, dump_text, assert_equal
 from .plugin import get_plugins
 
 logger = logging.getLogger(__name__)
@@ -116,6 +116,7 @@ class Podoc(object):
     def register_lang(self, name, file_ext=None,
                       load_func=None, dump_func=None,
                       loads_func=None, dumps_func=None,
+                      assert_equal_func=None,
                       **kwargs):
         """Register a language with a file extension and load/dump
         functions."""
@@ -125,11 +126,18 @@ class Podoc(object):
             logger.log(5, "Language `%s` already registered, skipping.", name)
             return
         logger.log(5, "Register language `%s`.", name)
+        # Default parameters.
+        assert_equal_func = assert_equal_func or assert_equal
+        load_func = load_func or load_text
+        dump_func = dump_func or dump_text
+        loads_func = loads_func or (lambda _: _)
+        dumps_func = dumps_func or (lambda _: _)
         self._langs[name] = Bunch(file_ext=file_ext,
-                                  load_func=load_func or load_text,
-                                  dump_func=dump_func or dump_text,
-                                  loads_func=loads_func or (lambda _: _),
-                                  dumps_func=dumps_func or (lambda _: _),
+                                  load_func=load_func,
+                                  dump_func=dump_func,
+                                  loads_func=loads_func,
+                                  dumps_func=dumps_func,
+                                  assert_equal_func=assert_equal_func,
                                   **kwargs)
 
     def convert(self, obj_or_path, source=None, target=None,
@@ -251,3 +259,9 @@ class Podoc(object):
         assert lang
         # Dump the string using the function registered for the language.
         return self._langs[lang].dumps_func(contents)
+
+    def assert_equal(self, obj0, obj1, lang=None):
+        """Assert that two objects are equal."""
+        assert lang
+        # Dump the string using the function registered for the language.
+        return self._langs[lang].assert_equal_func(obj0, obj1)

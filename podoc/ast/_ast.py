@@ -17,7 +17,7 @@ from six import string_types
 from podoc.tree import Node, TreeTransformer
 from podoc.plugin import IPlugin
 from podoc.utils import (has_pandoc, pandoc, get_pandoc_formats,
-                         _merge_str, _get_file,)
+                         _merge_str, _get_file, assert_equal,)
 
 logger = logging.getLogger(__name__)
 
@@ -419,6 +419,7 @@ class ASTPlugin(IPlugin):
         podoc.register_lang('ast', file_ext='.json',
                             load_func=self.load, dump_func=self.dump,
                             loads_func=self.loads, dumps_func=self.dumps,
+                            assert_equal_func=self.assert_equal,
                             )
 
     def load(self, file_or_path):
@@ -458,3 +459,6 @@ class ASTPlugin(IPlugin):
         assert isinstance(d, list)
         return json.dumps(d, sort_keys=True, indent=2,
                           separators=(',', ': ')) + '\n'
+
+    def assert_equal(self, ast0, ast1):
+        return assert_equal(ast0, ast1, to_remove=('_visit_meta',))

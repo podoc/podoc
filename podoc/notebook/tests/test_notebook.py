@@ -17,6 +17,7 @@ from .._notebook import (extract_output,
                          open_notebook,
                          NotebookReader,
                          NotebookWriter,
+                         NotebookPlugin,
                          wrap_code_cells,
                          )
 
@@ -102,7 +103,7 @@ def test_notebook_writer_hello():
     # Compare the notebooks.
     nb_expected = open_notebook(get_test_file_path('notebook', 'hello.ipynb'))
     # Ignore some fields when comparing the notebooks.
-    assert_equal(nb, nb_expected, ('metadata', 'kernelspec'))
+    NotebookPlugin().assert_equal(nb, nb_expected)
 
 
 def test_notebook_writer_notebook():
@@ -121,4 +122,4 @@ def test_notebook_writer_notebook():
     nb_expected = open_notebook(get_test_file_path('notebook',
                                                    'notebook.ipynb'))
     # Ignore some fields when comparing the notebooks.
-    assert_equal(nb, nb_expected, ('metadata', 'kernelspec'))
+    NotebookPlugin().assert_equal(nb, nb_expected)

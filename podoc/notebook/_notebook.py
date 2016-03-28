@@ -50,7 +50,7 @@ from nbformat.v4 import (new_notebook,
 from podoc.markdown import MarkdownPlugin
 from podoc.ast import ASTNode  # , TreeTransformer
 from podoc.plugin import IPlugin
-from podoc.utils import _get_file
+from podoc.utils import _get_file, assert_equal
 
 logger = logging.getLogger(__name__)
 
@@ -333,6 +333,7 @@ class NotebookPlugin(IPlugin):
                             dump_func=self.dump,
                             loads_func=self.loads,
                             dumps_func=self.dumps,
+                            assert_equal_func=self.assert_equal,
                             )
         podoc.register_func(source='notebook', target='ast',
                             func=self.read)
@@ -352,6 +353,10 @@ class NotebookPlugin(IPlugin):
 
     def dumps(self, nb):
         return nbformat.writes(nb, _NBFORMAT_VERSION)
+
+    def assert_equal(self, nb0, nb1):
+        return assert_equal(nb0, nb1,
+                            to_remove=('metadata', 'kernel_spec'))
 
     def read(self, nb):
         return NotebookReader().read(nb)
