@@ -68,6 +68,10 @@ def captured_output():
         sys.stdout, sys.stderr = old_out, old_err
 
 
+def _shorten_string(s, lim=40):
+    return s if len(s) <= lim else (s[:lim // 2] + ' (...) ' + s[-lim // 2:])
+
+
 #------------------------------------------------------------------------------
 # Path
 #------------------------------------------------------------------------------

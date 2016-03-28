@@ -13,6 +13,7 @@ import sys
 import click
 
 from podoc import __version__, Podoc
+from podoc.utils import _shorten_string
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ def podoc(files=None,
         # From string to object.
         contents = podoc.loads(contents_s, read)
         logger.debug("Converting `%s` from %s to %s (file: `%s`).",
-                     contents_s,
+                     _shorten_string(contents_s),
                      read, write, output,
                      )
         out = podoc.convert(contents, source=read, target=write,
