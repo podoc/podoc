@@ -97,7 +97,9 @@ class Podoc(object):
     # Main methods
     # -------------------------------------------------------------------------
 
-    def register_func(self, func=None, source=None, target=None):
+    def register_func(self, func=None, source=None, target=None,
+                      pre_filter=None, post_filter=None,
+                      ):
         """Register a conversion function between two languages."""
         if func is None:
             return lambda _: self.register_func(_, source=source,
@@ -112,7 +114,10 @@ class Podoc(object):
                          source, target)
             return
         logger.log(5, "Register conversion `%s -> %s`.", source, target)
-        self._funcs[(source, target)] = func
+        self._funcs[(source, target)] = Bunch(func=func,
+                                              pre_filter=pre_filter,
+                                              post_filter=post_filter,
+                                              )
 
     def register_lang(self, name, file_ext=None,
                       load_func=None, dump_func=None,
@@ -185,20 +190,32 @@ class Podoc(object):
         # Iterate over all successive pairs.
         for t0, t1 in zip(lang_list, lang_list[1:]):
             # Get the function registered for t0, t1.
-            f = self._funcs.get((t0, t1), None)
-            if not f:
+            fd = self._funcs.get((t0, t1), None)
+            if not fd:
                 raise ValueError("No function registered for `{}` => `{}`.".
                                  format(t0, t1))
             kwargs = {}
+            f = fd.func
+            # Pre-filter.
+            obj = fd.pre_filter(obj) if fd.pre_filter else obj
             # Add the resources dictionary if the conversion function accepts
             # it.
             if 'resources' in inspect.getargspec(f).args:
                 kwargs['resources'] = resources
             # Perform the conversion.
             obj = f(obj, **kwargs)
+            # Post-filter.
+            obj = fd.post_filter(obj) if fd.post_filter else obj
         if output:
             self.dump(obj, output, lang=target)
         return obj
+
+    def pre_filter(self, obj, source, target):
+        fd = self._funcs.get((source, target), None)
+        if fd.pre_filter:
+            return fd.pre_filter(obj)
+        else:
+            return obj
 
     # Properties
     # -------------------------------------------------------------------------

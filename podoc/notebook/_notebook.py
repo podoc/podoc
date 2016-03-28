@@ -262,7 +262,7 @@ class NotebookWriter(object):
 
         """
         data = self.resources.get(fn, None)
-        if not data:
+        if not data:  # pragma: no cover
             logger.warn("Resource `%s` couldn't be found.", fn)
             return ''
         out = base64.b64encode(data).decode('utf8')
@@ -339,9 +339,12 @@ class NotebookPlugin(IPlugin):
                             assert_equal_func=self.assert_equal,
                             )
         podoc.register_func(source='notebook', target='ast',
-                            func=self.read)
+                            func=self.read,
+                            )
         podoc.register_func(source='ast', target='notebook',
-                            func=self.write)
+                            func=self.write,
+                            pre_filter=wrap_code_cells,
+                            )
 
     def load(self, file_or_path):
         with _get_file(file_or_path, 'r') as f:

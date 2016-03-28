@@ -158,12 +158,16 @@ def test_all_convert(tempdir, podoc, source_target, test_file):
 
     # Convert with pandoc.
     converted = podoc.convert(source_path, target=target, resources=resources)
-    print('****** CONVERTED ******')
-    converted.show()
+    # print('****** CONVERTED ******')
+    # converted.show()
 
     expected = podoc.load(target_path)
-    print('****** EXPECTED ******')
-    expected.show()
+    # Apply the eventual pre-filter on the target.
+    # This is notably used when testing notebook -> AST, where the
+    # expected AST needs to be decorated with CodeCells before being
+    # compared to the converted AST.
+    expected = podoc.pre_filter(expected, target, source)
+    # print('****** EXPECTED ******')
+    # expected.show()
 
-    # assert_text_files_equal(path, target_path)
     podoc.assert_equal(converted, expected, target)
