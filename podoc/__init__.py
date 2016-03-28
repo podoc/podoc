@@ -81,13 +81,13 @@ def add_default_handler(level='INFO'):
     logger.addHandler(handler)
 
 
+DEBUG = False
 if '--debug' in sys.argv:  # pragma: no cover
-    add_default_handler('DEBUG')
-    logger.info("Activate DEBUG level.")
+    DEBUG = True
+    sys.argv.remove('--debug')
 
 
-# Load all native plugins when importing the library.
-# _load_all_native_plugins()
+add_default_handler('DEBUG' if DEBUG else 'INFO')
 
 
 def test():  # pragma: no cover

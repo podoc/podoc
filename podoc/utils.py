@@ -206,13 +206,14 @@ def get_pandoc_formats():
 
 def has_pandoc():  # pragma: no cover
     try:
-        import pypandoc
-        pypandoc.get_pandoc_version()
+        with captured_output():
+            import pypandoc
+            pypandoc.get_pandoc_version()
         return True
-    except ImportError:
-        logger.debug("pypandoc is not installed.")
+    except (OSError, ImportError):
+        logger.info("pypandoc is not installed.")
     except FileNotFoundError:
-        logger.debug("pandoc is not installed.")
+        logger.info("pandoc is not installed.")
     return False
 
 
