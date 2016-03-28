@@ -88,7 +88,7 @@ You'll be able to use the Jupyter Notebook to edit documents in Markdown or any 
 
 ## Installation
 
-The code is changing rapidly and there is no PyPI yet.
+The code is changing rapidly and there is no PyPI release yet.
 
 The main requirements are:
 
