@@ -33,6 +33,8 @@ PODOC_HELP = """Convert a file or a string from one format to another.
 
 
 def _wrap(languages, lead=''):
+    if not languages:  # pragma: no cover
+        return lead
     l = ', '.join(languages)
     lines = textwrap.wrap(l, 70 - len(lead))
     out = lead + lines[0] + '\n'
