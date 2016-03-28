@@ -236,7 +236,7 @@ class NotebookWriter(object):
         self._md = MarkdownPlugin()
         # Add code cells in the AST.
         ast = wrap_code_cells(ast)
-        ast.show()
+        # ast.show()
         # Create the notebook.
         # new_output, new_code_cell, new_markdown_cell
         nb = new_notebook()

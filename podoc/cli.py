@@ -50,13 +50,12 @@ def podoc(files=None,
         contents_s = ''.join(sys.stdin.readlines())
         # From string to object.
         contents = podoc.loads(contents_s, read)
-        logger.debug("Converting %d chars from %s to %s in %s.",
-                     len(contents_s),
-                     read,
-                     write,
-                     output,
+        logger.debug("Converting `%s` from %s to %s (file: `%s`).",
+                     contents_s,
+                     read, write, output,
                      )
-        out = podoc.convert(contents, source=read, target=write, output=output)
+        out = podoc.convert(contents, source=read, target=write,
+                            output=output)
     else:
         # TODO: multiple files
         logger.debug("Converting file `%s` from %s to %s in %s.",
