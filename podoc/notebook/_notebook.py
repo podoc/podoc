@@ -146,12 +146,13 @@ class NotebookReader(object):
         # NOTE: the language of the code block is the notebook's language.
         node.add_child(ASTNode('CodeBlock',
                                lang=self.language,
-                               children=[cell.source]))
+                               children=[cell.source.rstrip()]))
         # Then, we add one extra child per output.
         for output_index, output in enumerate(cell.get('outputs', [])):
             if output.output_type == 'stream':
-                child = ASTNode('CodeBlock', lang=output.name,  # stdout/stderr
-                                children=[output.text])
+                child = ASTNode('CodeBlock',
+                                lang=output.name,  # stdout/stderr
+                                children=[output.text.rstrip()])
             elif output.output_type in ('display_data', 'execute_result'):
                 # Output text node.
                 text = output.data.get('text/plain', 'Output')
@@ -168,7 +169,9 @@ class NotebookReader(object):
                                          unique_key=None,  # TODO
                                          )
                     self.resources[fn] = data
-                    child = ASTNode('Image', url=fn, children=[text])
+                    # Wrap the Image node in a Para.
+                    img_child = ASTNode('Image', url=fn, children=[text])
+                    child = ASTNode('Para', children=[img_child])
             node.add_child(child)
         self.tree.children.append(node)
 
