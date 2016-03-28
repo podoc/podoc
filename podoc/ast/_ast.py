@@ -16,7 +16,8 @@ from six import string_types
 
 from podoc.tree import Node, TreeTransformer
 from podoc.plugin import IPlugin
-from podoc.utils import has_pandoc, pandoc, get_pandoc_formats, _merge_str
+from podoc.utils import (has_pandoc, pandoc, get_pandoc_formats,
+                         _merge_str, _get_file, assert_equal,)
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +120,11 @@ class ASTNode(Node):
         elif self.name == 'BulletList':
             return '{} ({})'.format(self.name, self.bullet_char)
         return self.name
+
+    def __repr__(self):
+        """Display the pandoc JSON representation of the tree."""
+        d = self.to_pandoc()
+        return json.dumps(d, separators=(',', ':'))
 
 
 #------------------------------------------------------------------------------
@@ -226,7 +232,6 @@ class PodocToPandoc(TreeTransformer):
 
     def transform_main(self, ast):
         ast = PodocToPandocPreProcessor().transform(ast)
-        ast.show()
         blocks = self.transform(ast)['c']
         return [{'unMeta': {}}, blocks]
 
@@ -412,26 +417,48 @@ class ASTPlugin(IPlugin):
     def attach(self, podoc):
         # An object in the language 'ast' is an instance of AST.
         podoc.register_lang('ast', file_ext='.json',
-                            open_func=self.open, save_func=self.save)
+                            load_func=self.load, dump_func=self.dump,
+                            loads_func=self.loads, dumps_func=self.dumps,
+                            assert_equal_func=self.assert_equal,
+                            )
 
-    def open(self, path):
-        """Open a .json file and return an AST instance."""
-        logger.debug("Open JSON file `%s`.", path)
-        with open(path, 'r') as f:
+    def load(self, file_or_path):
+        """Load a JSON file and return an AST instance."""
+        # logger.debug("Load JSON file `%s`.", path)
+        with _get_file(file_or_path, 'r') as f:
             d = json.load(f)
         assert isinstance(d, list)
         ast = ast_from_pandoc(d)
         assert isinstance(ast, ASTNode)
         return ast
 
-    def save(self, path, ast):
-        """Save an AST instance to a JSON file."""
-        # assert isinstance(ast, AST)
+    def dump(self, ast, file_or_path):
+        """Dump an AST instance to a JSON file."""
+        assert isinstance(ast, ASTNode)
         d = ast.to_pandoc()
         assert isinstance(d, list)
-        logger.debug("Save JSON file `%s`.", path)
-        with open(path, 'w') as f:
+        # logger.debug("Save JSON file `%s`.", path)
+        with _get_file(file_or_path, 'w') as f:
             json.dump(d, f, sort_keys=True, indent=2,
                       separators=(',', ': '))  # avoid trailing whitespaces
             # Add a new line at the end.
             f.write('\n')
+
+    def loads(self, s):
+        """Load a JSON string and return an AST instance."""
+        d = json.loads(s)
+        assert isinstance(d, list)
+        ast = ast_from_pandoc(d)
+        assert isinstance(ast, ASTNode)
+        return ast
+
+    def dumps(self, ast):
+        """Dump an AST instance to a JSON string."""
+        assert isinstance(ast, ASTNode)
+        d = ast.to_pandoc()
+        assert isinstance(d, list)
+        return json.dumps(d, sort_keys=True, indent=2,
+                          separators=(',', ': ')) + '\n'
+
+    def assert_equal(self, ast0, ast1):
+        return assert_equal(ast0, ast1, to_remove=('_visit_meta',))

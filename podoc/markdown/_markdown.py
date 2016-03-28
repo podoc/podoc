@@ -318,20 +318,22 @@ def _parse_math(contents):
 # Markdown plugin
 #------------------------------------------------------------------------------
 
-class Markdown(IPlugin):
+class MarkdownPlugin(IPlugin):
     def attach(self, podoc):
         podoc.register_lang('markdown', file_ext='.md')
         podoc.register_func(source='markdown', target='ast',
-                            func=self.read_markdown)
+                            func=self.read)
         podoc.register_func(source='ast', target='markdown',
-                            func=self.write_markdown)
+                            func=self.write)
 
-    def read_markdown(self, contents):
+    def read(self, contents):
+        assert isinstance(contents, string_types)
         parser = Parser()
         contents = _parse_math(contents)
         cm = parser.parse(contents)
         ast = CommonMarkToAST().transform_main(cm)
         return ast
 
-    def write_markdown(self, ast):
+    def write(self, ast):
+        assert isinstance(ast, (ASTNode, string_types))
         return ASTToMarkdown().transform(ast)

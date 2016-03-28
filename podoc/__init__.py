@@ -16,11 +16,12 @@ import sys
 
 import pytest
 
-from .core import Podoc, create_podoc  # noqa
+from .core import Podoc  # noqa
 from .plugin import (IPlugin, discover_plugins,
                      get_plugin, get_plugins)  # noqa
 from .ast import ASTPlugin
-from .markdown import Markdown
+from .markdown import MarkdownPlugin
+from .notebook import NotebookPlugin
 
 
 #------------------------------------------------------------------------------

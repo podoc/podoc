@@ -9,21 +9,17 @@
 
 import os.path as op
 
-from podoc.markdown import Markdown
-from podoc.utils import get_test_file_path, open_text, assert_equal
+from podoc.markdown import MarkdownPlugin
+from podoc.utils import get_test_file_path, load_text, assert_equal
 from podoc.ast import ASTPlugin, ASTNode
 from .._notebook import (extract_output,
                          output_filename,
                          open_notebook,
                          NotebookReader,
                          NotebookWriter,
+                         NotebookPlugin,
                          wrap_code_cells,
                          )
-
-
-#------------------------------------------------------------------------------
-# Fixtures
-#------------------------------------------------------------------------------
 
 
 #------------------------------------------------------------------------------
@@ -74,7 +70,7 @@ def test_notebook_reader_hello():
     ast = NotebookReader().read(notebook)
     ast.show()
     # Check that the AST is equal to the one of a simple Mardown line.
-    ast_1 = Markdown().read_markdown('hello *world*')
+    ast_1 = MarkdownPlugin().read('hello *world*')
     assert ast == ast_1
 
 
@@ -89,8 +85,8 @@ def test_notebook_reader_notebook():
 
     # Compare with the markdown version.
     path = get_test_file_path('markdown', 'notebook.md')
-    markdown = open_text(path)
-    assert_equal(Markdown().write_markdown(ast), markdown)
+    markdown = load_text(path)
+    assert_equal(MarkdownPlugin().write(ast), markdown)
 
     assert 'output_4_1.png' in reader.resources
 
@@ -101,18 +97,18 @@ def test_notebook_reader_notebook():
 
 def test_notebook_writer_hello():
     path = get_test_file_path('ast', 'hello.json')
-    ast = ASTPlugin().open(path)
+    ast = ASTPlugin().load(path)
     nb = NotebookWriter().write(ast)
 
     # Compare the notebooks.
     nb_expected = open_notebook(get_test_file_path('notebook', 'hello.ipynb'))
     # Ignore some fields when comparing the notebooks.
-    assert_equal(nb, nb_expected, ('metadata', 'kernelspec'))
+    NotebookPlugin().assert_equal(nb, nb_expected)
 
 
 def test_notebook_writer_notebook():
     path = get_test_file_path('ast', 'notebook.json')
-    ast = ASTPlugin().open(path)
+    ast = ASTPlugin().load(path)
 
     # Load the image.
     fn = get_test_file_path('markdown', 'output_4_1.png')
@@ -126,4 +122,4 @@ def test_notebook_writer_notebook():
     nb_expected = open_notebook(get_test_file_path('notebook',
                                                    'notebook.ipynb'))
     # Ignore some fields when comparing the notebooks.
-    assert_equal(nb, nb_expected, ('metadata', 'kernelspec'))
+    NotebookPlugin().assert_equal(nb, nb_expected)

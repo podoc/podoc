@@ -9,10 +9,13 @@
 
 from collections import defaultdict
 import glob
+import inspect
 import logging
 import os.path as op
 
-from .utils import Bunch, open_text, save_text
+from six import string_types
+
+from .utils import Bunch, load_text, dump_text, assert_equal
 from .plugin import get_plugins
 
 logger = logging.getLogger(__name__)
@@ -66,15 +69,37 @@ class Podoc(object):
 
     This class implements the core conversion functionality of podoc.
 
+    Parameters
+    ----------
+
+    plugins : list of str (None)
+        List of plugins to load. By default, load all plugins found.
+    with_pandoc : bool (True)
+        Whether to load all pandoc conversion paths.
+
     """
-    def __init__(self):
+
+    def __init__(self, plugins=None, with_pandoc=True):
         self._funcs = {}  # mapping `(lang0, lang1) => func`
         self._langs = {}  # mapping `lang: Bunch()`
+        self._load_plugins(plugins, with_pandoc)
+
+    def _load_plugins(self, plugins=None, with_pandoc=True):
+        """Load plugins. By default (None), all plugins found are loaded."""
+        # Load plugins.
+        plugins = plugins if plugins is not None else get_plugins()
+        for p in plugins:
+            # Skip pandoc plugin.
+            if not with_pandoc and p.__name__ == 'PandocPlugin':
+                continue
+            p().attach(self)
 
     # Main methods
     # -------------------------------------------------------------------------
 
-    def register_func(self, func=None, source=None, target=None):
+    def register_func(self, func=None, source=None, target=None,
+                      pre_filter=None, post_filter=None,
+                      ):
         """Register a conversion function between two languages."""
         if func is None:
             return lambda _: self.register_func(_, source=source,
@@ -89,11 +114,17 @@ class Podoc(object):
                          source, target)
             return
         logger.log(5, "Register conversion `%s -> %s`.", source, target)
-        self._funcs[(source, target)] = func
+        self._funcs[(source, target)] = Bunch(func=func,
+                                              pre_filter=pre_filter,
+                                              post_filter=post_filter,
+                                              )
 
     def register_lang(self, name, file_ext=None,
-                      open_func=None, save_func=None, **kwargs):
-        """Register a language with a file extension and open/save
+                      load_func=None, dump_func=None,
+                      loads_func=None, dumps_func=None,
+                      assert_equal_func=None,
+                      **kwargs):
+        """Register a language with a file extension and load/dump
         functions."""
         if file_ext:
             assert file_ext.startswith('.')
@@ -101,24 +132,51 @@ class Podoc(object):
             logger.log(5, "Language `%s` already registered, skipping.", name)
             return
         logger.log(5, "Register language `%s`.", name)
+        # Default parameters.
+        assert_equal_func = assert_equal_func or assert_equal
+        load_func = load_func or load_text
+        dump_func = dump_func or dump_text
+        loads_func = loads_func or (lambda _: _)
+        dumps_func = dumps_func or (lambda _: _)
         self._langs[name] = Bunch(file_ext=file_ext,
-                                  open_func=open_func or open_text,
-                                  save_func=save_func or save_text,
+                                  load_func=load_func,
+                                  dump_func=dump_func,
+                                  loads_func=loads_func,
+                                  dumps_func=dumps_func,
+                                  assert_equal_func=assert_equal_func,
                                   **kwargs)
 
-    def convert(self, obj, source=None, target=None,
-                lang_list=None, output=None):
+    def convert(self, obj_or_path, source=None, target=None,
+                lang_list=None, output=None, resources=None):
         """Convert an object by passing it through a chain of conversion
         functions."""
+        resources = resources or {}
+        obj = obj_or_path
+        # NOTE: 'json' is an alias for 'ast', to match with pandoc's
+        # terminology.
+        source = source if source != 'json' else 'ast'
+        target = target if target != 'json' else 'ast'
+        # If the output is specified and not the target, infer the target
+        # from the file extension.
         if target is None and output is not None:
             target = self.get_lang_for_file_ext(op.splitext(output)[1])
-        if source is None and lang_list is None:
+        # NOTE: decide whether the object is a path or contents string.
+        if (isinstance(obj_or_path, string_types) and
+                len(obj_or_path) <= 1024 and  # this is to avoid passing huge
+                                              # strings to op.exists(), which
+                                              # crashes sometimes.
+                op.exists(obj_or_path)):
             # Convert a file to a target format.
-            path = obj
+            path = obj_or_path
             assert target
-            assert op.exists(path)
-            obj = self.open(path)
-            source = self.get_lang_for_file_ext(op.splitext(path)[1])
+            # Get the source from the file extension
+            if source is None and lang_list is None:
+                source = self.get_lang_for_file_ext(op.splitext(path)[1])
+            assert source
+            # Load the object.
+            obj = self.load(path, source)
+        # At this point, we should have a non-empty object.
+        assert obj
         if lang_list is None:
             # Find the shortest path from source to target in the conversion
             # graph.
@@ -132,15 +190,32 @@ class Podoc(object):
         # Iterate over all successive pairs.
         for t0, t1 in zip(lang_list, lang_list[1:]):
             # Get the function registered for t0, t1.
-            f = self._funcs.get((t0, t1), None)
-            if not f:
+            fd = self._funcs.get((t0, t1), None)
+            if not fd:
                 raise ValueError("No function registered for `{}` => `{}`.".
                                  format(t0, t1))
+            kwargs = {}
+            f = fd.func
+            # Pre-filter.
+            obj = fd.pre_filter(obj) if fd.pre_filter else obj
+            # Add the resources dictionary if the conversion function accepts
+            # it.
+            if 'resources' in inspect.getargspec(f).args:
+                kwargs['resources'] = resources
             # Perform the conversion.
-            obj = f(obj)
+            obj = f(obj, **kwargs)
+            # Post-filter.
+            obj = fd.post_filter(obj) if fd.post_filter else obj
         if output:
-            self.save(output, obj, lang=target)
+            self.dump(obj, output, lang=target)
         return obj
+
+    def pre_filter(self, obj, source, target):
+        fd = self._funcs.get((source, target), None)
+        if fd.pre_filter:
+            return fd.pre_filter(obj)
+        else:
+            return obj
 
     # Properties
     # -------------------------------------------------------------------------
@@ -181,29 +256,36 @@ class Podoc(object):
         """Return the file extension registered for a given language."""
         return self._langs[lang].file_ext
 
-    def open(self, path, lang=None):
-        """Open a file which has a registered file extension."""
+    def load(self, path, lang=None):
+        """Load a file which has a registered file extension."""
         # Find the language corresponding to the file's extension.
         file_ext = op.splitext(path)[1]
         lang = lang or self.get_lang_for_file_ext(file_ext)
-        # Open the file using the function registered for the language.
-        return self._langs[lang].open_func(path)
+        # Load the file using the function registered for the language.
+        return self._langs[lang].load_func(path)
 
-    def save(self, path, contents, lang=None):
-        """Save an object to a file."""
+    def dump(self, contents, path, lang=None):
+        """Dump an object to a file."""
         # Find the language corresponding to the file's extension.
         file_ext = op.splitext(path)[1]
         lang = lang or self.get_lang_for_file_ext(file_ext)
-        # Save the file using the function registered for the language.
-        return self._langs[lang].save_func(path, contents)
+        # Dump the file using the function registered for the language.
+        return self._langs[lang].dump_func(contents, path)
 
+    def loads(self, s, lang=None):
+        """Load an object from its string representation."""
+        assert lang
+        # Load the string using the function registered for the language.
+        return self._langs[lang].loads_func(s)
 
-def create_podoc(with_pandoc=True):
-    podoc = Podoc()
-    plugins = get_plugins()
-    for p in plugins:
-        # Skip pandoc plugin.
-        if not with_pandoc and p.__name__ == 'PandocPlugin':
-            continue
-        p().attach(podoc)
-    return podoc
+    def dumps(self, contents, lang=None):
+        """Dump an object to a string."""
+        assert lang
+        # Dump the string using the function registered for the language.
+        return self._langs[lang].dumps_func(contents)
+
+    def assert_equal(self, obj0, obj1, lang=None):
+        """Assert that two objects are equal."""
+        assert lang
+        # Dump the string using the function registered for the language.
+        return self._langs[lang].assert_equal_func(obj0, obj1)

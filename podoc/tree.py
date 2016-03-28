@@ -12,7 +12,7 @@ import logging
 from six import string_types, u
 from six.moves import zip_longest
 
-from .utils import Bunch, _are_dict_equal
+from .utils import Bunch, _are_dict_equal, _shorten_string
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +137,6 @@ class TreePrinter(TreeTransformer):
     prefix_t = u('├─ ')
     prefix_l = u('└─ ')
     prefix_d = u('│  ')
-    lim = 40  # maximum number of characters to display for a string.
 
     def __init__(self, get_node_name=None, get_node_children=None):
         self._get_node_name = get_node_name or (lambda n: n.name)
@@ -160,9 +159,7 @@ class TreePrinter(TreeTransformer):
         l = l.splitlines()
         # Split long strings in the tree representation.
         if len(l) == 1:
-            l = [l[0] if len(l[0]) <= self.lim
-                 else (l[0][:self.lim // 2] + ' (...) ' +
-                       l[0][-self.lim // 2:])]
+            l = [_shorten_string(l[0])]
         n = len(l)
         for i, _ in enumerate(l):
             # Choose the prefix.

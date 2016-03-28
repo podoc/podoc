@@ -8,4 +8,4 @@
 # Imports
 #------------------------------------------------------------------------------
 
-from ._markdown import Markdown
+from ._markdown import MarkdownPlugin

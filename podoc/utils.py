@@ -38,16 +38,23 @@ class Bunch(dict):
 # File I/O
 #------------------------------------------------------------------------------
 
-def open_text(path):
+def load_text(path):
     assert op.exists(path)
     with open(path, 'r') as f:
         out = f.read()
     return out
 
 
-def save_text(path, contents):
+def dump_text(contents, path):
     with open(path, 'w') as f:
         return f.write(contents)
+
+
+def _get_file(file_or_path, mode=None):
+    if isinstance(file_or_path, string_types):
+        return open(file_or_path, mode)
+    else:
+        return file_or_path
 
 
 @contextmanager
@@ -59,6 +66,10 @@ def captured_output():
         yield sys.stdout, sys.stderr
     finally:
         sys.stdout, sys.stderr = old_out, old_err
+
+
+def _shorten_string(s, lim=40):
+    return s if len(s) <= lim else (s[:lim // 2] + ' (...) ' + s[-lim // 2:])
 
 
 #------------------------------------------------------------------------------
@@ -96,6 +107,25 @@ def get_test_file_path(lang, filename):
     return path
 
 
+def _read_binary(path):
+    # Load a resource.
+    with open(path, 'rb') as f:
+        return f.read()
+
+
+def _test_file_resources():
+    """Return a dictionary of all test resources, which are stored in
+    markdown/test_files."""
+    file_exts = ('.png', '.jpg')
+    curdir = op.realpath(op.dirname(__file__))
+    # Construct the directory name for the language and test filename.
+    dirname = op.realpath(op.join(curdir, 'markdown'))
+    path = op.join(dirname, 'test_files')
+    return {op.basename(fn): _read_binary(op.join(path, fn))
+            for fn in os.listdir(path)
+            if fn.endswith(file_exts)}
+
+
 def _are_dict_equal(t0, t1):
     """Assert the equality of nested dicts, removing all private fields."""
     if isinstance(t0, list):
@@ -125,8 +155,10 @@ def _remove(d, to_remove=()):
 
 def assert_equal(p0, p1, to_remove=()):
     if isinstance(p0, string_types):
+        assert isinstance(p1, string_types)
         assert p0.rstrip('\n') == p1.rstrip('\n')
     elif isinstance(p0, dict):
+        assert isinstance(p1, dict)
         # p0.show()
         # p1.show()
         assert _remove(p0, to_remove) == _remove(p1, to_remove)
@@ -192,7 +224,7 @@ def generate_json_test_files():  # pragma: no cover
     for file in files:
         if file.endswith('.md'):
             path = op.join(directory, file)
-            out = pandoc(open_text(path), 'json',
+            out = pandoc(load_text(path), 'json',
                          format=PANDOC_MARKDOWN_FORMAT)
             base = op.splitext(file)[0]
             path_json = op.join(curdir, 'ast', 'test_files', base + '.json')

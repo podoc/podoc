@@ -47,8 +47,10 @@ from nbformat.v4 import (new_notebook,
                          new_output,
                          )
 
-from podoc.markdown import Markdown
+from podoc.markdown import MarkdownPlugin
 from podoc.ast import ASTNode  # , TreeTransformer
+from podoc.plugin import IPlugin
+from podoc.utils import _get_file, assert_equal
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +136,7 @@ class NotebookReader(object):
 
     def read_markdown(self, cell, cell_index=None):
         contents = cell.source
-        ast = Markdown().read_markdown(contents)
+        ast = MarkdownPlugin().read(contents)
         assert len(ast.children) == 1
         self.tree.children.append(ast.children[0])
 
@@ -144,12 +146,13 @@ class NotebookReader(object):
         # NOTE: the language of the code block is the notebook's language.
         node.add_child(ASTNode('CodeBlock',
                                lang=self.language,
-                               children=[cell.source]))
+                               children=[cell.source.rstrip()]))
         # Then, we add one extra child per output.
         for output_index, output in enumerate(cell.get('outputs', [])):
             if output.output_type == 'stream':
-                child = ASTNode('CodeBlock', lang=output.name,  # stdout/stderr
-                                children=[output.text])
+                child = ASTNode('CodeBlock',
+                                lang=output.name,  # stdout/stderr
+                                children=[output.text.rstrip()])
             elif output.output_type in ('display_data', 'execute_result'):
                 # Output text node.
                 text = output.data.get('text/plain', 'Output')
@@ -166,7 +169,9 @@ class NotebookReader(object):
                                          unique_key=None,  # TODO
                                          )
                     self.resources[fn] = data
-                    child = ASTNode('Image', url=fn, children=[text])
+                    # Wrap the Image node in a Para.
+                    img_child = ASTNode('Image', url=fn, children=[text])
+                    child = ASTNode('Para', children=[img_child])
             node.add_child(child)
         self.tree.children.append(node)
 
@@ -228,10 +233,10 @@ class NotebookWriter(object):
         # Mapping {filename: data}.
         self.resources = resources or {}
         self.execution_count = 1
-        self._md = Markdown()
+        self._md = MarkdownPlugin()
         # Add code cells in the AST.
         ast = wrap_code_cells(ast)
-        ast.show()
+        # ast.show()
         # Create the notebook.
         # new_output, new_code_cell, new_markdown_cell
         nb = new_notebook()
@@ -250,7 +255,7 @@ class NotebookWriter(object):
         return nb
 
     def new_markdown_cell(self, node, index=None):
-        return new_markdown_cell(self._md.write_markdown(node))
+        return new_markdown_cell(self._md.write(node))
 
     def _get_b64_resource(self, fn):
         """Return the base64 of a resource from its filename.
@@ -260,7 +265,10 @@ class NotebookWriter(object):
 
         """
         data = self.resources.get(fn, None)
-        out = base64.b64encode(data).decode('utf8') if data else None
+        if not data:  # pragma: no cover
+            logger.warn("Resource `%s` couldn't be found.", fn)
+            return ''
+        out = base64.b64encode(data).decode('utf8')
         # NOTE: split the output in multiple lines of 76 characters,
         # to make easier the comparison with actual Jupyter Notebook files.
         N = 76
@@ -303,7 +311,7 @@ class NotebookWriter(object):
                 img = child.children[0]
                 assert img.name == 'Image'
                 fn = img.url
-                caption = self._md.write_markdown(img.children[0])
+                caption = self._md.write(img.children[0])
                 output_type = 'display_data'
                 data = {}  # Dictionary {mimetype: data_buffer}.
                 # Infer the mime type of the file, from its filename and
@@ -311,7 +319,7 @@ class NotebookWriter(object):
                 mime_type = guess_type(fn)[0]
                 assert mime_type  # unknown extension: this shouldn't happen!
                 data[mime_type] = self._get_b64_resource(fn)
-                assert data[mime_type] is not None  # TODO
+                assert data[mime_type]  # TODO
                 data['text/plain'] = caption
                 kwargs = dict(data=data)
             output = new_output(output_type, **kwargs)
@@ -322,3 +330,45 @@ class NotebookWriter(object):
     def new_raw_cell(self, node, index=None):
         # TODO
         pass
+
+
+class NotebookPlugin(IPlugin):
+    def attach(self, podoc):
+        podoc.register_lang('notebook', file_ext='.ipynb',
+                            load_func=self.load,
+                            dump_func=self.dump,
+                            loads_func=self.loads,
+                            dumps_func=self.dumps,
+                            assert_equal_func=self.assert_equal,
+                            )
+        podoc.register_func(source='notebook', target='ast',
+                            func=self.read,
+                            )
+        podoc.register_func(source='ast', target='notebook',
+                            func=self.write,
+                            pre_filter=wrap_code_cells,
+                            )
+
+    def load(self, file_or_path):
+        with _get_file(file_or_path, 'r') as f:
+            return nbformat.read(f, _NBFORMAT_VERSION)
+
+    def dump(self, nb, file_or_path):
+        with _get_file(file_or_path, 'w') as f:
+            nbformat.write(nb, f, _NBFORMAT_VERSION)
+
+    def loads(self, s):
+        return nbformat.reads(s, _NBFORMAT_VERSION)
+
+    def dumps(self, nb):
+        return nbformat.writes(nb, _NBFORMAT_VERSION)
+
+    def assert_equal(self, nb0, nb1):
+        return assert_equal(nb0, nb1,
+                            to_remove=('metadata', 'kernel_spec'))
+
+    def read(self, nb):
+        return NotebookReader().read(nb)
+
+    def write(self, ast, resources=None):
+        return NotebookWriter().write(ast, resources=resources)

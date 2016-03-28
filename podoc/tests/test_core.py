@@ -12,8 +12,8 @@ import os.path as op
 
 from pytest import raises
 
-from ..core import Podoc, _find_path, _get_annotation, create_podoc
-from ..utils import get_test_file_path, assert_equal, open_text
+from ..core import Podoc, _find_path, _get_annotation
+from ..utils import get_test_file_path, load_text, _test_file_resources
 
 logger = logging.getLogger(__name__)
 
@@ -39,14 +39,19 @@ def test_find_path():
 # Tests podoc
 #------------------------------------------------------------------------------
 
+def test_podoc_1():
+    podoc = Podoc(with_pandoc=False)
+    assert 'ast' in podoc.languages
+
+
 def test_podoc_fail():
-    p = Podoc()
+    p = Podoc(with_pandoc=False)
     with raises(ValueError):
         p.convert('hello', lang_list=['a', 'b'])
 
 
 def test_podoc_convert_1(tempdir):
-    p = Podoc()
+    p = Podoc(plugins=[], with_pandoc=False)
 
     p.register_lang('lower', file_ext='.low')
     p.register_lang('upper', file_ext='.up')
@@ -80,11 +85,11 @@ def test_podoc_convert_1(tempdir):
 
 
 def test_podoc_file(tempdir):
-    p = Podoc()
+    p = Podoc(plugins=[], with_pandoc=False)
 
     p.register_lang('a', file_ext='.a',
-                    open_func=lambda path: 'a',
-                    save_func=lambda path, contents: None,
+                    load_func=lambda path: 'a',
+                    dump_func=lambda contents, path: None,
                     )
     assert p.languages == ['a']
 
@@ -103,52 +108,66 @@ def test_podoc_file(tempdir):
     assert fn in files[0]
 
 
-def test_podoc_open_save(tempdir):
-    p = Podoc()
+def test_podoc_load_dump(tempdir):
+    p = Podoc(with_pandoc=False)
     p.register_lang('txt', file_ext='.txt')
     filename = 'test.txt'
     path = op.join(tempdir, filename)
-    p.save(path, 'hello world')
-    assert p.open(path) == 'hello world'
+    p.dump('hello world', path)
+    assert p.load(path) == 'hello world'
 
-
-def test_create_podoc():
-    podoc = create_podoc()
-    assert 'ast' in podoc.languages
+    assert p.dumps('hello world', 'txt') == 'hello world'
+    assert p.loads('hello world', 'txt') == 'hello world'
 
 
 #------------------------------------------------------------------------------
 # Tests all languages
 #------------------------------------------------------------------------------
 
-def test_all_open_save(tempdir, podoc, lang, test_file):
-    """For all languages and test files, check round-tripping of open
-    and save."""
+def test_all_load_dump(tempdir, podoc, lang, test_file):
+    """For all languages and test files, check round-tripping of load
+    and dump."""
+
+    # Test file.
     filename = test_file + podoc.get_file_ext(lang)
     path = get_test_file_path(lang, filename)
-    contents = podoc.open(path)
-    to_path = op.join(tempdir, filename)
-    podoc.save(to_path, contents)
-    if lang == 'ast':
-        assert_equal(podoc.open(path), podoc.open(to_path))
-    else:
-        # TODO: non-text formats
 
-        assert_equal(open_text(path), open_text(to_path))
+    # Load the example file.
+    contents = podoc.load(path)
+    to_path = op.join(tempdir, filename)
+    # Save it again to a temporary file.
+    podoc.dump(contents, to_path)
+
+    # Assert equality.
+    podoc.assert_equal(contents, podoc.loads(load_text(path), lang), lang)
+    podoc.assert_equal(load_text(to_path), podoc.dumps(contents, lang), lang)
 
 
 def test_all_convert(tempdir, podoc, source_target, test_file):
+    """Check all conversion paths on all test files."""
     source, target = source_target
     source_filename = test_file + podoc.get_file_ext(source)
     target_filename = test_file + podoc.get_file_ext(target)
+
     # Get the source and target file names.
     source_path = get_test_file_path(source, source_filename)
     target_path = get_test_file_path(target, target_filename)
-    # Output file.
-    # path = op.join(tempdir, op.basename(target_path))
-    converted = podoc.convert(source_path, target=target)
-    expected = podoc.open(target_path)
-    # TODO: non-text formats
-    # assert_text_files_equal(path, target_path)
-    assert_equal(converted, expected)
-    # logger.debug("{} and {} are equal.".format(path, target_path))
+
+    # Load the test file resources.
+    resources = _test_file_resources()
+
+    # Convert with pandoc.
+    converted = podoc.convert(source_path, target=target, resources=resources)
+    # print('****** CONVERTED ******')
+    # converted.show()
+
+    expected = podoc.load(target_path)
+    # Apply the eventual pre-filter on the target.
+    # This is notably used when testing notebook -> AST, where the
+    # expected AST needs to be decorated with CodeCells before being
+    # compared to the converted AST.
+    expected = podoc.pre_filter(expected, target, source)
+    # print('****** EXPECTED ******')
+    # expected.show()
+
+    podoc.assert_equal(converted, expected, target)
