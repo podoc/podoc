@@ -191,7 +191,6 @@ class Podoc(object):
             # Load the object.
             obj = self.load(path, source)
         # At this point, we should have a non-empty object.
-        assert obj
         if lang_list is None:
             # Find the shortest path from source to target in the conversion
             # graph.

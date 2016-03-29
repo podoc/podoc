@@ -6,17 +6,20 @@
 # Imports
 #------------------------------------------------------------------------------
 
+import logging
 import os
 import os.path as op
 
 from tornado import web
-from six.moves.urllib.error import HTTPError
 import nbformat
 from traitlets import Unicode, Bool
 from traitlets.config import Configurable
 from notebook.services.contents.filemanager import FileContentsManager
 
 from podoc.core import Podoc
+from ._notebook import new_notebook
+
+logger = logging.getLogger(__name__)
 
 
 #------------------------------------------------------------------------------
@@ -49,7 +52,9 @@ class PodocContentsManager(FileContentsManager, Configurable):
         # NOTE: skip JSON files which are probably not notebooks.
         if file_ext == '.json':
             return False
-        if file_ext in p.file_extensions:
+        elif file_ext == '.ipynb':
+            return True
+        elif file_ext in p.file_extensions:
             lang = p.get_lang_for_file_ext(file_ext)
             return ('notebook' in p.get_target_languages(lang) and
                     lang in p.get_target_languages('notebook'))
@@ -92,12 +97,16 @@ class PodocContentsManager(FileContentsManager, Configurable):
         if os.path.isdir(os_path):
             if type not in (None, 'directory'):
                 raise web.HTTPError(400, u'%s is a directory, not a %s' % (path, type), reason='bad type')  # noqa
+            logger.debug("%s is a directory.", os_path)
             model = self._dir_model(path, content=content)
         elif (type == 'notebook' or (type is None and use_podoc)):
+            logger.debug("%s is a notebook.", os_path)
             model = self._notebook_model(path, content=content)
         else:
-            if type == 'directory':
-                raise web.HTTPError(400, u'%s is not a directory', reason='bad type')  # noqa
+            if type == 'directory':  # pragma: no cover
+                raise web.HTTPError(400, u'%s is not a directory',
+                                    reason='bad type')
+            logger.debug("%s is a static file.", os_path)
             model = self._file_model(path, content=content, format=format)
         return model
 
@@ -119,8 +128,9 @@ class PodocContentsManager(FileContentsManager, Configurable):
                                                resources=None,  # TODO
                                                )
 
-            except Exception as e:
-                raise HTTPError(
+            except Exception as e:  # pragma: no cover
+                logger.exception(e)
+                raise web.HTTPError(
                     400,
                     u"Unreadable Notebook: %s %r" % (os_path, e),
                 )
@@ -129,9 +139,10 @@ class PodocContentsManager(FileContentsManager, Configurable):
         """Save the file model and return the model with no content."""
         path = path.strip('/')
 
-        if 'type' not in model:
+        if 'type' not in model:  # pragma: no cover
             raise web.HTTPError(400, u'No file type provided')
-        if 'content' not in model and model['type'] != 'directory':
+        if ('content' not in model and
+                model['type'] != 'directory'):  # pragma: no cover
             raise web.HTTPError(400, u'No file content provided')
 
         self.run_pre_save_hook(model=model, path=path)
@@ -164,11 +175,11 @@ class PodocContentsManager(FileContentsManager, Configurable):
                 self._save_file(os_path, model['content'], model.get('format'))
             elif model['type'] == 'directory':
                 self._save_directory(os_path, model, path)
-            else:
+            else:  # pragma: no cover
                 raise web.HTTPError(400, "Unhandled contents type: %s" % model['type'])  # noqa
-        except web.HTTPError:
+        except web.HTTPError:  # pragma: no cover
             raise
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             self.log.error(u'Error while saving file: %s %s', path, e, exc_info=True)  # noqa
             raise web.HTTPError(500, u'Unexpected error while saving file: %s %s' % (path, e))  # noqa
 
@@ -178,9 +189,79 @@ class PodocContentsManager(FileContentsManager, Configurable):
             validation_message = model.get('message', None)
 
         model = self.get(path, content=False)
-        if validation_message:
+        if validation_message:  # pragma: no cover
             model['message'] = validation_message
 
         self.run_post_save_hook(model=model, os_path=os_path)
 
+        return model
+
+    def new_untitled(self, path='', type='', ext=''):
+        """Create a new untitled file or directory in path
+
+        path must be a directory
+
+        File extension can be specified.
+
+        Use `new` to create files with a fully specified path
+        (including filename).
+
+        """
+        path = path.strip('/')
+        if not self.dir_exists(path):
+            raise web.HTTPError(404, 'No such directory: %s' % path)
+
+        model = {}
+        if type:
+            model['type'] = type
+
+        # if ext == '.ipynb':
+        if self._do_use_podoc(ext):
+            model.setdefault('type', 'notebook')
+        else:
+            model.setdefault('type', 'file')
+
+        insert = ''
+        if model['type'] == 'directory':
+            untitled = self.untitled_directory
+            insert = ' '
+        elif model['type'] == 'notebook':
+            untitled = self.untitled_notebook
+            ext = ext or '.ipynb'
+        elif model['type'] == 'file':
+            untitled = self.untitled_file
+        else:  # pragma: no cover
+            raise web.HTTPError(400,
+                                "Unexpected model type: %r" % model['type'])
+
+        name = self.increment_filename(untitled + ext, path, insert=insert)
+        path = u'{0}/{1}'.format(path, name)
+        return self.new(model, path)
+
+    def new(self, model=None, path=''):
+        """Create a new file or directory and return its model with no content.
+
+        To create a new untitled entity in a directory, use `new_untitled`.
+        """
+        path = path.strip('/')
+        if model is None:
+            model = {}
+
+        # if path.endswith('.ipynb'):
+        if self._do_use_podoc(op.splitext(path)[1]):
+            model.setdefault('type', 'notebook')
+        else:
+            model.setdefault('type', 'file')
+
+        # no content, not a directory, so fill out new-file model
+        if 'content' not in model and model['type'] != 'directory':
+            if model['type'] == 'notebook':
+                model['content'] = new_notebook()
+                model['format'] = 'json'
+            else:
+                model['content'] = ''
+                model['type'] = 'file'
+                model['format'] = 'text'
+
+        model = self.save(model, path)
         return model
