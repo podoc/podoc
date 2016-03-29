@@ -226,12 +226,21 @@ class Podoc(object):
         return sorted(self._langs)
 
     @property
+    def file_extensions(self):
+        """List of all registered file extensions."""
+        return sorted(set(lang.file_ext for lang in self._langs.values()))
+
+    @property
     def conversion_pairs(self):
         """List of registered conversion pairs."""
         return sorted(self._funcs.keys())
 
     # File-related methods
     # -------------------------------------------------------------------------
+
+    def get_target_languages(self, lang):
+        """List of languages to which a given language can be converted to."""
+        return sorted(set(y for (x, y) in self._funcs.keys() if x == lang))
 
     def get_files_in_dir(self, path, lang=None):
         """Return the list of files of a given language in a directory."""

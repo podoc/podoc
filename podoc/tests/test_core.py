@@ -43,6 +43,11 @@ def test_podoc_1():
     podoc = Podoc(with_pandoc=False)
     assert 'ast' in podoc.languages
 
+    assert '.json' in podoc.file_extensions
+    assert '.md' in podoc.file_extensions
+
+    assert 'markdown' in podoc.get_target_languages('ast')
+
 
 def test_podoc_fail():
     p = Podoc(with_pandoc=False)
