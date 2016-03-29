@@ -9,3 +9,4 @@
 #------------------------------------------------------------------------------
 
 from ._notebook import NotebookPlugin
+from .manager import PodocContentsManager

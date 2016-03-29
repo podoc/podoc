@@ -126,6 +126,7 @@ def open_notebook(path):
 
 class NotebookReader(object):
     def read(self, notebook):
+        assert isinstance(notebook, nbformat.NotebookNode)
         self.tree = ASTNode('root')
         self.resources = {}  # Dictionary {filename: data}.
         # Language of the notebook.
