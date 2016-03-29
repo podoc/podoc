@@ -30,7 +30,6 @@ def _graph_from_edges(edges):
     g = defaultdict(set)
     for a, b in edges:
         g[a].add(b)
-        g[b].add(a)
     return g
 
 
@@ -47,6 +46,16 @@ def _bfs_paths(graph, start, target):
                 queue.append((next, path + [next]))
 
 
+def _bfs_component(graph, start):
+    visited, queue = set(), [start]
+    while queue:
+        vertex = queue.pop(0)
+        if vertex not in visited:
+            visited.add(vertex)
+            queue.extend(graph[vertex] - visited)
+    return visited
+
+
 def _find_path(edges, start, target):
     """Return a shortest path in a graph defined by a list of edges."""
     graph = _graph_from_edges(edges)
@@ -54,6 +63,12 @@ def _find_path(edges, start, target):
         return next(_bfs_paths(graph, start, target))
     except StopIteration:
         return None
+
+
+def _connected_component(edges, start):
+    graph = _graph_from_edges(edges)
+    # We remove the start from the component.
+    return sorted(_bfs_component(graph, start) - set([start]))
 
 
 #------------------------------------------------------------------------------
@@ -176,7 +191,6 @@ class Podoc(object):
             # Load the object.
             obj = self.load(path, source)
         # At this point, we should have a non-empty object.
-        assert obj
         if lang_list is None:
             # Find the shortest path from source to target in the conversion
             # graph.
@@ -228,7 +242,8 @@ class Podoc(object):
     @property
     def file_extensions(self):
         """List of all registered file extensions."""
-        return sorted(set(lang.file_ext for lang in self._langs.values()))
+        return sorted(set(lang.file_ext for lang in self._langs.values()
+                          if lang.file_ext))
 
     @property
     def conversion_pairs(self):
@@ -240,7 +255,7 @@ class Podoc(object):
 
     def get_target_languages(self, lang):
         """List of languages to which a given language can be converted to."""
-        return sorted(set(y for (x, y) in self._funcs.keys() if x == lang))
+        return _connected_component(self.conversion_pairs, lang)
 
     def get_files_in_dir(self, path, lang=None):
         """Return the list of files of a given language in a directory."""

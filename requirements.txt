@@ -1,6 +1,8 @@
 six
-traitlets
 click
-nbformat
 CommonMark
 pypandoc
+notebook
+tornado
+traitlets
+nbformat

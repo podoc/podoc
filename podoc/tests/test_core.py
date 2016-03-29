@@ -12,7 +12,7 @@ import os.path as op
 
 from pytest import raises
 
-from ..core import Podoc, _find_path, _get_annotation
+from ..core import Podoc, _find_path, _get_annotation, _connected_component
 from ..utils import get_test_file_path, load_text, _test_file_resources
 
 logger = logging.getLogger(__name__)
@@ -29,10 +29,23 @@ def test_get_annotation():
 def test_find_path():
     assert _find_path([(1, 2), (2, 3)], 1, 2) == [1, 2]
     assert _find_path([(1, 2), (2, 3)], 1, 3) == [1, 2, 3]
+    assert _find_path([(1, 2), (2, 3)], 2, 3) == [2, 3]
+    assert _find_path([(1, 2), (2, 3)], 3, 2) is None
     assert _find_path([(1, 2), (2, 3)], 1, 4) is None
     assert _find_path([(1, 2), (2, 3), (3, 4), (4, 5)], 1, 5) == \
         [1, 2, 3, 4, 5]
     assert _find_path([(1, 2), (2, 3), (1, 4), (4, 5)], 1, 5) == [1, 4, 5]
+
+
+def test_connected_component():
+    assert _connected_component([(1, 2), (2, 3)], 1) == [2, 3]
+    assert _connected_component([(1, 2), (2, 3)], 2) == [3]
+    assert _connected_component([(1, 2), (2, 3)], 3) == []
+    assert _connected_component([(1, 2), (2, 3)], 4) == []
+    assert _connected_component([(1, 2), (2, 3), (3, 4), (4, 5)], 1) == \
+        [2, 3, 4, 5]
+    assert _connected_component([(1, 2), (2, 3), (1, 4), (4, 5)], 1) == \
+        [2, 3, 4, 5]
 
 
 #------------------------------------------------------------------------------

@@ -126,10 +126,14 @@ def open_notebook(path):
 
 class NotebookReader(object):
     def read(self, notebook):
+        assert isinstance(notebook, nbformat.NotebookNode)
         self.tree = ASTNode('root')
         self.resources = {}  # Dictionary {filename: data}.
         # Language of the notebook.
-        self.language = notebook.metadata.language_info.name
+        m = notebook.metadata
+        # NOTE: if no language is available in the metadata, use Python
+        # by default.
+        self.language = m.get('language_info', {}).get('name', 'python')
         for cell_index, cell in enumerate(notebook.cells):
             getattr(self, 'read_{}'.format(cell.cell_type))(cell, cell_index)
         return self.tree
@@ -334,7 +338,8 @@ class NotebookWriter(object):
 
 class NotebookPlugin(IPlugin):
     def attach(self, podoc):
-        podoc.register_lang('notebook', file_ext='.ipynb',
+        podoc.register_lang('notebook',
+                            file_ext='.ipynb',
                             load_func=self.load,
                             dump_func=self.dump,
                             loads_func=self.loads,
