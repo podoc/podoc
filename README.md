@@ -9,7 +9,7 @@
 
 **podoc** is a document conversion library in Python (still a work in progress). Natively, it supports Markdown and Jupyter Notebook. More formats will be added later.
 
-podoc will be able to convert documents on the fly in the Jupyter Notebook, so you can use the Notebook directly on documents in Markdown and many other formats. This feature was previously implemented in [**ipymd**](https://github.com/rossant/ipymd).
+podoc also allows you to convert documents on the fly in the Jupyter Notebook, so you can use the Notebook directly on documents in Markdown and many other formats. This feature was previously implemented in [**ipymd**](https://github.com/rossant/ipymd).
 
 ## Relations with pandoc
 
@@ -75,9 +75,13 @@ We generate a notebook from stdin (we type the contents directly in the terminal
 
 ### Writing Markdown in the Jupyter Notebook
 
-*Work in progress.*
+You can edit in the Jupyter Notebook all documents in podoc-supported formats. You just have to open a Jupyter Notebook server with the following command:
 
-You'll be able to use the Jupyter Notebook to edit documents in Markdown or any other format supported by pandoc: HTML, LaTeX, docx, etc.
+```bash
+jupyter notebook --NotebookApp.contents_manager_class=podoc.notebook.PodocContentsManager
+```
+
+For example, you can edit any Markdown document in the Notebook. Code cells are automatically converted into code blocks.
 
 ## Installation
 
@@ -112,14 +116,14 @@ $ make test  # you need pandoc to run the test suite
 * The rest of the library is implemented in built-in **plugins**. A plugin is just a class deriving from `podoc.plugin.IPlugin` that is defined in a loaded Python script. The plugin attaches to a `Podoc` instance via the `attach(podoc)` method, where it can register formats/functions. All discovered plugins are automatically loaded when you instantiate a `Podoc` class, but you can also specify the list of plugins to use.
 * A generic recursive tree structure is implemented in `podoc.tree`. It is based on nested dict subclasses (`Node` class). Use `node.show()` to display a nice hierarchical representation of a tree. There is also a `TreeTransformer` class where you can override `transform_XXX()` methods to transform any type of node. We use this framework to convert abstract syntax trees.
 * **AST plugin**: this plugin implements an in-memory representation of any document. This representation closely follows the representation used in latest version of pandoc (1.17 at this time).
-  
+
   * A document consists of a list of Block elements (`Para`, `List`, `CodeBlock`, etc.), each Block containing other Blocks, strings, or Inlines (`Emph`, `Image`, etc.). These elements can have metadata (the image's URL, for example).
   * **Custom nodes can be used by plugins; if a plugin encounters an unknown node, it just skips it and process the children recursively.** This is to keep in mind if you implement a custom format.
   * An AST can be imported/exported to a JSON document which has exactly the same format as pandoc's intermediate representation (`json` format). This is how we achieve compatibility with pandoc. Not all pandoc features are supported at this time (most notably, tables).
   * The compatibility is extensively tested in the test suite. We'll add even more tests in the future.
 * **Markdown plugin**: this plugin implements transformations between AST and Markdown via the **CommonMark-py** package. podoc converts between the internal CommonMark-py AST and the podoc AST. **podoc implements no Markdown parser on its own**. We test the compatibility of the Markdown-AST transformations with pandoc's own Markdown parser (currently based on `markdown_strict` plus a few extensions).
 * **Notebook plugin**: this plugin implements transformations between AST and Jupyter Notebook via the **nbformat** package.
-  
+
   * To convert a notebook to Markdown, we parse every Markdown cell with the Markdown plugin, and we convert every code cell to a special `CodeCell` node. This custom AST node contains a `CodeBlock` with the source, and a list of `CodeBlock` (with `result`, `stdout`, or `stderr` "language") or `Para` (images) with the cell's outputs. Images are saved to external files and inserted in Markdown. We keep a `resources` dictionary mapping the external filenames to the data (binary string).
   * To convert a Markdown document to a notebook, we first convert it to an AST, then we loop through the top-level blocks to detect `CodeBlock` which should be wrapped within `CodeCell`s. There are a few heuristics to decide whether a `CodeBlock` is a `CodeCell` or a regular Markdown code block, and to find the list of outputs. These heuristics could certainly be improved. This logic is implemented in `podoc.notebook.wrap_code_cells()`. When converting a notebook to another podoc format (for example, HTML, although it is not yet implemented), the information about the `CodeCell`s can be used for custom styling. If the target format doesn't know about `CodeCell`s, it will just discard them and process the children recursively.
 * Every plugin comes with a set of test files in its own format. We automatically test all conversion paths on all test files as part of the test suite.
