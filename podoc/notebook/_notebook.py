@@ -146,6 +146,8 @@ class NotebookReader(object):
 
     def read_code(self, cell, cell_index=None):
         node = ASTNode('CodeCell')
+        # TODO: improve this.
+        node._visit_meta['is_block'] = True
         # The first child is the source.
         # NOTE: the language of the code block is the notebook's language.
         node.add_child(ASTNode('CodeBlock',

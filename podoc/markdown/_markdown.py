@@ -189,7 +189,10 @@ class ASTToMarkdown(TreeTransformer):
         # Otherwise we just concatenate the children.
         if node.children:
             child = node.children[0]
-            if isinstance(child, ASTNode) and child.is_block():
+            # TODO: improve this.
+            if (isinstance(child, ASTNode) and
+                (child.is_block() or
+                 child.get('_visit_meta', {}).get('is_block', None))):
                 delim = '\n\n'
         return delim.join(self.transform_children(node))
 
