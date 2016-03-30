@@ -44,7 +44,7 @@ def test_extract_output():
     assert data == data_expected
 
 
-def test_wrap_code_cells():
+def test_wrap_code_cells_1():
     # Test wrap_code_cells() with a single code cell.
     ast = ASTNode('root')
     ast.add_child(ASTNode('CodeBlock', lang='python', children=['']))
@@ -54,6 +54,36 @@ def test_wrap_code_cells():
 
     ast_expected = ASTNode('root')
     ast_expected.add_child(ASTNode('CodeCell', children=[ast.children[0]]))
+
+    assert_equal(ast_wrapped, ast_expected)
+
+
+def test_wrap_code_cells_2():
+    # Test wrap_code_cells() with two code cells.
+    ast = ASTNode('root')
+
+    cb0 = ASTNode('CodeBlock', lang='python', children=['a'])
+    cb1 = ASTNode('CodeBlock', lang='python', children=['b'])
+
+    ast.add_child(cb0)
+    ast.add_child(cb1)
+
+    ast.show()
+    ast_wrapped = wrap_code_cells(ast)
+    ast_wrapped.show()
+
+    ast_expected = ASTNode('root')
+
+    # First code cell.
+    code_cell0 = ASTNode('CodeCell')
+    code_cell0.add_child(cb0)
+    ast_expected.add_child(code_cell0)
+
+    # Second code cell.
+    code_cell1 = ASTNode('CodeCell')
+    code_cell1.add_child(cb1)
+    ast_expected.add_child(code_cell1)
+    ast_expected.show()
 
     assert_equal(ast_wrapped, ast_expected)
 
