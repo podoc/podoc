@@ -186,48 +186,61 @@ class NotebookReader(object):
         pass
 
 
+class CodeCellWrapper(object):
+    def wrap(self, ast):
+        self.ast = ast.copy()
+        self.ast.children = []
+        self._code_cell = None
+        for i, node in enumerate(ast.children):
+            if self._code_cell:
+                if self.is_output(node) or self.is_image(node):
+                    self.add_output(node)
+                else:
+                    self.end_code_cell()
+            if not self._code_cell:
+                if self.is_source(node):
+                    self.start_code_cell(node)
+                else:
+                    self.append(node)
+        # Ensure the last cell is appended.
+        self.end_code_cell()
+        return self.ast
+
+    def is_output(self, node):
+        return ((node.name == 'CodeBlock') and
+                (node.lang in (None, '', 'stdout', 'stderr', 'result')))
+
+    def is_image(self, node):
+        children = node.children
+        return ((node.name == 'Para') and
+                (len(children) == 1) and
+                (isinstance(children[0], ASTNode)) and
+                (children[0].name == 'Image'))
+
+    def is_source(self, node):
+        # TODO: customizable lang
+        return node.name == 'CodeBlock' and node.lang == 'python'
+
+    def start_code_cell(self, node):
+        self._code_cell = ASTNode('CodeCell')
+        # Source CodeBlock.
+        self._code_cell.add_child(node)
+
+    def add_output(self, node):
+        self._code_cell.add_child(node)
+
+    def end_code_cell(self):
+        if self._code_cell:
+            self.append(self._code_cell)
+            self._code_cell = None
+
+    def append(self, node):
+        self.ast.add_child(node)
+
+
 def wrap_code_cells(ast):
     """Take an AST and wrap top-level CodeBlocks within CodeCells."""
-    out = ast.copy()
-    out.children = []
-    current_cell = None
-    for i, child in enumerate(ast.children):
-        # Notebook code cell.
-        if child.name == 'CodeBlock' and child.lang == 'python':
-            current_cell = ASTNode('CodeCell')
-            # TODO: parameterizable language
-            # Wrap CodeBlocks within CodeCells.
-            current_cell.add_child(child)
-        else:
-            # Decide whether we're part of the current cell.
-            name = child.name
-            children = child.children
-            # Case 1: we're a code block with a notebook-specific language.
-            is_output = ((name == 'CodeBlock') and
-                         (child.lang in (None, '', 'stdout',
-                                         'stderr', 'result')))
-            # Case 2: we're just an image.
-            is_image = ((name == 'Para') and
-                        (len(children) == 1) and
-                        (isinstance(children[0], ASTNode)) and
-                        (children[0].name == 'Image'))
-            if current_cell:
-                if is_output or is_image:
-                    # Add the current block to the cell's outputs.
-                    current_cell.add_child(child)
-                else:
-                    # We're no longer part of the current cell.
-                    # First, we add the cell that has just finished.
-                    out.add_child(current_cell)
-                    # Then, we add the current block.
-                    out.add_child(child)
-                    current_cell = None
-            else:
-                out.add_child(child)
-    # Add the last current cell (if it had no output).
-    if current_cell:
-        out.add_child(current_cell)
-    return out
+    return CodeCellWrapper().wrap(ast)
 
 
 def _append_newlines(s):
@@ -242,7 +255,6 @@ class NotebookWriter(object):
         self._md = MarkdownPlugin()
         # Add code cells in the AST.
         ast = wrap_code_cells(ast)
-        # ast.show()
         # Create the notebook.
         # new_output, new_code_cell, new_markdown_cell
         nb = new_notebook()
