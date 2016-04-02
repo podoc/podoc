@@ -1,4 +1,5 @@
 coverage
 flake8
-git+https://github.com/pytest-dev/pytest.git
+pytest
 pytest-cov
+nose
