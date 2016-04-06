@@ -141,6 +141,9 @@ class NotebookReader(object):
     def read_markdown(self, cell, cell_index=None):
         contents = cell.source
         ast = MarkdownPlugin().read(contents)
+        if not ast.children:
+            logger.debug("Skipping empty node.")
+            return
         assert len(ast.children) == 1
         self.tree.children.append(ast.children[0])
 
@@ -337,7 +340,7 @@ class NotebookWriter(object):
                 mime_type = guess_type(fn)[0]
                 assert mime_type  # unknown extension: this shouldn't happen!
                 data[mime_type] = self._get_b64_resource(fn)
-                assert data[mime_type]  # TODO
+                # assert data[mime_type]  # TODO
                 data['text/plain'] = caption
                 kwargs = dict(data=data)
             output = new_output(output_type, **kwargs)
