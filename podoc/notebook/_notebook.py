@@ -168,7 +168,8 @@ class NotebookReader(object):
                 # Extract image output, if any.
                 out = extract_output(output)
                 if out is None:
-                    child = ASTNode('CodeBlock', lang='result',
+                    child = ASTNode('CodeBlock',
+                                    lang='result',
                                     children=[text])
                 else:
                     mime_type, data = out

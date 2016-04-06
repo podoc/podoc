@@ -29,9 +29,16 @@ class MarkdownRenderer(object):
         assert level >= 1
         return self.text(('#' * level) + ' ' + text)
 
-    def code(self, code, lang=None):
-        return self.text('```{}\n{}\n```'.format(lang or '',
-                         code.rstrip('\n')))
+    def code(self, code, lang=None, is_fenced=None):
+        lang = lang.strip() if lang else ''
+        is_fenced = is_fenced if is_fenced is not None else True
+        code = code.rstrip('\n')
+        # Fenced code block, or indented code block.
+        if is_fenced:
+            return self.text('```{}\n{}\n```'.format(lang, code))
+        else:
+            return self.text('\n'.join((' ' * 4) + line
+                                       for line in code.splitlines()))
 
     def quote(self, text):
         # Add quote '>' at the beginning of each line when quote is activated.

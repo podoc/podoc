@@ -128,6 +128,8 @@ def _test_file_resources():
 
 def _are_dict_equal(t0, t1):
     """Assert the equality of nested dicts, removing all private fields."""
+    if t0 is None:
+        return t1 is None
     if isinstance(t0, list):
         assert isinstance(t1, list)
         return all(_are_dict_equal(c0, c1) for c0, c1 in zip(t0, t1))
