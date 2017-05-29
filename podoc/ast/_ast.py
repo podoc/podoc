@@ -233,7 +233,7 @@ class PodocToPandoc(TreeTransformer):
     def transform_main(self, ast):
         ast = PodocToPandocPreProcessor().transform(ast)
         blocks = self.transform(ast)['c']
-        return [{'unMeta': {}}, blocks]
+        return {'meta': {}, 'blocks': blocks, 'pandoc-api-version': [1, 17, 0, 5]}
 
 
 #------------------------------------------------------------------------------
@@ -267,14 +267,13 @@ class PandocToPodoc(TreeTransformer):
         pass
 
     def transform_main(self, obj):
-        assert isinstance(obj, list)
+        assert isinstance(obj, dict)
         # Check that this is really the root.
-        assert len(obj) == 2
-        assert 'unMeta' in obj[0]
+        assert 'blocks' in obj
         # Special case: the root.
         # Process the root: obj is a list, and the second item
         # is a list of blocks to process.
-        children = [self.transform(block) for block in obj[1]]
+        children = [self.transform(block) for block in obj['blocks']]
         out = ASTNode('root', children=children)
         out = PandocToPodocPostProcessor().transform(out)
         return out
