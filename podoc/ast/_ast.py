@@ -173,8 +173,11 @@ class PodocToPandoc(TreeTransformer):
     def transform_str(self, text):
         """Split on spaces and insert Space elements for pandoc."""
         tokens = _split_spaces(text)
-        return [{'t': 'Str', 'c': s} if s else {'t': 'Space', 'c': []}
+        return [{'t': 'Str', 'c': s} if s else {'t': 'Space'}
                 for s in tokens]
+
+    def transform_LineBreak(self, node):
+        return {'t': 'LineBreak'}
 
     def transform_Header(self, node):
         children = [node.level, ['', [], []],
@@ -183,7 +186,7 @@ class PodocToPandoc(TreeTransformer):
 
     def transform_MathBlock(self, node):
         contents = node.children[0]
-        return {'t': 'Math', 'c': [{'t': 'DisplayMath', 'c': []}, contents]}
+        return {'t': 'Math', 'c': [{'t': 'DisplayMath'}, contents]}
 
     def transform_CodeBlock(self, node):
         # NOTE: node.children contains a single element, which is the code.
@@ -199,9 +202,8 @@ class PodocToPandoc(TreeTransformer):
         style = node.get('style', 'Decimal')
         delimiter = node.get('delimiter', ')')
         children = [[node.start,
-                    {"t": style, "c": []},
-                    {"t": 'OneParen' if delimiter == ')' else 'Period',
-                     "c": []}], items]
+                    {"t": style},
+                    {"t": 'OneParen' if delimiter == ')' else 'Period'}], items]
         return _node_dict(node, children)
 
     def transform_BulletList(self, node):
@@ -228,7 +230,7 @@ class PodocToPandoc(TreeTransformer):
 
     def transform_Math(self, node):
         contents = node.children[0]
-        return {'t': 'Math', 'c': [{'t': 'InlineMath', 'c': []}, contents]}
+        return {'t': 'Math', 'c': [{'t': 'InlineMath'}, contents]}
 
     def transform_main(self, ast):
         ast = PodocToPandocPreProcessor().transform(ast)
@@ -261,7 +263,7 @@ class PandocToPodoc(TreeTransformer):
         return node['t']
 
     def get_node_children(self, node):
-        return node['c']
+        return node.get('c', None)
 
     def set_next_child(self, child, next_child):
         pass
@@ -286,6 +288,7 @@ class PandocToPodoc(TreeTransformer):
         children = self.get_transform_func(d)(c, node)
         if isinstance(children, string_types):
             return children
+        children = children or []
         assert isinstance(children, list)
         # Recursively transform all children and assign them to the node.
         node.children = [self.transform(child) for child in children]
