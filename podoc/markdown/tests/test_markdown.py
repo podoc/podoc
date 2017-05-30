@@ -10,25 +10,16 @@
 import json
 
 from pytest import fixture
-from CommonMark import Parser
 from six import string_types
 
 from podoc.ast import ASTNode, ast_from_pandoc
 from podoc.utils import pandoc, PANDOC_MARKDOWN_FORMAT
-from .._markdown import (CommonMarkToAST, ASTToMarkdown, MarkdownPlugin)
+from .._markdown import MarkdownPlugin
 
 
 #------------------------------------------------------------------------------
 # Fixtures
 #------------------------------------------------------------------------------
-
-@fixture
-def commonmark():
-    contents = 'hello *world*'
-    parser = Parser()
-    cm = parser.parse(contents)
-    return cm
-
 
 @fixture
 def ast():
@@ -48,26 +39,6 @@ def ast():
 @fixture
 def markdown():
     return 'hello *world*'
-
-
-#------------------------------------------------------------------------------
-# Test CommonMark to AST
-#------------------------------------------------------------------------------
-
-def test_cm_to_ast(commonmark, ast):
-    ast_t = CommonMarkToAST().transform_main(commonmark)
-    ast.show()
-    ast_t.show()
-    assert ast == ast_t
-
-
-#------------------------------------------------------------------------------
-# Test AST to Markdown
-#------------------------------------------------------------------------------
-
-def test_ast_to_markdown(ast, markdown):
-    md = ASTToMarkdown().transform(ast)
-    assert md == markdown
 
 
 #------------------------------------------------------------------------------
@@ -100,43 +71,13 @@ def _tree_contains_nodes(ast, names):
 def _test_renderer(s, *contains_nodes):
     """Test the renderer on a string."""
     # Parse the string with CommonMark-py.
-    ast = MarkdownPlugin().read(s)
-    print()
-    print('****** PODOC AST ******')
+    mp = MarkdownPlugin()
+    ast = mp.read(s)
     ast.show()
     # Check that the tree contains a node.
     if contains_nodes:
         assert _tree_contains_nodes(ast, contains_nodes)
-
-    # Check markdown =(podoc)=> AST =(podoc)=> markdown.
-    contents = ASTToMarkdown().transform(ast)
-    assert contents.strip() == s
-
-    # Check markdown =(podoc)=> AST =(pandoc)=> markdown.
-    pandoc_json = json.dumps(ast.to_pandoc(), indent=2)
-    markdown_pandoc = pandoc(pandoc_json,
-                             PANDOC_MARKDOWN_FORMAT, format='json')
-    # NOTE: the pandoc-converted Markdown is not guaranteed to
-    # be equal to the original Markdown document. For example * List
-    # is transformed into - List, same with ATXHeader etc.
-    # However, we do test that the generated JSON is compatible with pandoc.
-    assert markdown_pandoc
-
-    # Check markdown_pandoc =(podoc)=> (AST_pandoc == AST_podoc).
-    ast_0 = MarkdownPlugin().read(markdown_pandoc)
-    print('****** PODOC AST (from markdown_pandoc) ******')
-    ast_0.show()
-    assert ast_0 == ast
-
-    # Check markdown =(pandoc)=> (AST_pandoc == AST_podoc).
-    p = pandoc(s, 'json', format=PANDOC_MARKDOWN_FORMAT)
-    # NOTE: we use the '-' bullet char in the tests, for better compatibility
-    # with pandoc.
-    ast_1 = ast_from_pandoc(json.loads(p),
-                            bullet_char='-')
-    print('****** PODOC AST (via pandoc) ******')
-    ast_1.show()
-    assert ast_1 == ast
+    assert mp.write(ast) == s
 
 
 def test_markdown_renderer_simple():
@@ -175,10 +116,10 @@ def test_markdown_renderer_blockquote():
 
 
 def test_markdown_renderer_bullet_list():
-    _test_renderer('- Item 1')
-    _test_renderer('- Item 1\n- Item 2')
+    _test_renderer('* Item 1')
+    _test_renderer('* Item 1\n* Item 2')
     # TODO: fix the following test
-    # _test_renderer('- Item 1\n  - Item 1.2')
+    # _test_renderer('* Item 1\n  * Item 1.2')
 
 
 def test_markdown_renderer_ordered_list():
@@ -207,15 +148,13 @@ def test_markdown_renderer_codeblocks():
 
 
 def test_markdown_renderer_ordered_bullet():
-    # NOTE: we use `-` bullets instead of `*` to ensure stable round-trip
-    # with pandoc which uses - by default.
-    _test_renderer('1. Item 1\n\n- Bullet',
+    _test_renderer('1. Item 1\n\n* Bullet',
                    'BulletList', 'OrderedList')
-    _test_renderer('- Bullet\n\n1. Item 1',
+    _test_renderer('* Bullet\n\n1. Item 1',
                    'BulletList', 'OrderedList')
-    _test_renderer('1. Item 1\n2. Item 2\n\n- Bullet',
+    _test_renderer('1. Item 1\n2. Item 2\n\n* Bullet',
                    'BulletList', 'OrderedList')
-    _test_renderer('1. Item 1\n2. Item 2\n\n- Bullet\n\n3. Item 3',
+    _test_renderer('1. Item 1\n2. Item 2\n\n* Bullet\n\n3. Item 3',
                    'BulletList', 'OrderedList')
 
 

@@ -9,165 +9,17 @@
 
 import logging
 import re
+import pypandoc
 
-from CommonMark import Parser
 from six import string_types
 
-from podoc.ast import ASTNode
+from podoc.ast import ASTNode, ASTPlugin
 from podoc.markdown.renderer import MarkdownRenderer
 from podoc.plugin import IPlugin
 from podoc.tree import TreeTransformer
-from podoc.utils import _merge_str
+from podoc.utils import PANDOC_MARKDOWN_FORMAT
 
 logger = logging.getLogger(__name__)
-
-
-#------------------------------------------------------------------------------
-# Markdown reader (using CommonMark-py)
-#------------------------------------------------------------------------------
-
-def _iter_child(cm):
-    child = cm.first_child
-    while child is not None:
-        yield child
-        child = child.nxt
-
-
-class CommonMarkPostProcessor(TreeTransformer):
-    def transform_ListItem(self, node):
-        """Replace Para by Plain among the ListItem children."""
-        for child in node.children:
-            if child.name == 'Para':
-                child.name = 'Plain'
-        return self.transform_Node(node)
-
-    def transform_Node(self, node):
-        """Call the transformation methods recursively."""
-        children = self.transform_children(node)
-        node.children = _merge_str(children)
-        return node
-
-
-class CommonMarkToAST(TreeTransformer):
-    _name_mapping = {
-        'Paragraph': 'Para',
-        'Heading': 'Header',
-        'Softbreak': 'LineBreak',
-        'Hardbreak': 'LineBreak',
-        'Item': 'ListItem',
-    }
-
-    def get_node_name(self, obj):
-        # Convert from CommonMark name to Pandoc
-        return self._name_mapping.get(obj.t, obj.t)
-
-    def get_node_children(self, obj):
-        return list(_iter_child(obj))
-
-    def transform_main(self, cm):
-        # TODO: should be def transform() for consistency with the other way
-        children = [self.transform(block)
-                    for block in self.get_node_children(cm)]
-        out = ASTNode('root', children=children)
-        out = CommonMarkPostProcessor().transform(out)
-        return out
-
-    def transform(self, obj):
-        if isinstance(obj, string_types):
-            return obj
-        # obj is a CommonMark.Node instance.
-        name = self.get_node_name(obj)
-
-        # The transform_* functions take the 'c' attribute and the newly-
-        # created node, and return the list of children objects to process.
-        if name == 'List':
-            # Special treatment for lists. In CommonMark, there is a single
-            # node type, List, and the type (Bullet or Ordered) is found
-            # in list_data['type']
-            # The name is BulletList or OrderedList.
-            name = obj.list_data['type'] + 'List'
-            func = (self.transform_BulletList
-                    if obj.list_data['type'] == 'Bullet'
-                    else self.transform_OrderedList)
-        else:
-            func = getattr(self, 'transform_%s' % name, self.transform_Node)
-
-        node = ASTNode(name)
-        out = func(obj, node)
-        # NOTE: if the function returns a node, we directly return it
-        # instead of assuming the output is a list of children.
-        if isinstance(out, ASTNode):
-            return out
-        # We directly return a string output.
-        elif isinstance(out, string_types):
-            return out
-        # Otherwise, the output is a list of non-processed children.
-        children = out
-        assert isinstance(children, list)
-        # Recursively transform all children and assign them to the node.
-        node.children = [self.transform(child) for child in children]
-        return node
-
-    def transform_Node(self, obj, node):
-        return self.get_node_children(obj)
-
-    def transform_Code(self, obj, node):
-        contents = obj.literal
-        contents_strip = contents.strip()
-        # Detect math inline elements.
-        if contents_strip[0] == contents_strip[-1] == '$':
-            # Change the node from CodeBlock to Math.
-            node.name = 'Math'
-            contents = contents_strip[1:-1].strip()
-        return [contents]
-
-    def transform_Text(self, obj, node):
-        return obj.literal
-
-    def transform_Link(self, obj, node):
-        node.url = obj.destination
-        return self.get_node_children(obj)
-
-    def transform_Image(self, obj, node):
-        node.url = obj.destination
-        return self.get_node_children(obj)
-
-    def transform_CodeBlock(self, obj, node):
-        node.lang = obj.info
-        contents = obj.literal.strip()
-        # Detect math block elements.
-        if node.lang == 'math':
-            node.name = 'Para'
-            # NOTE: Delete the language attribute of the old CodeBlock.
-            # This is to ensure compat with pandoc in tests.
-            del node['lang']
-            node.children = [ASTNode('MathBlock',
-                                     children=[contents])]
-            return node
-        return [contents]
-
-    def transform_BlockQuote(self, obj, node):
-        return self.get_node_children(obj)
-
-    def transform_Header(self, obj, node):
-        node.level = obj.level
-        return self.get_node_children(obj)
-
-    def transform_ListItem(self, obj, node):
-        return self.get_node_children(obj)
-
-    def transform_BulletList(self, obj, node):
-        node.bullet_char = obj.list_data['bullet_char']
-        node.delimiter = obj.list_data['delimiter'] or ' '
-        return self.get_node_children(obj)
-
-    def transform_OrderedList(self, obj, node):
-        node.start = obj.list_data['start']
-        assert node.start >= 0
-        node.delimiter = obj.list_data['delimiter']
-        # NOTE: used for compat with pandoc.
-        node.style = 'Decimal'
-        return self.get_node_children(obj)
 
 
 #------------------------------------------------------------------------------
@@ -331,11 +183,8 @@ class MarkdownPlugin(IPlugin):
 
     def read(self, contents):
         assert isinstance(contents, string_types)
-        parser = Parser()
-        contents = _parse_math(contents)
-        cm = parser.parse(contents)
-        ast = CommonMarkToAST().transform_main(cm)
-        return ast
+        js = pypandoc.convert_text(contents, 'json', format=PANDOC_MARKDOWN_FORMAT)
+        return ASTPlugin().loads(js)
 
     def write(self, ast):
         assert isinstance(ast, (ASTNode, string_types))

@@ -52,6 +52,9 @@ BLOCK_NAMES = (
 )
 
 
+DEFAULT_BULLET_SYMBOL = '*'
+
+
 # List of allowed inline names.
 INLINE_NAMES = (
     # The following are pandoc inline names:
@@ -259,7 +262,7 @@ class PandocToPodocPostProcessor(TreeTransformer):
 class PandocToPodoc(TreeTransformer):
     def __init__(self, bullet_char=None):
         super(TreeTransformer, self).__init__()
-        self.bullet_char = bullet_char or '*'
+        self.bullet_char = bullet_char or DEFAULT_BULLET_SYMBOL
 
     def get_node_name(self, node):
         return node['t']
