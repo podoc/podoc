@@ -125,6 +125,8 @@ def open_notebook(path):
 
 
 class NotebookReader(object):
+    _NEW_CELL_DELIMITER = '@@@@@ PODOC-NEW-CELL @@@@@'
+
     def read(self, notebook):
         assert isinstance(notebook, nbformat.NotebookNode)
         self.tree = ASTNode('root')
@@ -134,18 +136,49 @@ class NotebookReader(object):
         # NOTE: if no language is available in the metadata, use Python
         # by default.
         self.language = m.get('language_info', {}).get('name', 'python')
+
+        # NOTE: for performance reasons, we parse the Markdown of all cells at once
+        # to reduce the overhead of calling pandoc.
+        self._markdown_tree = []
+        self._read_all_markdown(notebook.cells)
+
         for cell_index, cell in enumerate(notebook.cells):
             getattr(self, 'read_{}'.format(cell.cell_type))(cell, cell_index)
         return self.tree
 
-    def read_markdown(self, cell, cell_index=None):
-        contents = cell.source
+    def _read_all_markdown(self, cells):
+        sources = [cell.source for cell in cells if cell.cell_type == 'markdown']
+        contents = ('\n\n%s\n\n' % self._NEW_CELL_DELIMITER).join(sources)
         ast = MarkdownPlugin().read(contents)
         if not ast.children:
             logger.debug("Skipping empty node.")
             return
-        assert len(ast.children) == 1
-        self.tree.children.append(ast.children[0])
+        curtree = ASTNode('root')
+        for child in ast.children:
+            curtree.children.append(child)
+            # Create a new tree at every cell delimiter.
+            if child.children[0] == self._NEW_CELL_DELIMITER:
+                # Remove the delimiter node.
+                curtree.children.pop()
+                # Append the current cell tree and create the next one.
+                self._markdown_tree.append(curtree)
+                curtree = ASTNode('root')
+        # Append the last cell tree if not empty.
+        if curtree.children:
+            self._markdown_tree.append(curtree)
+        # ast.show()
+
+    def read_markdown(self, cell, cell_index=None):
+        if self._markdown_tree:
+            cell_tree = self._markdown_tree.pop(0)
+            self.tree.children.extend(cell_tree.children)
+        else:
+            logger.warn("Isolated read_markdown() call: slow because of pandoc call overhead.")
+            ast = MarkdownPlugin().read(cell.source)
+            if not ast.children:
+                logger.debug("Skipping empty node.")
+                return
+            self.tree.children.append()
 
     def read_code(self, cell, cell_index=None):
         node = ASTNode('CodeCell')
