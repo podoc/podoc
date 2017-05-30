@@ -14,7 +14,10 @@ from pytest import fixture
 from .._ast import (ASTNode, ast_from_pandoc,
                     _merge_str, _split_spaces)
 from podoc.core import Podoc
-from podoc.utils import has_pandoc, pandoc, PANDOC_MARKDOWN_FORMAT
+from podoc.utils import (has_pandoc, pandoc,
+                         PANDOC_MARKDOWN_FORMAT,
+                         PANDOC_API_VERSION,
+                         )
 
 
 #------------------------------------------------------------------------------
@@ -23,16 +26,17 @@ from podoc.utils import has_pandoc, pandoc, PANDOC_MARKDOWN_FORMAT
 
 @fixture
 def ast_pandoc():
-    ast_dict = [{'unMeta': {}}, [
-                {'c': [{'c': 'hello', 't': 'Str'},
-                       {'c': [], 't': 'Space'},
-                       {'c': [{'c': 'world', 't': 'Str'}], 't': 'Emph'}],
-                 't': 'Para',
-                 },
-                {'c': [{'c': 'hi!', 't': 'Str'}],
-                 't': 'Para',
-                 }]
-                ]
+    ast_dict = {'meta': {},
+                'pandoc-api-version': PANDOC_API_VERSION,
+                'blocks': [
+                    {'c': [{'c': 'hello', 't': 'Str'},
+                           {'t': 'Space'},
+                           {'c': [{'c': 'world', 't': 'Str'}], 't': 'Emph'}],
+                     't': 'Para',
+                     },
+                    {'c': [{'c': 'hi!', 't': 'Str'}],
+                     't': 'Para',
+                     }]}
     return ast_dict
 
 
@@ -69,7 +73,8 @@ def ast():
 #------------------------------------------------------------------------------
 
 def test_repr_ast():
-    assert str(ASTNode('Para')) == '[{"unMeta":{}},[]]'
+    assert str(ASTNode('Para')) == ('{"blocks":[],"meta":{},"pandoc-api-version":%s}' %
+                                    str(PANDOC_API_VERSION).replace(' ', ''))
 
 
 def test_merge_str():

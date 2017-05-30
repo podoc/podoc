@@ -125,6 +125,15 @@ def test_notebook_reader_notebook():
 # Test NotebookWriter
 #------------------------------------------------------------------------------
 
+def test_notebook_empty():
+    ast = ASTNode('root')
+    ast.add_child(ASTNode('Para'))
+    nb = NotebookWriter().write(ast)
+    reader = NotebookReader()
+    ast = reader.read(nb)
+    assert not ast.children
+
+
 def test_notebook_writer_hello():
     path = get_test_file_path('ast', 'hello.json')
     ast = ASTPlugin().load(path)
@@ -133,7 +142,7 @@ def test_notebook_writer_hello():
     # Compare the notebooks.
     nb_expected = open_notebook(get_test_file_path('notebook', 'hello.ipynb'))
     # Ignore some fields when comparing the notebooks.
-    NotebookPlugin().assert_equal(nb, nb_expected)
+    assert nb == nb_expected
 
 
 def test_notebook_writer_notebook():

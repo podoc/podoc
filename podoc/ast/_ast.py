@@ -17,6 +17,7 @@ from six import string_types
 from podoc.tree import Node, TreeTransformer
 from podoc.plugin import IPlugin
 from podoc.utils import (has_pandoc, pandoc, get_pandoc_formats,
+                         PANDOC_API_VERSION,
                          _merge_str, _get_file, assert_equal,)
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,9 @@ BLOCK_NAMES = (
     # 'Table',
     # 'Div',
 )
+
+
+DEFAULT_BULLET_SYMBOL = '*'
 
 
 # List of allowed inline names.
@@ -124,7 +128,7 @@ class ASTNode(Node):
     def __repr__(self):
         """Display the pandoc JSON representation of the tree."""
         d = self.to_pandoc()
-        return json.dumps(d, separators=(',', ':'))
+        return json.dumps(d, separators=(',', ':'), sort_keys=True)
 
 
 #------------------------------------------------------------------------------
@@ -173,8 +177,11 @@ class PodocToPandoc(TreeTransformer):
     def transform_str(self, text):
         """Split on spaces and insert Space elements for pandoc."""
         tokens = _split_spaces(text)
-        return [{'t': 'Str', 'c': s} if s else {'t': 'Space', 'c': []}
+        return [{'t': 'Str', 'c': s} if s else {'t': 'Space'}
                 for s in tokens]
+
+    def transform_LineBreak(self, node):
+        return {'t': 'LineBreak'}
 
     def transform_Header(self, node):
         children = [node.level, ['', [], []],
@@ -183,7 +190,7 @@ class PodocToPandoc(TreeTransformer):
 
     def transform_MathBlock(self, node):
         contents = node.children[0]
-        return {'t': 'Math', 'c': [{'t': 'DisplayMath', 'c': []}, contents]}
+        return {'t': 'Math', 'c': [{'t': 'DisplayMath'}, contents]}
 
     def transform_CodeBlock(self, node):
         # NOTE: node.children contains a single element, which is the code.
@@ -199,9 +206,8 @@ class PodocToPandoc(TreeTransformer):
         style = node.get('style', 'Decimal')
         delimiter = node.get('delimiter', ')')
         children = [[node.start,
-                    {"t": style, "c": []},
-                    {"t": 'OneParen' if delimiter == ')' else 'Period',
-                     "c": []}], items]
+                    {"t": style},
+                    {"t": 'OneParen' if delimiter == ')' else 'Period'}], items]
         return _node_dict(node, children)
 
     def transform_BulletList(self, node):
@@ -228,12 +234,13 @@ class PodocToPandoc(TreeTransformer):
 
     def transform_Math(self, node):
         contents = node.children[0]
-        return {'t': 'Math', 'c': [{'t': 'InlineMath', 'c': []}, contents]}
+        return {'t': 'Math', 'c': [{'t': 'InlineMath'}, contents]}
 
     def transform_main(self, ast):
         ast = PodocToPandocPreProcessor().transform(ast)
         blocks = self.transform(ast)['c']
-        return [{'unMeta': {}}, blocks]
+        return {'meta': {}, 'blocks': blocks,
+                'pandoc-api-version': PANDOC_API_VERSION}
 
 
 #------------------------------------------------------------------------------
@@ -255,26 +262,25 @@ class PandocToPodocPostProcessor(TreeTransformer):
 class PandocToPodoc(TreeTransformer):
     def __init__(self, bullet_char=None):
         super(TreeTransformer, self).__init__()
-        self.bullet_char = bullet_char or '*'
+        self.bullet_char = bullet_char or DEFAULT_BULLET_SYMBOL
 
     def get_node_name(self, node):
         return node['t']
 
     def get_node_children(self, node):
-        return node['c']
+        return node.get('c', None)
 
     def set_next_child(self, child, next_child):
         pass
 
     def transform_main(self, obj):
-        assert isinstance(obj, list)
+        assert isinstance(obj, dict)
         # Check that this is really the root.
-        assert len(obj) == 2
-        assert 'unMeta' in obj[0]
+        assert 'blocks' in obj
         # Special case: the root.
         # Process the root: obj is a list, and the second item
         # is a list of blocks to process.
-        children = [self.transform(block) for block in obj[1]]
+        children = [self.transform(block) for block in obj['blocks']]
         out = ASTNode('root', children=children)
         out = PandocToPodocPostProcessor().transform(out)
         return out
@@ -287,6 +293,7 @@ class PandocToPodoc(TreeTransformer):
         children = self.get_transform_func(d)(c, node)
         if isinstance(children, string_types):
             return children
+        children = children or []
         assert isinstance(children, list)
         # Recursively transform all children and assign them to the node.
         node.children = [self.transform(child) for child in children]
@@ -427,7 +434,7 @@ class ASTPlugin(IPlugin):
         # logger.debug("Load JSON file `%s`.", path)
         with _get_file(file_or_path, 'r') as f:
             d = json.load(f)
-        assert isinstance(d, list)
+        assert isinstance(d, dict)
         ast = ast_from_pandoc(d)
         assert isinstance(ast, ASTNode)
         return ast
@@ -436,7 +443,7 @@ class ASTPlugin(IPlugin):
         """Dump an AST instance to a JSON file."""
         assert isinstance(ast, ASTNode)
         d = ast.to_pandoc()
-        assert isinstance(d, list)
+        assert isinstance(d, dict)
         # logger.debug("Save JSON file `%s`.", path)
         with _get_file(file_or_path, 'w') as f:
             json.dump(d, f, sort_keys=True, indent=2,
@@ -447,7 +454,7 @@ class ASTPlugin(IPlugin):
     def loads(self, s):
         """Load a JSON string and return an AST instance."""
         d = json.loads(s)
-        assert isinstance(d, list)
+        assert isinstance(d, dict)
         ast = ast_from_pandoc(d)
         assert isinstance(ast, ASTNode)
         return ast
@@ -456,7 +463,7 @@ class ASTPlugin(IPlugin):
         """Dump an AST instance to a JSON string."""
         assert isinstance(ast, ASTNode)
         d = ast.to_pandoc()
-        assert isinstance(d, list)
+        assert isinstance(d, dict)
         return json.dumps(d, sort_keys=True, indent=2,
                           separators=(',', ': ')) + '\n'
 

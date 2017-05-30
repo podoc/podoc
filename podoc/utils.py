@@ -128,6 +128,8 @@ def _test_file_resources():
 
 def _are_dict_equal(t0, t1):
     """Assert the equality of nested dicts, removing all private fields."""
+    if t0 is None:
+        return t1 is None
     if isinstance(t0, list):
         assert isinstance(t1, list)
         return all(_are_dict_equal(c0, c1) for c0, c1 in zip(t0, t1))
@@ -159,9 +161,9 @@ def assert_equal(p0, p1, to_remove=()):
         assert p0.rstrip('\n') == p1.rstrip('\n')
     elif isinstance(p0, dict):
         assert isinstance(p1, dict)
-        # p0.show()
-        # p1.show()
-        assert _remove(p0, to_remove) == _remove(p1, to_remove)
+        p0 = _remove(p0, to_remove)
+        p1 = _remove(p1, to_remove)
+        assert p0 == p1
     else:
         assert p0 == p1
 
@@ -204,6 +206,14 @@ def get_pandoc_formats():
     return pypandoc.get_pandoc_formats()
 
 
+def get_pandoc_api_version():
+    import pypandoc
+    return json.loads(pypandoc.convert_text('', 'json', format='markdown'))['pandoc-api-version']
+
+
+PANDOC_API_VERSION = get_pandoc_api_version()
+
+
 def has_pandoc():  # pragma: no cover
     try:
         with captured_output():
@@ -231,4 +241,4 @@ def generate_json_test_files():  # pragma: no cover
             path_json = op.join(curdir, 'ast', 'test_files', base + '.json')
             with open(path_json, 'w') as fw:
                 d = json.loads(out)
-                json.dump(d, fw, sort_keys=True, indent=4)
+                json.dump(d, fw, sort_keys=True, indent=2)

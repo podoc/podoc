@@ -67,7 +67,7 @@ def test_open_dump_text(tempdir):
 
 def test_pandoc():
     out = pandoc('hello *world*', 'json', format='markdown')
-    assert isinstance(json.loads(out), list)
+    assert isinstance(json.loads(out), dict)
 
     sl, tl = get_pandoc_formats()
     assert 'markdown' in sl
