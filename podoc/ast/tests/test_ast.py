@@ -26,16 +26,17 @@ from podoc.utils import (has_pandoc, pandoc,
 
 @fixture
 def ast_pandoc():
-    ast_dict = [{'unMeta': {}}, [
-                {'c': [{'c': 'hello', 't': 'Str'},
-                       {'c': [], 't': 'Space'},
-                       {'c': [{'c': 'world', 't': 'Str'}], 't': 'Emph'}],
-                 't': 'Para',
-                 },
-                {'c': [{'c': 'hi!', 't': 'Str'}],
-                 't': 'Para',
-                 }]
-                ]
+    ast_dict = {'meta': {},
+                'pandoc-api-version': PANDOC_API_VERSION,
+                'blocks': [
+                    {'c': [{'c': 'hello', 't': 'Str'},
+                           {'t': 'Space'},
+                           {'c': [{'c': 'world', 't': 'Str'}], 't': 'Emph'}],
+                     't': 'Para',
+                     },
+                    {'c': [{'c': 'hi!', 't': 'Str'}],
+                     't': 'Para',
+                     }]}
     return ast_dict
 
 
