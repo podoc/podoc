@@ -1,29 +1,32 @@
-[
+{
+  "blocks": [
     {
-        "unMeta": {}
-    },
-    [
+      "c": [
         {
-            "c": [
-                {
-                    "c": "hello",
-                    "t": "Str"
-                },
-                {
-                    "c": [],
-                    "t": "Space"
-                },
-                {
-                    "c": [
-                        {
-                            "c": "world",
-                            "t": "Str"
-                        }
-                    ],
-                    "t": "Emph"
-                }
-            ],
-            "t": "Para"
+          "c": "hello",
+          "t": "Str"
+        },
+        {
+          "t": "Space"
+        },
+        {
+          "c": [
+            {
+              "c": "world",
+              "t": "Str"
+            }
+          ],
+          "t": "Emph"
         }
-    ]
-]
+      ],
+      "t": "Para"
+    }
+  ],
+  "meta": {},
+  "pandoc-api-version": [
+    1,
+    17,
+    0,
+    4
+  ]
+}

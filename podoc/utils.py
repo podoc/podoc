@@ -241,4 +241,4 @@ def generate_json_test_files():  # pragma: no cover
             path_json = op.join(curdir, 'ast', 'test_files', base + '.json')
             with open(path_json, 'w') as fw:
                 d = json.loads(out)
-                json.dump(d, fw, sort_keys=True, indent=4)
+                json.dump(d, fw, sort_keys=True, indent=2)
