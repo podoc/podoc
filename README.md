@@ -1,5 +1,7 @@
 # podoc
 
+**THIS IS AN EXPERIMENTAL PROJECT AT THE MOMENT -- DO NOT USE**
+
 [![Build Status](https://img.shields.io/travis/podoc/podoc.svg)](https://travis-ci.org/podoc/podoc)
 [![codecov.io](https://img.shields.io/codecov/c/github/podoc/podoc.svg)](http://codecov.io/github/podoc/podoc?branch=master)
 [![Documentation Status](https://readthedocs.org/projects/podoc/badge/?version=latest)](https://readthedocs.org/projects/podoc/?badge=latest)
