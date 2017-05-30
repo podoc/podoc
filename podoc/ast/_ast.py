@@ -17,6 +17,7 @@ from six import string_types
 from podoc.tree import Node, TreeTransformer
 from podoc.plugin import IPlugin
 from podoc.utils import (has_pandoc, pandoc, get_pandoc_formats,
+                         PANDOC_API_VERSION,
                          _merge_str, _get_file, assert_equal,)
 
 logger = logging.getLogger(__name__)
@@ -235,7 +236,8 @@ class PodocToPandoc(TreeTransformer):
     def transform_main(self, ast):
         ast = PodocToPandocPreProcessor().transform(ast)
         blocks = self.transform(ast)['c']
-        return {'meta': {}, 'blocks': blocks, 'pandoc-api-version': [1, 17, 0, 5]}
+        return {'meta': {}, 'blocks': blocks,
+                'pandoc-api-version': PANDOC_API_VERSION}
 
 
 #------------------------------------------------------------------------------

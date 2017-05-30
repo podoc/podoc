@@ -206,6 +206,14 @@ def get_pandoc_formats():
     return pypandoc.get_pandoc_formats()
 
 
+def get_pandoc_api_version():
+    import pypandoc
+    return json.loads(pypandoc.convert_text('', 'json', format='markdown'))['pandoc-api-version']
+
+
+PANDOC_API_VERSION = get_pandoc_api_version()
+
+
 def has_pandoc():  # pragma: no cover
     try:
         with captured_output():
