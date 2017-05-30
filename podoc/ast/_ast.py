@@ -128,7 +128,7 @@ class ASTNode(Node):
     def __repr__(self):
         """Display the pandoc JSON representation of the tree."""
         d = self.to_pandoc()
-        return json.dumps(d, separators=(',', ':'))
+        return json.dumps(d, separators=(',', ':'), sort_keys=True)
 
 
 #------------------------------------------------------------------------------

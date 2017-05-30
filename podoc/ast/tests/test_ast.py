@@ -73,7 +73,7 @@ def ast():
 #------------------------------------------------------------------------------
 
 def test_repr_ast():
-    assert str(ASTNode('Para')) == ('{"meta":{},"blocks":[],"pandoc-api-version":%s}' %
+    assert str(ASTNode('Para')) == ('{"blocks":[],"meta":{},"pandoc-api-version":%s}' %
                                     str(PANDOC_API_VERSION).replace(' ', ''))
 
 
