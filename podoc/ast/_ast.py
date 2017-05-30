@@ -431,7 +431,7 @@ class ASTPlugin(IPlugin):
         # logger.debug("Load JSON file `%s`.", path)
         with _get_file(file_or_path, 'r') as f:
             d = json.load(f)
-        assert isinstance(d, list)
+        assert isinstance(d, dict)
         ast = ast_from_pandoc(d)
         assert isinstance(ast, ASTNode)
         return ast
@@ -440,7 +440,7 @@ class ASTPlugin(IPlugin):
         """Dump an AST instance to a JSON file."""
         assert isinstance(ast, ASTNode)
         d = ast.to_pandoc()
-        assert isinstance(d, list)
+        assert isinstance(d, dict)
         # logger.debug("Save JSON file `%s`.", path)
         with _get_file(file_or_path, 'w') as f:
             json.dump(d, f, sort_keys=True, indent=2,
@@ -451,7 +451,7 @@ class ASTPlugin(IPlugin):
     def loads(self, s):
         """Load a JSON string and return an AST instance."""
         d = json.loads(s)
-        assert isinstance(d, list)
+        assert isinstance(d, dict)
         ast = ast_from_pandoc(d)
         assert isinstance(ast, ASTNode)
         return ast
@@ -460,7 +460,7 @@ class ASTPlugin(IPlugin):
         """Dump an AST instance to a JSON string."""
         assert isinstance(ast, ASTNode)
         d = ast.to_pandoc()
-        assert isinstance(d, list)
+        assert isinstance(d, dict)
         return json.dumps(d, sort_keys=True, indent=2,
                           separators=(',', ': ')) + '\n'
 
