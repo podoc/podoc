@@ -161,9 +161,9 @@ def assert_equal(p0, p1, to_remove=()):
         assert p0.rstrip('\n') == p1.rstrip('\n')
     elif isinstance(p0, dict):
         assert isinstance(p1, dict)
-        # p0.show()
-        # p1.show()
-        assert _remove(p0, to_remove) == _remove(p1, to_remove)
+        p0 = _remove(p0, to_remove)
+        p1 = _remove(p1, to_remove)
+        assert p0 == p1
     else:
         assert p0 == p1
 

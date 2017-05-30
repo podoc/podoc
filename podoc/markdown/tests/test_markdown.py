@@ -7,13 +7,10 @@
 # Imports
 #------------------------------------------------------------------------------
 
-import json
-
 from pytest import fixture
 from six import string_types
 
-from podoc.ast import ASTNode, ast_from_pandoc
-from podoc.utils import pandoc, PANDOC_MARKDOWN_FORMAT
+from podoc.ast import ASTNode
 from .._markdown import MarkdownPlugin
 
 
