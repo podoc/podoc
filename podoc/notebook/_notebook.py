@@ -166,7 +166,6 @@ class NotebookReader(object):
         # Append the last cell tree if not empty.
         if curtree.children:
             self._markdown_tree.append(curtree)
-        # ast.show()
 
     def read_markdown(self, cell, cell_index=None):
         if self._markdown_tree:
@@ -178,7 +177,7 @@ class NotebookReader(object):
             if not ast.children:
                 logger.debug("Skipping empty node.")
                 return
-            self.tree.children.append()
+            self.tree.children.append(ast)
 
     def read_code(self, cell, cell_index=None):
         node = ASTNode('CodeCell')

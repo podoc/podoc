@@ -8,7 +8,6 @@
 #------------------------------------------------------------------------------
 
 import logging
-import re
 import pypandoc
 
 from six import string_types
@@ -140,33 +139,6 @@ class ASTToMarkdown(TreeTransformer):
     def transform_Image(self, node):
         return self.renderer.image(self.get_inner_contents(node),
                                    node.url)
-
-
-# TODO: this might be improved. For example, the $ char is not accepted within
-# equations currently. Also, there cannot be a space after the opening $ or $$.
-# Similar heuristic as in pandoc
-# http://talk.commonmark.org/t/mathjax-extension-for-latex-equations/698/7
-_MATH_REGEX = r'((?<!\$)\${1,2}(?!\s))([^\$]+)((?<!\s)\${1,2}(?!\d))'
-
-
-def _repl_math(m):
-    """Callback function for sub regex."""
-    n = len(m.group(1))
-    contents = m.group(2)
-    assert n in (1, 2)
-    if n == 1:
-        # Math inline.
-        return '`${}$`'.format(contents)
-    elif n == 2:
-        # Math block (code with `math` language).
-        return '```math\n{}\n```'.format(contents)
-
-
-def _parse_math(contents):
-    """Enclose math equations within code elements to prevent
-    them from being incorrectly parsed."""
-    contents = re.sub(_MATH_REGEX, _repl_math, contents)
-    return contents
 
 
 #------------------------------------------------------------------------------
