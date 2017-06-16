@@ -7,11 +7,11 @@ print('hello *world*')
 2 * 3
 ```
 
-```stdout
+```{output:stdout}
 hello *world*
 ```
 
-```result
+```{output:result}
 6
 ```
 
@@ -28,7 +28,7 @@ plt.yticks([])
 plt.show()
 ```
 
-```stderr
+```{output:stderr}
 Vendor:  Continuum Analytics, Inc.
 Package: mkl
 Message: trial mode expires in 30 days

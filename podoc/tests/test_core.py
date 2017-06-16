@@ -174,7 +174,7 @@ def test_all_convert(tempdir, podoc, source_target, test_file):
     # Load the test file resources.
     resources = _test_file_resources()
 
-    # Convert with pandoc.
+    # Convert with podoc.
     converted = podoc.convert(source_path, target=target, resources=resources)
     # print('****** CONVERTED ******')
     # converted.show()
@@ -187,5 +187,4 @@ def test_all_convert(tempdir, podoc, source_target, test_file):
     expected = podoc.pre_filter(expected, target, source)
     # print('****** EXPECTED ******')
     # expected.show()
-
     podoc.assert_equal(converted, expected, target)

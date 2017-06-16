@@ -192,7 +192,7 @@ class NotebookReader(object):
         for output_index, output in enumerate(cell.get('outputs', [])):
             if output.output_type == 'stream':
                 child = ASTNode('CodeBlock',
-                                lang=output.name,  # stdout/stderr
+                                lang='{output:' + output.name + '}',  # stdout/stderr
                                 children=[output.text.rstrip()])
             elif output.output_type in ('display_data', 'execute_result'):
                 # Output text node.
@@ -201,7 +201,7 @@ class NotebookReader(object):
                 out = extract_output(output)
                 if out is None:
                     child = ASTNode('CodeBlock',
-                                    lang='result',
+                                    lang='{output:result}',
                                     children=[text])
                 else:
                     mime_type, data = out
@@ -244,7 +244,7 @@ class CodeCellWrapper(object):
 
     def is_output(self, node):
         return ((node.name == 'CodeBlock') and
-                (node.lang in (None, '', 'stdout', 'stderr', 'result')))
+                (node.lang in (None, '') or node.lang.startswith('{output')))
 
     def is_image(self, node):
         children = node.children
@@ -344,21 +344,22 @@ class NotebookWriter(object):
                 # The output is a code block.
                 # What is the output's type? It depends on the code block's
                 # name. It can be: `stdout`, `stderr`, `result`.
-                output_type = child.lang or 'result'
-                assert output_type in ('stdout', 'stderr', 'result')
+                output_type = child.lang or '{output:result}'
+                assert output_type.startswith('{output')
                 contents = child.children[0]
                 # NOTE: append new lines at the end of every line in stdout
                 # and stderr contents, to match with the Jupyter Notebook.
-                if output_type != 'result':
+                if output_type != '{output:result}':
                     contents = _append_newlines(contents)
-                if output_type == 'result':
+                if output_type == '{output:result}':
                     kwargs = dict(execution_count=self.execution_count,
                                   data={'text/plain': contents})
                     # Output type to pass to nbformat.
                     output_type = 'execute_result'
-                elif output_type in ('stdout', 'stderr'):
+                elif output_type in ('{output:stdout}', '{output:stderr}'):
                     # Standard output or error.
-                    kwargs = dict(text=contents, name=output_type)
+                    # NOTE: strip {output } and only keep stdout/stderr in name.
+                    kwargs = dict(text=contents, name=output_type[8:-1])
                     # Output type to pass to nbformat.
                     output_type = 'stream'
             elif child.name == 'Para':
@@ -376,6 +377,7 @@ class NotebookWriter(object):
                 # assert data[mime_type]  # TODO
                 data['text/plain'] = caption
                 kwargs = dict(data=data)
+            assert not output_type.startswith('{output')
             output = new_output(output_type, **kwargs)
             cell.outputs.append(output)
         self.execution_count += 1
