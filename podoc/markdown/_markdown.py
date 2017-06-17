@@ -17,7 +17,11 @@ from podoc.ast import ASTNode, ASTPlugin
 from podoc.markdown.renderer import MarkdownRenderer
 from podoc.plugin import IPlugin
 from podoc.tree import TreeTransformer
-from podoc.utils import PANDOC_MARKDOWN_FORMAT
+from podoc.utils import (PANDOC_MARKDOWN_FORMAT,
+                         _get_resources_path,
+                         _load_resources, _save_resources,
+                         _get_file,
+                         )
 
 logger = logging.getLogger(__name__)
 
@@ -146,58 +150,50 @@ class ASTToMarkdown(TreeTransformer):
 # Markdown plugin
 #------------------------------------------------------------------------------
 
-def _save_resources(resources, res_path=None):
-    if not res_path:
-        logger.debug("No resource path given.")
-        return
-    for fn, data in resources.items():
-        path = op.join(res_path, fn)
-        with open(path, 'wb') as f:
-            logger.debug("Writing %d bytes to `%s`.", len(data), path)
-            f.write(data)
-
-
-def _load_resources(ast, res_path=None):
-    if res_path is None:
-        logger.debug("No resource path given.")
-        return
-    resources = {}
-
-    class MyTreeTransformer(TreeTransformer):
-        def transform_Node(self, node):
-            node.children = self.transform_children(node)
-            return node
-
-        def transform_Image(self, node):
-            # TODO: check this is a relative path.
-            path = op.join(res_path, node.path)
-            fn = op.basename(node.path)
-            with open(path, 'rb') as f:
-                data = f.read()
-            logger.debug("Read %d bytes from `%s`.", len(data), path)
-            resources[fn] = data
-            return node
-
-    return resources
-
-
 class MarkdownPlugin(IPlugin):
+    def __init__(self, *args, **kwargs):
+        super(MarkdownPlugin, self).__init__(*args, **kwargs)
+        self.resources = {}
+
     def attach(self, podoc):
-        podoc.register_lang('markdown', file_ext='.md')
+        podoc.register_lang('markdown', file_ext='.md',
+                            load_func=self.load, dump_func=self.dump,)
         podoc.register_func(source='markdown', target='ast',
                             func=self.read)
         podoc.register_func(source='ast', target='markdown',
                             func=self.write)
 
+    def load(self, file_or_path):
+        """Load a Markdown file and return a string."""
+        with _get_file(file_or_path, 'r') as f:
+            path = op.realpath(f.name)
+            text = f.read()
+        # Load the resources from the resource directory.
+        res_path = _get_resources_path(path)
+        self.resources = _load_resources(res_path)
+        return text
+
+    def dump(self, text, file_or_path):
+        """Dump string to a Markdown file."""
+        with _get_file(file_or_path, 'w') as f:
+            path = op.realpath(f.name)
+            f.write(text)
+        # Save the resources in the AST to files.
+        res_path = _get_resources_path(path)
+        _save_resources(self.resources, res_path=res_path)
+        self.resources = {}
+
     def read(self, contents):
         assert isinstance(contents, string_types)
         js = pypandoc.convert_text(contents, 'json', format=PANDOC_MARKDOWN_FORMAT)
         ast = ASTPlugin().loads(js)
-        ast.resources = _load_resources(ast, ast.resources_path)
+        # Set the AST resources.
+        ast.resources = self.resources
+        self.resources = {}
         return ast
 
     def write(self, ast):
         assert isinstance(ast, (ASTNode, string_types))
-        if isinstance(ast, ASTNode):
-            _save_resources(ast.resources, ast.resources_path)
+        if hasattr(ast, 'resources'):
+            self.resources = ast.resources
         return ASTToMarkdown().transform(ast)
