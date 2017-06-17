@@ -8,8 +8,9 @@
 #------------------------------------------------------------------------------
 
 import logging
-import pypandoc
+import os.path as op
 
+import pypandoc
 from six import string_types
 
 from podoc.ast import ASTNode, ASTPlugin
@@ -145,6 +146,41 @@ class ASTToMarkdown(TreeTransformer):
 # Markdown plugin
 #------------------------------------------------------------------------------
 
+def _save_resources(resources, res_path=None):
+    if not res_path:
+        logger.debug("No resource path given.")
+        return
+    for fn, data in resources.items():
+        path = op.join(res_path, fn)
+        with open(path, 'wb') as f:
+            logger.debug("Writing %d bytes to `%s`.", len(data), path)
+            f.write(data)
+
+
+def _load_resources(ast, res_path=None):
+    if res_path is None:
+        logger.debug("No resource path given.")
+        return
+    resources = {}
+
+    class MyTreeTransformer(TreeTransformer):
+        def transform_Node(self, node):
+            node.children = self.transform_children(node)
+            return node
+
+        def transform_Image(self, node):
+            # TODO: check this is a relative path.
+            path = op.join(res_path, node.path)
+            fn = op.basename(node.path)
+            with open(path, 'rb') as f:
+                data = f.read()
+            logger.debug("Read %d bytes from `%s`.", len(data), path)
+            resources[fn] = data
+            return node
+
+    return resources
+
+
 class MarkdownPlugin(IPlugin):
     def attach(self, podoc):
         podoc.register_lang('markdown', file_ext='.md')
@@ -156,8 +192,12 @@ class MarkdownPlugin(IPlugin):
     def read(self, contents):
         assert isinstance(contents, string_types)
         js = pypandoc.convert_text(contents, 'json', format=PANDOC_MARKDOWN_FORMAT)
-        return ASTPlugin().loads(js)
+        ast = ASTPlugin().loads(js)
+        ast.resources = _load_resources(ast, ast.resources_path)
+        return ast
 
     def write(self, ast):
         assert isinstance(ast, (ASTNode, string_types))
+        if isinstance(ast, ASTNode):
+            _save_resources(ast.resources, ast.resources_path)
         return ASTToMarkdown().transform(ast)
