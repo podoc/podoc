@@ -13,7 +13,6 @@ import os.path as op
 
 from pytest import mark, raises
 
-from ..tree import Node
 from ..utils import (Bunch, Path, load_text, dump_text, _get_file,
                      assert_equal,
                      _get_resources_path, _save_resources, _load_resources,
@@ -67,8 +66,7 @@ def test_save_load_resources(tempdir):
     resources = {'test.ext': b'abc'}
     _save_resources(resources, res_path=tempdir)
 
-    ast = Node('root', children=[Node('Image', path='test.ext')])
-    resources_loaded = _load_resources(ast, tempdir)
+    resources_loaded = _load_resources(tempdir)
     assert resources_loaded == resources
 
 
