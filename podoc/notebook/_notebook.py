@@ -144,6 +144,8 @@ class NotebookReader(object):
 
         for cell_index, cell in enumerate(notebook.cells):
             getattr(self, 'read_{}'.format(cell.cell_type))(cell, cell_index)
+
+        self.tree.resources = self.resources
         return self.tree
 
     def _read_all_markdown(self, cells):
@@ -284,9 +286,9 @@ def _append_newlines(s):
 
 
 class NotebookWriter(object):
-    def write(self, ast, resources=None):
+    def write(self, ast):
         # Mapping {filename: data}.
-        self.resources = resources or {}
+        self.resources = ast.resources
         self.execution_count = 1
         self._md = MarkdownPlugin()
         # Add code cells in the AST.
@@ -427,5 +429,5 @@ class NotebookPlugin(IPlugin):
     def read(self, nb):
         return NotebookReader().read(nb)
 
-    def write(self, ast, resources=None):
-        return NotebookWriter().write(ast, resources=resources)
+    def write(self, ast):
+        return NotebookWriter().write(ast)

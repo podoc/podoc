@@ -148,14 +148,15 @@ def test_notebook_writer_hello():
 def test_notebook_writer_notebook():
     path = get_test_file_path('ast', 'notebook.json')
     ast = ASTPlugin().load(path)
+    # TODO: save resource files in JSON serializer
 
     # Load the image.
     fn = get_test_file_path('markdown', 'output_4_1.png')
     with open(fn, 'rb') as f:
         img = f.read()
-    resources = {op.basename(fn): img}
+    ast.resources = {op.basename(fn): img}
     # Convert the AST to a notebook.
-    nb = NotebookWriter().write(ast, resources=resources)
+    nb = NotebookWriter().write(ast)
 
     # Compare the notebooks.
     nb_expected = open_notebook(get_test_file_path('notebook',
