@@ -99,3 +99,17 @@ def test_transform_2(root):
                                         'c': [{'t': '1.1',
                                                'c': ['1.1.1', '1.1.2']},
                                               '1.2']}, '2']}
+
+
+def test_transform_3(root):
+
+    class MyTreeTransformer(TreeTransformer):
+        def transform_Node(self, node):
+            node = node.copy()
+            node.name += ' visited'
+            node.children = self.transform_children(node)
+            return node
+
+    t = MyTreeTransformer()
+    assert t.transform(root).name == 'root visited'
+    assert t.transform(root).children[0].name == root.children[0].name + ' visited'
