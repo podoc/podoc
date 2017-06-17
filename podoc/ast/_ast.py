@@ -88,6 +88,11 @@ NATIVE_NAMES = BLOCK_NAMES + INLINE_NAMES + (
 
 
 class ASTNode(Node):
+    def __init__(self, *args, **kwargs):
+        super(ASTNode, self).__init__(*args, **kwargs)
+        self.resources = {}
+        self.resources_path = {}
+
     def is_block(self):
         return self.name in BLOCK_NAMES
 
