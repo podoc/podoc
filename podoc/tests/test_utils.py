@@ -13,8 +13,10 @@ import os.path as op
 
 from pytest import mark, raises
 
+from ..tree import Node
 from ..utils import (Bunch, Path, load_text, dump_text, _get_file,
                      assert_equal,
+                     _get_resources_path, _save_resources, _load_resources,
                      pandoc, has_pandoc, get_pandoc_formats)
 
 logger = logging.getLogger(__name__)
@@ -50,6 +52,24 @@ def test_assert_equal():
     with raises(AssertionError):
         assert_equal({'a': 1, 'b': [2, 3], '_c': 0},
                      {'a': 1, 'b': [2, 4], '_c': 0})
+
+
+#------------------------------------------------------------------------------
+# Test resources
+#------------------------------------------------------------------------------
+
+def test_get_resources_path():
+    res_path = _get_resources_path('/path/to/test.ext')
+    assert res_path == '/path/to/test_files'
+
+
+def test_save_load_resources(tempdir):
+    resources = {'test.ext': b'abc'}
+    _save_resources(resources, res_path=tempdir)
+
+    ast = Node('root', children=[Node('Image', path='test.ext')])
+    resources_loaded = _load_resources(ast, tempdir)
+    assert resources_loaded == resources
 
 
 #------------------------------------------------------------------------------

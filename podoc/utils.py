@@ -73,6 +73,55 @@ def _shorten_string(s, lim=40):
 
 
 #------------------------------------------------------------------------------
+# Resources
+#------------------------------------------------------------------------------
+
+def _get_resources_path(doc_path):
+    doc_path = op.realpath(doc_path)
+    fn = op.basename(doc_path)
+    fn = op.splitext(fn)[0]
+    return op.join(op.dirname(doc_path), '%s_files' % fn)
+
+
+def _save_resources(resources, res_path=None):
+    if not res_path:
+        logger.debug("No resource path given.")
+        return
+    for fn, data in resources.items():
+        path = op.join(res_path, fn)
+        with open(path, 'wb') as f:
+            logger.debug("Writing %d bytes to `%s`.", len(data), path)
+            f.write(data)
+
+
+def _load_resources(ast, res_path=None):
+    from podoc.tree import TreeTransformer
+
+    if res_path is None:
+        logger.debug("No resource path given.")
+        return
+    resources = {}
+
+    class MyTreeTransformer(TreeTransformer):
+        def transform_Node(self, node):
+            node.children = self.transform_children(node)
+            return node
+
+        def transform_Image(self, node):
+            # TODO: check this is a relative path.
+            path = op.join(res_path, node.path)
+            fn = op.basename(node.path)
+            with open(path, 'rb') as f:
+                data = f.read()
+            logger.debug("Read %d bytes from `%s`.", len(data), path)
+            resources[fn] = data
+            return node
+    MyTreeTransformer().transform(ast)
+
+    return resources
+
+
+#------------------------------------------------------------------------------
 # Path
 #------------------------------------------------------------------------------
 
