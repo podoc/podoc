@@ -227,6 +227,8 @@ class NotebookReader(object):
 class CodeCellWrapper(object):
     def wrap(self, ast):
         self.ast = ast.copy()
+        # NOTE: make sure the resources dictionary is correctly copied.
+        self.ast.resources = ast.resources
         self.ast.children = []
         self._code_cell = None
         for i, node in enumerate(ast.children):
@@ -289,6 +291,8 @@ class NotebookWriter(object):
     def write(self, ast):
         # Mapping {filename: data}.
         self.resources = ast.resources
+        if not self.resources:
+            logger.debug("No resources in AST %s.", ast)
         self.execution_count = 1
         self._md = MarkdownPlugin()
         # Add code cells in the AST.
@@ -321,7 +325,7 @@ class NotebookWriter(object):
 
         """
         data = self.resources.get(fn, None)
-        if not data:  # pragma: no cover
+        if self.resources and not data:  # pragma: no cover
             logger.warn("Resource `%s` couldn't be found.", fn)
             return ''
         out = base64.b64encode(data).decode('utf8')

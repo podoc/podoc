@@ -125,7 +125,6 @@ class PodocContentsManager(FileContentsManager, Configurable):
                     return self._podoc.convert(os_path,
                                                source=lang,
                                                target='notebook',
-                                               resources=None,  # TODO
                                                )
 
             except Exception as e:  # pragma: no cover
@@ -163,7 +162,6 @@ class PodocContentsManager(FileContentsManager, Configurable):
                     p.convert(nb,
                               source='notebook',
                               target=lang,
-                              resources=None,  # TODO
                               output=os_path,
                               )
 
