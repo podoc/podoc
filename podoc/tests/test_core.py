@@ -13,7 +13,7 @@ import os.path as op
 from pytest import raises
 
 from ..core import Podoc, _find_path, _get_annotation, _connected_component
-from ..utils import get_test_file_path, load_text, _test_file_resources
+from ..utils import get_test_file_path, load_text
 
 logger = logging.getLogger(__name__)
 
@@ -171,11 +171,8 @@ def test_all_convert(tempdir, podoc, source_target, test_file):
     source_path = get_test_file_path(source, source_filename)
     target_path = get_test_file_path(target, target_filename)
 
-    # Load the test file resources.
-    resources = _test_file_resources()
-
     # Convert with podoc.
-    converted = podoc.convert(source_path, target=target, resources=resources)
+    converted = podoc.convert(source_path, target=target)
     # print('****** CONVERTED ******')
     # converted.show()
 

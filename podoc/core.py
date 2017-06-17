@@ -9,7 +9,6 @@
 
 from collections import defaultdict
 import glob
-import inspect
 import logging
 import os.path as op
 
@@ -162,10 +161,9 @@ class Podoc(object):
                                   **kwargs)
 
     def convert(self, obj_or_path, source=None, target=None,
-                lang_list=None, output=None, resources=None):
+                lang_list=None, output=None):
         """Convert an object by passing it through a chain of conversion
         functions."""
-        resources = resources or {}
         obj = obj_or_path
         # NOTE: 'json' is an alias for 'ast', to match with pandoc's
         # terminology.
@@ -212,10 +210,6 @@ class Podoc(object):
             f = fd.func
             # Pre-filter.
             obj = fd.pre_filter(obj) if fd.pre_filter else obj
-            # Add the resources dictionary if the conversion function accepts
-            # it.
-            if 'resources' in inspect.getargspec(f).args:
-                kwargs['resources'] = resources
             # Perform the conversion.
             obj = f(obj, **kwargs)
             # Post-filter.
