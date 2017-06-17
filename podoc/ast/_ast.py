@@ -10,6 +10,7 @@
 from itertools import chain
 import json
 import logging
+import os.path as op
 import re
 
 from six import string_types
@@ -18,7 +19,11 @@ from podoc.tree import Node, TreeTransformer
 from podoc.plugin import IPlugin
 from podoc.utils import (has_pandoc, pandoc, get_pandoc_formats,
                          PANDOC_API_VERSION,
-                         _merge_str, _get_file, assert_equal,)
+                         _merge_str, _get_file, assert_equal,
+                         _get_resources_path,
+                         _load_resources,
+                         _save_resources,
+                         )
 
 logger = logging.getLogger(__name__)
 
@@ -90,8 +95,8 @@ NATIVE_NAMES = BLOCK_NAMES + INLINE_NAMES + (
 class ASTNode(Node):
     def __init__(self, *args, **kwargs):
         super(ASTNode, self).__init__(*args, **kwargs)
-        self.resources = {}
-        self.resources_path = {}
+        if self.name == 'root':
+            self['resources'] = {}
 
     def is_block(self):
         return self.name in BLOCK_NAMES
@@ -438,10 +443,14 @@ class ASTPlugin(IPlugin):
         """Load a JSON file and return an AST instance."""
         # logger.debug("Load JSON file `%s`.", path)
         with _get_file(file_or_path, 'r') as f:
+            path = op.realpath(f.name)
             d = json.load(f)
         assert isinstance(d, dict)
         ast = ast_from_pandoc(d)
         assert isinstance(ast, ASTNode)
+        # Load the resources from the resource directory.
+        res_path = _get_resources_path(path)
+        ast.resources = _load_resources(res_path)
         return ast
 
     def dump(self, ast, file_or_path):
@@ -451,10 +460,14 @@ class ASTPlugin(IPlugin):
         assert isinstance(d, dict)
         # logger.debug("Save JSON file `%s`.", path)
         with _get_file(file_or_path, 'w') as f:
+            path = op.realpath(f.name)
             json.dump(d, f, sort_keys=True, indent=2,
                       separators=(',', ': '))  # avoid trailing whitespaces
             # Add a new line at the end.
             f.write('\n')
+        # Save the resources in the AST to files.
+        res_path = _get_resources_path(path)
+        _save_resources(ast.resources, res_path=res_path)
 
     def loads(self, s):
         """Load a JSON string and return an AST instance."""
@@ -473,4 +486,4 @@ class ASTPlugin(IPlugin):
                           separators=(',', ': ')) + '\n'
 
     def assert_equal(self, ast0, ast1):
-        return assert_equal(ast0, ast1, to_remove=('_visit_meta',))
+        return assert_equal(ast0, ast1, to_remove=('_visit_meta', 'resources'))
