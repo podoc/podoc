@@ -18,9 +18,8 @@ from podoc.markdown.renderer import MarkdownRenderer
 from podoc.plugin import IPlugin
 from podoc.tree import TreeTransformer
 from podoc.utils import (PANDOC_MARKDOWN_FORMAT,
-                         _get_resources_path,
-                         _load_resources, _save_resources,
                          _get_file,
+                         _get_resources_path, _save_resources,
                          )
 
 logger = logging.getLogger(__name__)
@@ -151,9 +150,7 @@ class ASTToMarkdown(TreeTransformer):
 #------------------------------------------------------------------------------
 
 class MarkdownPlugin(IPlugin):
-    def __init__(self, *args, **kwargs):
-        super(MarkdownPlugin, self).__init__(*args, **kwargs)
-        self.resources = {}
+    _resources = None
 
     def attach(self, podoc):
         podoc.register_lang('markdown', file_ext='.md',
@@ -166,11 +163,7 @@ class MarkdownPlugin(IPlugin):
     def load(self, file_or_path):
         """Load a Markdown file and return a string."""
         with _get_file(file_or_path, 'r') as f:
-            path = op.realpath(f.name)
             text = f.read()
-        # Load the resources from the resource directory.
-        res_path = _get_resources_path(path)
-        self.resources = _load_resources(res_path)
         return text
 
     def dump(self, text, file_or_path):
@@ -178,22 +171,19 @@ class MarkdownPlugin(IPlugin):
         with _get_file(file_or_path, 'w') as f:
             path = op.realpath(f.name)
             f.write(text)
-        # Save the resources in the AST to files.
-        res_path = _get_resources_path(path)
-        _save_resources(self.resources, res_path=res_path)
-        self.resources = {}
+        # Save the resources.
+        _save_resources(self._resources, _get_resources_path(path))
+        self._resources = None
 
     def read(self, contents):
         assert isinstance(contents, string_types)
         js = pypandoc.convert_text(contents, 'json', format=PANDOC_MARKDOWN_FORMAT)
         ast = ASTPlugin().loads(js)
-        # Set the AST resources.
-        ast.resources = self.resources
-        self.resources = {}
         return ast
 
     def write(self, ast):
         assert isinstance(ast, (ASTNode, string_types))
-        if hasattr(ast, 'resources'):
-            self.resources = ast.resources
-        return ASTToMarkdown().transform(ast)
+        text = ASTToMarkdown().transform(ast)
+        if isinstance(ast, ASTNode):
+            self._resources = ast.get('resources', {})
+        return text
