@@ -36,7 +36,7 @@ def test_extract_output():
     assert filename == 'output_4_1.png'
 
     # Open the image file in the markdown directory.
-    image_path = get_test_file_path('markdown', filename)
+    image_path = get_test_file_path('markdown', 'notebook_files/' + filename)
     with open(image_path, 'rb') as f:
         data_expected = f.read()
 
@@ -52,7 +52,7 @@ def test_wrap_code_cells_1():
     ast_wrapped = wrap_code_cells(ast)
     ast_wrapped.show()
 
-    ast_expected = ASTNode('root')
+    ast_expected = ASTNode('root', metadata={})
     ast_expected.add_child(ASTNode('CodeCell', children=[ast.children[0]]))
 
     assert_equal(ast_wrapped, ast_expected)
@@ -101,6 +101,7 @@ def test_notebook_reader_hello():
     ast.show()
     # Check that the AST is equal to the one of a simple Mardown line.
     ast_1 = MarkdownPlugin().read('hello *world*')
+    ast_1['metadata'] = {}
     assert ast == ast_1
 
 
@@ -151,7 +152,7 @@ def test_notebook_writer_notebook():
     # TODO: save resource files in JSON serializer
 
     # Load the image.
-    fn = get_test_file_path('markdown', 'output_4_1.png')
+    fn = get_test_file_path('markdown', 'notebook_files/output_4_1.png')
     with open(fn, 'rb') as f:
         img = f.read()
     ast.resources = {op.basename(fn): img}
@@ -162,4 +163,5 @@ def test_notebook_writer_notebook():
     nb_expected = open_notebook(get_test_file_path('notebook',
                                                    'notebook.ipynb'))
     # Ignore some fields when comparing the notebooks.
+    assert nb == nb_expected
     NotebookPlugin().assert_equal(nb, nb_expected)

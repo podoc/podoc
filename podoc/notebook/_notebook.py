@@ -38,6 +38,7 @@ This all could (and should) be improved...
 import base64
 import logging
 from mimetypes import guess_extension, guess_type
+import os.path as op
 import sys
 
 import nbformat
@@ -50,7 +51,7 @@ from nbformat.v4 import (new_notebook,
 from podoc.markdown import MarkdownPlugin
 from podoc.ast import ASTNode  # , TreeTransformer
 from podoc.plugin import IPlugin
-from podoc.utils import _get_file, assert_equal
+from podoc.utils import _get_file, assert_equal, _get_resources_path, _save_resources
 
 logger = logging.getLogger(__name__)
 
@@ -129,8 +130,8 @@ class NotebookReader(object):
 
     def read(self, notebook):
         assert isinstance(notebook, nbformat.NotebookNode)
-        self.tree = ASTNode('root')
         self.resources = {}  # Dictionary {filename: data}.
+        self.tree = ASTNode('root', metadata={'resources': self.resources})
         # Language of the notebook.
         m = notebook.metadata
         # NOTE: if no language is available in the metadata, use Python
@@ -145,7 +146,6 @@ class NotebookReader(object):
         for cell_index, cell in enumerate(notebook.cells):
             getattr(self, 'read_{}'.format(cell.cell_type))(cell, cell_index)
 
-        self.tree.resources = self.resources
         return self.tree
 
     def _read_all_markdown(self, cells):
@@ -227,8 +227,7 @@ class NotebookReader(object):
 class CodeCellWrapper(object):
     def wrap(self, ast):
         self.ast = ast.copy()
-        # NOTE: make sure the resources dictionary is correctly copied.
-        self.ast.resources = ast.resources
+        self.ast['metadata'] = ast.get('metadata', {}).copy()
         self.ast.children = []
         self._code_cell = None
         for i, node in enumerate(ast.children):
@@ -287,16 +286,25 @@ def _append_newlines(s):
     return '\n'.join(s.rstrip().split('\n')) + '\n'
 
 
+def _get_b64_resource(data):
+    if not data:
+        return ''
+    """Return the base64 of a binary buffer."""
+    out = base64.b64encode(data).decode('utf8')
+    # NOTE: split the output in multiple lines of 76 characters,
+    # to make easier the comparison with actual Jupyter Notebook files.
+    N = 76
+    out = '\n'.join([out[i:i + N] for i in range(0, len(out), N)]) + '\n'
+    return out
+
+
 class NotebookWriter(object):
     def write(self, ast):
-        # Mapping {filename: data}.
-        self.resources = ast.resources
-        if not self.resources:
-            logger.debug("No resources in AST %s.", ast)
         self.execution_count = 1
         self._md = MarkdownPlugin()
         # Add code cells in the AST.
         ast = wrap_code_cells(ast)
+        self.resources = ast.get('metadata', {}).get('resources', {})
         # Create the notebook.
         # new_output, new_code_cell, new_markdown_cell
         nb = new_notebook()
@@ -316,24 +324,6 @@ class NotebookWriter(object):
 
     def new_markdown_cell(self, node, index=None):
         return new_markdown_cell(self._md.write(node))
-
-    def _get_b64_resource(self, fn):
-        """Return the base64 of a resource from its filename.
-
-        The mapping `resources={fn: data}` needs to be passed to the `write()`
-        method.
-
-        """
-        data = self.resources.get(fn, None)
-        if self.resources and not data:  # pragma: no cover
-            logger.warn("Resource `%s` couldn't be found.", fn)
-            return ''
-        out = base64.b64encode(data).decode('utf8')
-        # NOTE: split the output in multiple lines of 76 characters,
-        # to make easier the comparison with actual Jupyter Notebook files.
-        N = 76
-        out = '\n'.join([out[i:i + N] for i in range(0, len(out), N)]) + '\n'
-        return out
 
     def new_code_cell(self, node, index=None):
         # Get the code cell input: the first child of the CodeCell block.
@@ -379,7 +369,8 @@ class NotebookWriter(object):
                 # extension.
                 mime_type = guess_type(fn)[0]
                 assert mime_type  # unknown extension: this shouldn't happen!
-                data[mime_type] = self._get_b64_resource(fn)
+                # Get the resource data.
+                data[mime_type] = _get_b64_resource(self.resources.get(fn, None))
                 # assert data[mime_type]  # TODO
                 data['text/plain'] = caption
                 kwargs = dict(data=data)
@@ -414,7 +405,8 @@ class NotebookPlugin(IPlugin):
 
     def load(self, file_or_path):
         with _get_file(file_or_path, 'r') as f:
-            return nbformat.read(f, _NBFORMAT_VERSION)
+            nb = nbformat.read(f, _NBFORMAT_VERSION)
+        return nb
 
     def dump(self, nb, file_or_path):
         with _get_file(file_or_path, 'w') as f:
@@ -431,7 +423,9 @@ class NotebookPlugin(IPlugin):
                             to_remove=('metadata', 'kernel_spec'))
 
     def read(self, nb):
-        return NotebookReader().read(nb)
+        nr = NotebookReader()
+        ast = nr.read(nb)
+        return ast
 
     def write(self, ast):
         return NotebookWriter().write(ast)
