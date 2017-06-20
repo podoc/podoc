@@ -77,6 +77,7 @@ def _shorten_string(s, lim=40):
 #------------------------------------------------------------------------------
 
 def _get_resources_path(doc_path):
+    assert doc_path
     doc_path = op.realpath(doc_path)
     fn = op.basename(doc_path)
     fn = op.splitext(fn)[0]
@@ -84,6 +85,8 @@ def _get_resources_path(doc_path):
 
 
 def _save_resources(resources, res_path=None):
+    if not resources:
+        return
     if not res_path:
         logger.debug("No resource path given.")
         return
