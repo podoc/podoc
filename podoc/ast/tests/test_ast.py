@@ -73,8 +73,9 @@ def ast():
 #------------------------------------------------------------------------------
 
 def test_repr_ast():
-    assert str(ASTNode('Para')) == ('{"blocks":[],"meta":{},"pandoc-api-version":%s}' %
-                                    str(PANDOC_API_VERSION).replace(' ', ''))
+    d = json.dumps(ASTNode('Para').to_pandoc(), separators=(',', ':'), sort_keys=True)
+    assert d == ('{"blocks":[],"meta":{},"pandoc-api-version":%s}' %
+                 str(PANDOC_API_VERSION).replace(' ', ''))
 
 
 def test_merge_str():

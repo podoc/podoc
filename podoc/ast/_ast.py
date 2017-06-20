@@ -19,10 +19,8 @@ from podoc.tree import Node, TreeTransformer
 from podoc.plugin import IPlugin
 from podoc.utils import (has_pandoc, pandoc, get_pandoc_formats,
                          PANDOC_API_VERSION,
+                         _load_resources, _save_resources, _get_resources_path,
                          _merge_str, _get_file, assert_equal,
-                         _get_resources_path,
-                         _load_resources,
-                         _save_resources,
                          )
 
 logger = logging.getLogger(__name__)
@@ -93,11 +91,6 @@ NATIVE_NAMES = BLOCK_NAMES + INLINE_NAMES + (
 
 
 class ASTNode(Node):
-    def __init__(self, *args, **kwargs):
-        super(ASTNode, self).__init__(*args, **kwargs)
-        if self.name == 'root':
-            self['resources'] = {}
-
     def is_block(self):
         return self.name in BLOCK_NAMES
 
@@ -137,8 +130,7 @@ class ASTNode(Node):
 
     def __repr__(self):
         """Display the pandoc JSON representation of the tree."""
-        d = self.to_pandoc()
-        return json.dumps(d, separators=(',', ':'), sort_keys=True)
+        return self.display()
 
 
 #------------------------------------------------------------------------------
@@ -249,7 +241,25 @@ class PodocToPandoc(TreeTransformer):
     def transform_main(self, ast):
         ast = PodocToPandocPreProcessor().transform(ast)
         blocks = self.transform(ast)['c']
-        return {'meta': {}, 'blocks': blocks,
+        # Save podoc metadata in the pandoc JSON.
+        m = ast.get('metadata', {})
+        # NOTE: do not save resources in the JSON.
+        m = {k: v for k, v in m.items() if v and k != 'resources'}
+        if m:
+            meta = {
+                'podoc': {
+                    't': 'MetaMap',
+                    'c': {
+                        key: {
+                            't': 'MetaInlines',
+                            'c': [{'t': 'Str', 'c': value or []}],
+                        } for key, value in m.items()
+                    }
+                }
+            }
+        else:
+            meta = {}
+        return {'meta': meta, 'blocks': blocks,
                 'pandoc-api-version': PANDOC_API_VERSION}
 
 
@@ -282,18 +292,6 @@ class PandocToPodoc(TreeTransformer):
 
     def set_next_child(self, child, next_child):
         pass
-
-    def transform_main(self, obj):
-        assert isinstance(obj, dict)
-        # Check that this is really the root.
-        assert 'blocks' in obj
-        # Special case: the root.
-        # Process the root: obj is a list, and the second item
-        # is a list of blocks to process.
-        children = [self.transform(block) for block in obj['blocks']]
-        out = ASTNode('root', children=children)
-        out = PandocToPodocPostProcessor().transform(out)
-        return out
 
     def transform(self, d):
         if isinstance(d, string_types):
@@ -374,6 +372,22 @@ class PandocToPodoc(TreeTransformer):
         children = c[-2]
         return children
 
+    def transform_main(self, obj):
+        assert isinstance(obj, dict)
+        # Check that this is really the root.
+        assert 'blocks' in obj
+        # Special case: the root.
+        # Process the root: obj is a list, and the second item
+        # is a list of blocks to process.
+        children = [self.transform(block) for block in obj['blocks']]
+        out = ASTNode('root', children=children)
+        out = PandocToPodocPostProcessor().transform(out)
+        # Load metadata.
+        m = obj.get('meta', {}).get('podoc', {})
+        if m:
+            out['metadata'] = m
+        return out
+
 
 #------------------------------------------------------------------------------
 # pandoc plugin
@@ -443,14 +457,12 @@ class ASTPlugin(IPlugin):
         """Load a JSON file and return an AST instance."""
         # logger.debug("Load JSON file `%s`.", path)
         with _get_file(file_or_path, 'r') as f:
+            # Get the path to the JSON file.
             path = op.realpath(f.name)
             d = json.load(f)
         assert isinstance(d, dict)
         ast = ast_from_pandoc(d)
         assert isinstance(ast, ASTNode)
-        # Load the resources from the resource directory.
-        res_path = _get_resources_path(path)
-        ast.resources = _load_resources(res_path)
         return ast
 
     def dump(self, ast, file_or_path):
@@ -465,9 +477,8 @@ class ASTPlugin(IPlugin):
                       separators=(',', ': '))  # avoid trailing whitespaces
             # Add a new line at the end.
             f.write('\n')
-        # Save the resources in the AST to files.
-        res_path = _get_resources_path(path)
-        _save_resources(ast.resources, res_path=res_path)
+        # Save the resources.
+        _save_resources(ast.get('resources', {}), _get_resources_path(path))
 
     def loads(self, s):
         """Load a JSON string and return an AST instance."""
@@ -486,4 +497,4 @@ class ASTPlugin(IPlugin):
                           separators=(',', ': ')) + '\n'
 
     def assert_equal(self, ast0, ast1):
-        return assert_equal(ast0, ast1, to_remove=('_visit_meta', 'resources'))
+        return assert_equal(ast0, ast1, to_remove=('_visit_meta'))
