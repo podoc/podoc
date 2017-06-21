@@ -161,7 +161,7 @@ class Podoc(object):
                                   **kwargs)
 
     def convert(self, obj_or_path, source=None, target=None,
-                lang_list=None, output=None):
+                lang_chain=None, output=None):
         """Convert an object by passing it through a chain of conversion
         functions."""
         obj = obj_or_path
@@ -183,24 +183,24 @@ class Podoc(object):
             path = obj_or_path
             assert target
             # Get the source from the file extension
-            if source is None and lang_list is None:
+            if source is None and lang_chain is None:
                 source = self.get_lang_for_file_ext(op.splitext(path)[1])
             assert source
             # Load the object.
             obj = self.load(path, source)
         # At this point, we should have a non-empty object.
-        if lang_list is None:
+        if lang_chain is None:
             # Find the shortest path from source to target in the conversion
             # graph.
             assert source and target
-            lang_list = _find_path(self.conversion_pairs,
-                                   source, target)
-            if not lang_list:
+            lang_chain = _find_path(self.conversion_pairs,
+                                    source, target)
+            if not lang_chain:
                 raise ValueError("No path found from `{}` to `{}`.".format(
                                  source, target))
-        assert isinstance(lang_list, (tuple, list))
+        assert isinstance(lang_chain, (tuple, list))
         # Iterate over all successive pairs.
-        for t0, t1 in zip(lang_list, lang_list[1:]):
+        for t0, t1 in zip(lang_chain, lang_chain[1:]):
             # Get the function registered for t0, t1.
             fd = self._funcs.get((t0, t1), None)
             if not fd:

@@ -115,9 +115,9 @@ def test_pandoc_conv():
     podoc = Podoc()
     html = '<p><a href="b">a</a></p>'
     assert podoc.convert(html,
-                         lang_list=['html', 'ast', 'markdown']) == '[a](b)'
+                         lang_chain=['html', 'ast', 'markdown']) == '[a](b)'
     assert podoc.convert('[a](b)',
-                         lang_list=['markdown', 'ast', 'rst']) == '`a <b>`__\n'
+                         lang_chain=['markdown', 'ast', 'rst']) == '`a <b>`__\n'
 
 
 # We use strict Markdown, but we allow fancy lists.

@@ -65,7 +65,7 @@ def test_podoc_1():
 def test_podoc_fail():
     p = Podoc(with_pandoc=False)
     with raises(ValueError):
-        p.convert('hello', lang_list=['a', 'b'])
+        p.convert('hello', lang_chain=['a', 'b'])
 
 
 def test_podoc_convert_1(tempdir):
@@ -84,7 +84,7 @@ def test_podoc_convert_1(tempdir):
 
     # Conversion with explicit path.
     assert p.conversion_pairs == [('lower', 'upper'), ('upper', 'lower')]
-    assert p.convert('Hello', lang_list=['lower', 'upper', 'lower']) == 'hello'
+    assert p.convert('Hello', lang_chain=['lower', 'upper', 'lower']) == 'hello'
 
     # Conversion with shortest path between source and target.
     assert p.convert('hello', source='lower', target='upper') == 'HELLO'
