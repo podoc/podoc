@@ -51,7 +51,7 @@ from nbformat.v4 import (new_notebook,
 from podoc.markdown import MarkdownPlugin
 from podoc.ast import ASTNode  # , TreeTransformer
 from podoc.plugin import IPlugin
-from podoc.utils import _get_file, assert_equal, _get_resources_path, _save_resources
+from podoc.utils import _get_file, assert_equal
 
 logger = logging.getLogger(__name__)
 
@@ -214,7 +214,7 @@ class NotebookReader(object):
                                          )
                     self.resources[fn] = data
                     # Wrap the Image node in a Para.
-                    img_child = ASTNode('Image', url=fn, children=[text])
+                    img_child = ASTNode('Image', url='{resource:%s}' % fn, children=[text])
                     child = ASTNode('Para', children=[img_child])
             node.add_child(child)
         self.tree.children.append(node)
@@ -370,6 +370,7 @@ class NotebookWriter(object):
                 mime_type = guess_type(fn)[0]
                 assert mime_type  # unknown extension: this shouldn't happen!
                 # Get the resource data.
+                fn = op.basename(fn)
                 data[mime_type] = _get_b64_resource(self.resources.get(fn, None))
                 # assert data[mime_type]  # TODO
                 data['text/plain'] = caption

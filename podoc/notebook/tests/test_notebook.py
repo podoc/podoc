@@ -8,6 +8,7 @@
 #------------------------------------------------------------------------------
 
 import os.path as op
+import re
 
 from podoc.markdown import MarkdownPlugin
 from podoc.utils import get_test_file_path, load_text, assert_equal
@@ -60,7 +61,7 @@ def test_wrap_code_cells_1():
 
 def test_wrap_code_cells_2():
     # Test wrap_code_cells() with two code cells.
-    ast = ASTNode('root')
+    ast = ASTNode('root', metadata={})
 
     cb0 = ASTNode('CodeBlock', lang='python', children=['a'])
     cb1 = ASTNode('CodeBlock', lang='python', children=['b'])
@@ -72,7 +73,7 @@ def test_wrap_code_cells_2():
     ast_wrapped = wrap_code_cells(ast)
     ast_wrapped.show()
 
-    ast_expected = ASTNode('root')
+    ast_expected = ASTNode('root', metadata={})
 
     # First code cell.
     code_cell0 = ASTNode('CodeCell')
@@ -101,7 +102,7 @@ def test_notebook_reader_hello():
     ast.show()
     # Check that the AST is equal to the one of a simple Mardown line.
     ast_1 = MarkdownPlugin().read('hello *world*')
-    ast_1['metadata'] = {}
+    ast_1['metadata'] = {'resources': {}}
     assert ast == ast_1
 
 
@@ -116,8 +117,11 @@ def test_notebook_reader_notebook():
 
     # Compare with the markdown version.
     path = get_test_file_path('markdown', 'notebook.md')
-    markdown = load_text(path)
-    assert_equal(MarkdownPlugin().write(ast), markdown)
+    markdown_expected = load_text(path)
+    markdown_converted = MarkdownPlugin().write(ast)
+    markdown_converted = re.sub(r'\{resource:([^\}]+)\}', r'notebook_files/\1',
+                                markdown_converted)
+    assert_equal(markdown_converted, markdown_expected)
 
     assert 'output_4_1.png' in reader.resources
 
@@ -155,7 +159,7 @@ def test_notebook_writer_notebook():
     fn = get_test_file_path('markdown', 'notebook_files/output_4_1.png')
     with open(fn, 'rb') as f:
         img = f.read()
-    ast.resources = {op.basename(fn): img}
+    ast['metadata'] = {'resources': {op.basename(fn): img}}
     # Convert the AST to a notebook.
     nb = NotebookWriter().write(ast)
 
@@ -163,5 +167,5 @@ def test_notebook_writer_notebook():
     nb_expected = open_notebook(get_test_file_path('notebook',
                                                    'notebook.ipynb'))
     # Ignore some fields when comparing the notebooks.
-    assert nb == nb_expected
+    # assert nb == nb_expected
     NotebookPlugin().assert_equal(nb, nb_expected)
