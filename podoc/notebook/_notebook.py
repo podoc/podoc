@@ -39,6 +39,7 @@ import base64
 import logging
 from mimetypes import guess_extension, guess_type
 import os.path as op
+import re
 import sys
 
 import nbformat
@@ -51,7 +52,8 @@ from nbformat.v4 import (new_notebook,
 from podoc.markdown import MarkdownPlugin
 from podoc.ast import ASTNode  # , TreeTransformer
 from podoc.plugin import IPlugin
-from podoc.utils import _get_file, assert_equal
+from podoc.tree import TreeTransformer
+from podoc.utils import _get_file, assert_equal, _get_resources_path
 
 logger = logging.getLogger(__name__)
 
@@ -282,6 +284,29 @@ def wrap_code_cells(ast, context=None):
     return CodeCellWrapper().wrap(ast)
 
 
+def replace_resource_paths(ast, context=None):
+    """Replace {resource:...} image paths to actual relative paths."""
+
+    # Get the relative path of the directory with the resources.
+    output = (context or {}).get('output', None)
+    if not output:
+        return ast
+    path = op.basename(_get_resources_path(output))
+
+    class ResourceTransformer(TreeTransformer):
+        def transform_Image(self, node):
+            url = node.url
+            if url.startswith('{resource:'):
+                node.url = re.sub(r'\{resource:([^\}]+)\}', r'%s/\1' % path, url)
+                logger.debug("Replace %s by %s.", url, node.url)
+
+        def transform_Node(self, node):
+            node.children = self.transform_children(node)
+            return node
+
+    return ResourceTransformer().transform(ast)
+
+
 def _append_newlines(s):
     return '\n'.join(s.rstrip().split('\n')) + '\n'
 
@@ -398,6 +423,7 @@ class NotebookPlugin(IPlugin):
                             )
         podoc.register_func(source='notebook', target='ast',
                             func=self.read,
+                            post_filter=replace_resource_paths,
                             )
         podoc.register_func(source='ast', target='notebook',
                             func=self.write,
