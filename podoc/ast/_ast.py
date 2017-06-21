@@ -19,7 +19,7 @@ from podoc.tree import Node, TreeTransformer
 from podoc.plugin import IPlugin
 from podoc.utils import (has_pandoc, pandoc, get_pandoc_formats,
                          PANDOC_API_VERSION,
-                         _load_resources, _save_resources, _get_resources_path,
+                         _save_resources, _get_resources_path,
                          _merge_str, _get_file, assert_equal,
                          )
 
@@ -123,7 +123,7 @@ class ASTNode(Node):
         elif self.name == 'OrderedList':
             return '{} ({})'.format(self.name, self.start)
         elif self.name == 'CodeBlock':
-            return '{} ({})'.format(self.name, self.lang)
+            return '{} {}'.format(self.name, self.lang)
         elif self.name == 'BulletList':
             return '{} ({})'.format(self.name, self.bullet_char)
         return self.name
@@ -458,7 +458,7 @@ class ASTPlugin(IPlugin):
         # logger.debug("Load JSON file `%s`.", path)
         with _get_file(file_or_path, 'r') as f:
             # Get the path to the JSON file.
-            path = op.realpath(f.name)
+            # path = op.realpath(f.name)
             d = json.load(f)
         assert isinstance(d, dict)
         ast = ast_from_pandoc(d)
