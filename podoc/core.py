@@ -220,14 +220,16 @@ class Podoc(object):
     def _convert(self, obj_or_path, source=None, target=None, lang_chain=None, output=None,
                  is_path=None):
         """Convert a file by passing it through a chain of conversion functions."""
-        source, target, output, lang_chain = self._validate(path=obj_or_path if is_path else None,
+        path = obj_or_path if is_path else None
+        source, target, output, lang_chain = self._validate(path=path,
                                                             source=source,
                                                             target=target,
                                                             output=output,
                                                             lang_chain=lang_chain,
                                                             )
         # Create the context object.
-        context = Bunch(source=source, target=target, lang_chain=lang_chain, output=output)
+        context = Bunch(path=path, source=source, target=target,
+                        lang_chain=lang_chain, output=output)
         # Load the object from disk if necessary.
         obj = self.load(obj_or_path, source, context=context) if is_path else obj_or_path
         # Make the conversion in memory.

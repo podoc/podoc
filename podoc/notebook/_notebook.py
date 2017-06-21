@@ -229,7 +229,8 @@ class NotebookReader(object):
 class CodeCellWrapper(object):
     def wrap(self, ast):
         self.ast = ast.copy()
-        self.ast['metadata'] = ast.get('metadata', {}).copy()
+        if 'metadata' in ast:
+            assert 'metadata' in self.ast
         self.ast.children = []
         self._code_cell = None
         for i, node in enumerate(ast.children):
@@ -288,10 +289,14 @@ def replace_resource_paths(ast, context=None):
     """Replace {resource:...} image paths to actual relative paths."""
 
     # Get the relative path of the directory with the resources.
-    output = (context or {}).get('output', None)
-    if not output:
+    path = (context or {}).get('output', None)
+    if not path:
+        path = (context or {}).get('path', None)
+    if path:
+        path = op.basename(_get_resources_path(path))
+    else:
+        logger.debug("No output or path given, not replacing resource paths.")
         return ast
-    path = op.basename(_get_resources_path(output))
 
     class ResourceTransformer(TreeTransformer):
         def transform_Image(self, node):
@@ -299,6 +304,7 @@ def replace_resource_paths(ast, context=None):
             if url.startswith('{resource:'):
                 node.url = re.sub(r'\{resource:([^\}]+)\}', r'%s/\1' % path, url)
                 logger.debug("Replace %s by %s.", url, node.url)
+            return node
 
         def transform_Node(self, node):
             node.children = self.transform_children(node)
@@ -329,7 +335,13 @@ class NotebookWriter(object):
         self._md = MarkdownPlugin()
         # Add code cells in the AST.
         ast = wrap_code_cells(ast)
-        self.resources = context.get('resources', {}) if context else {}
+        # Find the directory containing the notebook file.
+        doc_path = (context or {}).get('path', None)
+        if doc_path:
+            self._dir_path = op.dirname(op.realpath(doc_path))
+        else:
+            logger.warn("No input path, unable to resolve the image relative paths.")
+            self._dir_path = None
         # Create the notebook.
         # new_output, new_code_cell, new_markdown_cell
         nb = new_notebook()
@@ -395,9 +407,13 @@ class NotebookWriter(object):
                 mime_type = guess_type(fn)[0]
                 assert mime_type  # unknown extension: this shouldn't happen!
                 # Get the resource data.
-                fn = op.basename(fn)
-                data[mime_type] = _get_b64_resource(self.resources.get(fn, None))
-                # assert data[mime_type]  # TODO
+                if self._dir_path:
+                    image_path = op.join(self._dir_path, fn)
+                    if op.exists(image_path):
+                        with open(image_path, 'rb') as f:
+                            data[mime_type] = _get_b64_resource(f.read())
+                    else:
+                        logger.debug("File `%s` doesn't exist.", image_path)
                 data['text/plain'] = caption
                 kwargs = dict(data=data)
             assert not output_type.startswith('{output')

@@ -53,7 +53,7 @@ def test_wrap_code_cells_1():
     ast_wrapped = wrap_code_cells(ast)
     ast_wrapped.show()
 
-    ast_expected = ASTNode('root', metadata={})
+    ast_expected = ASTNode('root')
     ast_expected.add_child(ASTNode('CodeCell', children=[ast.children[0]]))
 
     assert_equal(ast_wrapped, ast_expected)
@@ -61,7 +61,7 @@ def test_wrap_code_cells_1():
 
 def test_wrap_code_cells_2():
     # Test wrap_code_cells() with two code cells.
-    ast = ASTNode('root', metadata={})
+    ast = ASTNode('root')
 
     cb0 = ASTNode('CodeBlock', lang='python', children=['a'])
     cb1 = ASTNode('CodeBlock', lang='python', children=['b'])
@@ -73,7 +73,7 @@ def test_wrap_code_cells_2():
     ast_wrapped = wrap_code_cells(ast)
     ast_wrapped.show()
 
-    ast_expected = ASTNode('root', metadata={})
+    ast_expected = ASTNode('root')
 
     # First code cell.
     code_cell0 = ASTNode('CodeCell')
@@ -159,10 +159,12 @@ def test_notebook_writer_notebook():
     with open(fn, 'rb') as f:
         img = f.read()
     # Convert the AST to a notebook.
-    nb = NotebookWriter().write(ast, context={'resources': {op.basename(fn): img}})
+    nb = NotebookWriter().write(ast, context={'resources': {op.basename(fn): img},
+                                              'path': path})
 
     # Compare the notebooks.
     nb_expected = open_notebook(get_test_file_path('notebook',
                                                    'notebook.ipynb'))
     # Ignore some fields when comparing the notebooks.
+    # assert nb == nb_expected
     NotebookPlugin().assert_equal(nb, nb_expected)
