@@ -9,10 +9,9 @@
 
 from collections import defaultdict
 import glob
+import inspect
 import logging
 import os.path as op
-
-from six import string_types
 
 from .utils import Bunch, load_text, dump_text, assert_equal
 from .plugin import get_plugins
@@ -119,6 +118,7 @@ class Podoc(object):
             return lambda _: self.register_func(_, source=source,
                                                 target=target)
         assert func
+        assert 'context' in inspect.getargspec(func).args
         source = source or _get_annotation(func, 'source')
         target = target or _get_annotation(func, 'target')
         assert source
@@ -160,38 +160,36 @@ class Podoc(object):
                                   assert_equal_func=assert_equal_func,
                                   **kwargs)
 
-    def convert(self, obj_or_path, source=None, target=None,
-                lang_chain=None, output=None):
-        """Convert an object by passing it through a chain of conversion
-        functions."""
-        obj = obj_or_path
-        # NOTE: 'json' is an alias for 'ast', to match with pandoc's
-        # terminology.
+    def _validate(self, path=None, source=None, target=None, output=None, lang_chain=None):
+
+        # Infer source and target from lang_chain.
+        if lang_chain is not None:
+            assert len(lang_chain) >= 2
+            source = lang_chain[0]
+            target = lang_chain[-1]
+
+        # NOTE: 'json' is an alias for 'ast', to match with pandoc's terminology.
         source = source if source != 'json' else 'ast'
         target = target if target != 'json' else 'ast'
+
         # If the output is specified and not the target, infer the target
         # from the file extension.
         if target is None and output is not None:
             target = self.get_lang_for_file_ext(op.splitext(output)[1])
+        assert target
+
         # NOTE: decide whether the object is a path or contents string.
-        if (isinstance(obj_or_path, string_types) and
-                len(obj_or_path) <= 1024 and  # this is to avoid passing huge
-                                              # strings to op.exists(), which
-                                              # crashes sometimes.
-                op.exists(obj_or_path)):
-            # Convert a file to a target format.
-            path = obj_or_path
-            assert target
+        if path is not None:
+            if not op.exists(path):
+                raise ValueError("File %s does not exist.", path)
             # Get the source from the file extension
             if source is None and lang_chain is None:
                 source = self.get_lang_for_file_ext(op.splitext(path)[1])
-            assert source
-            # Load the object.
-            obj = self.load(path, source)
+        assert source
+
         # At this point, we should have a non-empty object.
         if lang_chain is None:
-            # Find the shortest path from source to target in the conversion
-            # graph.
+            # Find the shortest path from source to target in the conversion graph.
             assert source and target
             lang_chain = _find_path(self.conversion_pairs,
                                     source, target)
@@ -199,6 +197,10 @@ class Podoc(object):
                 raise ValueError("No path found from `{}` to `{}`.".format(
                                  source, target))
         assert isinstance(lang_chain, (tuple, list))
+
+        return source, target, output, lang_chain
+
+    def _make_conversion(self, obj, lang_chain, context=None):
         # Iterate over all successive pairs.
         for t0, t1 in zip(lang_chain, lang_chain[1:]):
             # Get the function registered for t0, t1.
@@ -206,17 +208,42 @@ class Podoc(object):
             if not fd:
                 raise ValueError("No function registered for `{}` => `{}`.".
                                  format(t0, t1))
-            kwargs = {}
             f = fd.func
             # Pre-filter.
-            obj = fd.pre_filter(obj) if fd.pre_filter else obj
+            obj = fd.pre_filter(obj, context=context) if fd.pre_filter else obj
             # Perform the conversion.
-            obj = f(obj, **kwargs)
+            obj = f(obj, context=context)
             # Post-filter.
-            obj = fd.post_filter(obj) if fd.post_filter else obj
+            obj = fd.post_filter(obj, context=context) if fd.post_filter else obj
+        return obj
+
+    def _convert(self, obj_or_path, source=None, target=None, lang_chain=None, output=None,
+                 is_path=None):
+        """Convert a file by passing it through a chain of conversion functions."""
+        source, target, output, lang_chain = self._validate(path=obj_or_path if is_path else None,
+                                                            source=source,
+                                                            target=target,
+                                                            output=output,
+                                                            lang_chain=lang_chain,
+                                                            )
+        # Create the context object.
+        context = Bunch(source=source, target=target, lang_chain=lang_chain, output=output)
+        # Load the object from disk if necessary.
+        obj = self.load(obj_or_path, source) if is_path else obj_or_path
+        # Make the conversion in memory.
+        obj = self._make_conversion(obj, lang_chain, context=context)
+        # Save the file.
         if output:
             self.dump(obj, output, lang=target)
         return obj
+
+    def convert_file(self, path, source=None, target=None, lang_chain=None, output=None):
+        return self._convert(path, source=source, target=target, lang_chain=lang_chain,
+                             output=output, is_path=True)
+
+    def convert_text(self, text, source=None, target=None, lang_chain=None, output=None):
+        return self._convert(text, source=source, target=target, lang_chain=lang_chain,
+                             output=output, is_path=False)
 
     def pre_filter(self, obj, source, target):
         fd = self._funcs.get((source, target), None)

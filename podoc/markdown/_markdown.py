@@ -175,13 +175,13 @@ class MarkdownPlugin(IPlugin):
         _save_resources(self._resources, _get_resources_path(path))
         self._resources = None
 
-    def read(self, contents):
+    def read(self, contents, context=None):
         assert isinstance(contents, string_types)
         js = pypandoc.convert_text(contents, 'json', format=PANDOC_MARKDOWN_FORMAT)
         ast = ASTPlugin().loads(js)
         return ast
 
-    def write(self, ast):
+    def write(self, ast, context=None):
         assert isinstance(ast, (ASTNode, string_types))
         text = ASTToMarkdown().transform(ast)
         if isinstance(ast, ASTNode):

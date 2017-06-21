@@ -277,7 +277,7 @@ class CodeCellWrapper(object):
         self.ast.add_child(node)
 
 
-def wrap_code_cells(ast):
+def wrap_code_cells(ast, context=None):
     """Take an AST and wrap top-level CodeBlocks within CodeCells."""
     return CodeCellWrapper().wrap(ast)
 
@@ -423,10 +423,10 @@ class NotebookPlugin(IPlugin):
         return assert_equal(nb0, nb1,
                             to_remove=('metadata', 'kernel_spec'))
 
-    def read(self, nb):
+    def read(self, nb, context=None):
         nr = NotebookReader()
         ast = nr.read(nb)
         return ast
 
-    def write(self, ast):
+    def write(self, ast, context=None):
         return NotebookWriter().write(ast)

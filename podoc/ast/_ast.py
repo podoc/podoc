@@ -403,7 +403,7 @@ class PandocPlugin(IPlugin):
 
         # From pandoc source formats to AST.
         def _make_source_func(lang):
-            def conv(doc):
+            def conv(doc, context=None):
                 """Convert a document from `lang` to the podoc AST, via
                 pandoc."""
                 d = pandoc(doc, 'json', format=lang)
@@ -422,7 +422,7 @@ class PandocPlugin(IPlugin):
 
         # From AST to pandoc target formats.
         def _make_target_func(lang):
-            def conv(ast):
+            def conv(ast, context=None):
                 """Convert a document from the podoc AST to `lang`, via
                 pandoc."""
                 d = json.dumps(ast.to_pandoc())

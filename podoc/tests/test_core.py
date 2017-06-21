@@ -65,7 +65,7 @@ def test_podoc_1():
 def test_podoc_fail():
     p = Podoc(with_pandoc=False)
     with raises(ValueError):
-        p.convert('hello', lang_chain=['a', 'b'])
+        p.convert_text('hello', lang_chain=['a', 'b'])
 
 
 def test_podoc_convert_1(tempdir):
@@ -75,29 +75,29 @@ def test_podoc_convert_1(tempdir):
     p.register_lang('upper', file_ext='.up')
 
     @p.register_func(source='lower', target='upper')
-    def toupper(text):
+    def toupper(text, context=None):
         return text.upper()
 
     @p.register_func(source='upper', target='lower')
-    def tolower(text):
+    def tolower(text, context=None):
         return text.lower()
 
     # Conversion with explicit path.
     assert p.conversion_pairs == [('lower', 'upper'), ('upper', 'lower')]
-    assert p.convert('Hello', lang_chain=['lower', 'upper', 'lower']) == 'hello'
+    assert p.convert_text('Hello', lang_chain=['lower', 'upper', 'lower']) == 'hello'
 
     # Conversion with shortest path between source and target.
-    assert p.convert('hello', source='lower', target='upper') == 'HELLO'
+    assert p.convert_text('hello', source='lower', target='upper') == 'HELLO'
 
     with raises(ValueError):
-        p.convert('hello', source='lower', target='unknown')
+        p.convert_text('hello', source='lower', target='unknown')
 
     # Convert a file.
     path = op.join(tempdir, 'test.up')
     path2 = op.join(tempdir, 'test.low')
     with open(path, 'w') as f:
         f.write('HELLO')
-    assert p.convert(path, output=path2) == 'hello'
+    assert p.convert_file(path, output=path2) == 'hello'
     with open(path2, 'r') as f:
         assert f.read() == 'hello'
 
@@ -172,7 +172,7 @@ def test_all_convert(tempdir, podoc, source_target, test_file):
     target_path = get_test_file_path(target, target_filename)
 
     # Convert with podoc.
-    converted = podoc.convert(source_path, target=target)
+    converted = podoc.convert_file(source_path, target=target)
     # print('****** CONVERTED ******')
     # converted.show()
 
