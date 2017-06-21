@@ -150,8 +150,6 @@ class ASTToMarkdown(TreeTransformer):
 #------------------------------------------------------------------------------
 
 class MarkdownPlugin(IPlugin):
-    _resources = None
-
     def attach(self, podoc):
         podoc.register_lang('markdown', file_ext='.md',
                             load_func=self.load, dump_func=self.dump,)
@@ -166,14 +164,14 @@ class MarkdownPlugin(IPlugin):
             text = f.read()
         return text
 
-    def dump(self, text, file_or_path):
+    def dump(self, text, file_or_path, context=None):
         """Dump string to a Markdown file."""
         with _get_file(file_or_path, 'w') as f:
             path = op.realpath(f.name)
             f.write(text)
         # Save the resources.
-        _save_resources(self._resources, _get_resources_path(path))
-        self._resources = None
+        if context and context.get('resources', {}):
+            _save_resources(context.get('resources', {}), _get_resources_path(path))
 
     def read(self, contents, context=None):
         assert isinstance(contents, string_types)
@@ -184,6 +182,4 @@ class MarkdownPlugin(IPlugin):
     def write(self, ast, context=None):
         assert isinstance(ast, (ASTNode, string_types))
         text = ASTToMarkdown().transform(ast)
-        if isinstance(ast, ASTNode):
-            self._resources = ast.get('resources', {})
         return text

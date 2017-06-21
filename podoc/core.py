@@ -229,12 +229,12 @@ class Podoc(object):
         # Create the context object.
         context = Bunch(source=source, target=target, lang_chain=lang_chain, output=output)
         # Load the object from disk if necessary.
-        obj = self.load(obj_or_path, source) if is_path else obj_or_path
+        obj = self.load(obj_or_path, source, context=context) if is_path else obj_or_path
         # Make the conversion in memory.
         obj = self._make_conversion(obj, lang_chain, context=context)
         # Save the file.
         if output:
-            self.dump(obj, output, lang=target)
+            self.dump(obj, output, lang=target, context=context)
         return obj
 
     def convert_file(self, path, source=None, target=None, lang_chain=None, output=None):
@@ -301,21 +301,25 @@ class Podoc(object):
         """Return the file extension registered for a given language."""
         return self._langs[lang].file_ext
 
-    def load(self, path, lang=None):
+    def load(self, path, lang=None, context=None):
         """Load a file which has a registered file extension."""
         # Find the language corresponding to the file's extension.
         file_ext = op.splitext(path)[1]
         lang = lang or self.get_lang_for_file_ext(file_ext)
+        func = self._langs[lang].load_func
+        kwargs = {'context': context} if 'context' in inspect.getargspec(func).args else {}
         # Load the file using the function registered for the language.
-        return self._langs[lang].load_func(path)
+        return func(path, **kwargs)
 
-    def dump(self, contents, path, lang=None):
+    def dump(self, contents, path, lang=None, context=None):
         """Dump an object to a file."""
         # Find the language corresponding to the file's extension.
         file_ext = op.splitext(path)[1]
         lang = lang or self.get_lang_for_file_ext(file_ext)
+        func = self._langs[lang].dump_func
+        kwargs = {'context': context} if 'context' in inspect.getargspec(func).args else {}
         # Dump the file using the function registered for the language.
-        return self._langs[lang].dump_func(contents, path)
+        return func(contents, path, **kwargs)
 
     def loads(self, s, lang=None):
         """Load an object from its string representation."""

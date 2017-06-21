@@ -102,7 +102,6 @@ def test_notebook_reader_hello():
     ast.show()
     # Check that the AST is equal to the one of a simple Mardown line.
     ast_1 = MarkdownPlugin().read('hello *world*')
-    ast_1['metadata'] = {'resources': {}}
     assert ast == ast_1
 
 
@@ -159,13 +158,11 @@ def test_notebook_writer_notebook():
     fn = get_test_file_path('markdown', 'notebook_files/output_4_1.png')
     with open(fn, 'rb') as f:
         img = f.read()
-    ast['metadata'] = {'resources': {op.basename(fn): img}}
     # Convert the AST to a notebook.
-    nb = NotebookWriter().write(ast)
+    nb = NotebookWriter().write(ast, context={'resources': {op.basename(fn): img}})
 
     # Compare the notebooks.
     nb_expected = open_notebook(get_test_file_path('notebook',
                                                    'notebook.ipynb'))
     # Ignore some fields when comparing the notebooks.
-    # assert nb == nb_expected
     NotebookPlugin().assert_equal(nb, nb_expected)

@@ -243,8 +243,7 @@ class PodocToPandoc(TreeTransformer):
         blocks = self.transform(ast)['c']
         # Save podoc metadata in the pandoc JSON.
         m = ast.get('metadata', {})
-        # NOTE: do not save resources in the JSON.
-        m = {k: v for k, v in m.items() if v and k != 'resources'}
+        m = {k: v for k, v in m.items() if v}
         if m:
             meta = {
                 'podoc': {
@@ -465,7 +464,7 @@ class ASTPlugin(IPlugin):
         assert isinstance(ast, ASTNode)
         return ast
 
-    def dump(self, ast, file_or_path):
+    def dump(self, ast, file_or_path, context=None):
         """Dump an AST instance to a JSON file."""
         assert isinstance(ast, ASTNode)
         d = ast.to_pandoc()
@@ -478,7 +477,8 @@ class ASTPlugin(IPlugin):
             # Add a new line at the end.
             f.write('\n')
         # Save the resources.
-        _save_resources(ast.get('resources', {}), _get_resources_path(path))
+        if context and context.get('resources', {}):
+            _save_resources(context.get('resources', {}), _get_resources_path(path))
 
     def loads(self, s):
         """Load a JSON string and return an AST instance."""

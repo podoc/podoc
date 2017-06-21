@@ -131,7 +131,7 @@ class NotebookReader(object):
     def read(self, notebook):
         assert isinstance(notebook, nbformat.NotebookNode)
         self.resources = {}  # Dictionary {filename: data}.
-        self.tree = ASTNode('root', metadata={'resources': self.resources})
+        self.tree = ASTNode('root')
         # Language of the notebook.
         m = notebook.metadata
         # NOTE: if no language is available in the metadata, use Python
@@ -299,12 +299,12 @@ def _get_b64_resource(data):
 
 
 class NotebookWriter(object):
-    def write(self, ast):
+    def write(self, ast, context=None):
         self.execution_count = 1
         self._md = MarkdownPlugin()
         # Add code cells in the AST.
         ast = wrap_code_cells(ast)
-        self.resources = ast.get('metadata', {}).get('resources', {})
+        self.resources = context.get('resources', {}) if context else {}
         # Create the notebook.
         # new_output, new_code_cell, new_markdown_cell
         nb = new_notebook()
@@ -426,7 +426,9 @@ class NotebookPlugin(IPlugin):
     def read(self, nb, context=None):
         nr = NotebookReader()
         ast = nr.read(nb)
+        if context:
+            context.resources = nr.resources
         return ast
 
     def write(self, ast, context=None):
-        return NotebookWriter().write(ast)
+        return NotebookWriter().write(ast, context=context)
