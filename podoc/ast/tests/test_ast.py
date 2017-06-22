@@ -86,6 +86,14 @@ def test_equal(ast):
     assert ast == ast_2
 
 
+def test_metadata():
+    m = {'hello': 'two *words*'}
+    ast = ASTNode('root', metadata=m)
+    pandoc_ast = ast.to_pandoc()
+    ast_2 = ast_from_pandoc(pandoc_ast)
+    assert ast_2.metadata == m
+
+
 def test_split_spaces():
     assert _split_spaces('a  b') == ['a', '', 'b']
     assert _split_spaces('a b  \tc,d ') == ['a', '', 'b', '', 'c,d', '']

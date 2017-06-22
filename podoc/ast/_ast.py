@@ -153,6 +153,26 @@ def _split_spaces(text):
     return out
 
 
+def _to_pandoc_metadata(ast_metadata):
+    return {
+        'podoc': {
+            't': 'MetaMap',
+            'c': {
+                key: {
+                    't': 'MetaInlines',
+                    'c': [{'t': 'Str', 'c': value or []}],
+                } for key, value in ast_metadata.items()
+            }
+        }
+    }
+
+
+def _from_pandoc_metadata(pandoc_metadata):
+    l = pandoc_metadata.get('podoc', {}).get('c', {})
+    for k, v in l.items():
+        yield k, v['c'][0]['c']
+
+
 class PodocToPandocPreProcessor(TreeTransformer):
     def transform_Node(self, node):
         """Call the transformation methods recursively."""
@@ -240,22 +260,11 @@ class PodocToPandoc(TreeTransformer):
         # Save podoc metadata in the pandoc JSON.
         m = ast.get('metadata', {})
         m = {k: v for k, v in m.items() if v}
-        if m:
-            meta = {
-                'podoc': {
-                    't': 'MetaMap',
-                    'c': {
-                        key: {
-                            't': 'MetaInlines',
-                            'c': [{'t': 'Str', 'c': value or []}],
-                        } for key, value in m.items()
-                    }
+        meta = _to_pandoc_metadata(m) if m else {}
+        return {'meta': meta,
+                'blocks': blocks,
+                'pandoc-api-version': PANDOC_API_VERSION,
                 }
-            }
-        else:
-            meta = {}
-        return {'meta': meta, 'blocks': blocks,
-                'pandoc-api-version': PANDOC_API_VERSION}
 
 
 #------------------------------------------------------------------------------
@@ -378,9 +387,9 @@ class PandocToPodoc(TreeTransformer):
         out = ASTNode('root', children=children)
         out = PandocToPodocPostProcessor().transform(out)
         # Load metadata.
-        m = obj.get('meta', {}).get('podoc', {})
+        m = obj.get('meta', {})
         if m:
-            out['metadata'] = m
+            out['metadata'] = dict(_from_pandoc_metadata(m))
         return out
 
 
