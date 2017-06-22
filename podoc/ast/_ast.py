@@ -490,7 +490,7 @@ class ASTPlugin(IPlugin):
         d = ast.to_pandoc()
         assert isinstance(d, dict)
         return json.dumps(d, sort_keys=True, indent=2,
-                          separators=(',', ': ')) + '\n'
+                          separators=(',', ': '))
 
     def eq_filter(self, ast):
         def f(node):

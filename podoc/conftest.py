@@ -11,7 +11,7 @@ from .tempdir import TemporaryDirectory
 
 from pytest import fixture, yield_fixture
 
-from podoc import add_default_handler, Podoc
+from podoc import add_default_handler, Podoc  # noqa
 
 
 #------------------------------------------------------------------------------

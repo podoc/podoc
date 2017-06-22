@@ -15,6 +15,7 @@ import subprocess
 import sys
 
 import pytest
+pytest.register_assert_rewrite('podoc.core')
 
 from .core import Podoc  # noqa
 from .plugin import (IPlugin, discover_plugins,

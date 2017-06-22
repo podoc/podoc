@@ -462,8 +462,11 @@ class NotebookPlugin(IPlugin):
         return nbformat.writes(nb, _NBFORMAT_VERSION)
 
     def eq_filter(self, nb):
-        nb.pop('metadata', {})
-        nb.pop('kernel_spec', {})
+        if not isinstance(nb, dict):
+            return nb
+        for k in ('metadata', 'kernel_spec'):
+            if k in nb:
+                nb[k] = {}
         return nb
 
     def read(self, nb, context=None):

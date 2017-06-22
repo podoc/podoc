@@ -18,7 +18,6 @@ from .._notebook import (extract_output,
                          open_notebook,
                          NotebookReader,
                          NotebookWriter,
-                         NotebookPlugin,
                          wrap_code_cells,
                          )
 
@@ -169,4 +168,3 @@ def test_notebook_writer_notebook():
                                                    'notebook.ipynb'))
     # Ignore some fields when comparing the notebooks.
     assert nb == nb_expected
-    # NotebookPlugin().assert_equal(nb, nb_expected)
