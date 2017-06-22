@@ -15,12 +15,12 @@ import re
 
 from six import string_types
 
-from podoc.tree import Node, TreeTransformer
+from podoc.tree import Node, TreeTransformer, filter_tree
 from podoc.plugin import IPlugin
 from podoc.utils import (has_pandoc, pandoc, get_pandoc_formats,
                          PANDOC_API_VERSION,
                          _save_resources, _get_resources_path,
-                         _merge_str, _get_file, assert_equal,
+                         _merge_str, _get_file,
                          )
 
 logger = logging.getLogger(__name__)
@@ -127,10 +127,6 @@ class ASTNode(Node):
         elif self.name == 'BulletList':
             return '{} ({})'.format(self.name, self.bullet_char)
         return self.name
-
-    def __repr__(self):
-        """Display the pandoc JSON representation of the tree."""
-        return self.display()
 
 
 #------------------------------------------------------------------------------
@@ -449,7 +445,7 @@ class ASTPlugin(IPlugin):
         podoc.register_lang('ast', file_ext='.json',
                             load_func=self.load, dump_func=self.dump,
                             loads_func=self.loads, dumps_func=self.dumps,
-                            assert_equal_func=self.assert_equal,
+                            eq_filter=self.eq_filter,
                             )
 
     def load(self, file_or_path):
@@ -496,5 +492,8 @@ class ASTPlugin(IPlugin):
         return json.dumps(d, sort_keys=True, indent=2,
                           separators=(',', ': ')) + '\n'
 
-    def assert_equal(self, ast0, ast1):
-        return assert_equal(ast0, ast1, to_remove=('_visit_meta'))
+    def eq_filter(self, ast):
+        def f(node):
+            # node.pop('metadata', None)
+            return node
+        return filter_tree(ast, f)

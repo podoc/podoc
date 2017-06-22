@@ -78,6 +78,15 @@ def test_repr_ast():
                  str(PANDOC_API_VERSION).replace(' ', ''))
 
 
+def test_equal(ast):
+    ast_2 = ast.copy()
+    ast_2.add_child(ASTNode('new'))
+    assert ast != ast_2
+
+    ast.add_child(ASTNode('new'))
+    assert ast == ast_2
+
+
 def test_merge_str():
     assert _merge_str(['a', 'b', None, 'c']) == ['ab', None, 'c']
 
