@@ -68,6 +68,8 @@ def test_podoc_fail():
     p = Podoc(with_pandoc=False)
     with raises(ValueError):
         p.convert_text('hello', lang_chain=['a', 'b'])
+    with raises(ValueError):
+        p.convert_file('/does/not/exist', lang_chain=['a', 'b'])
 
 
 def test_podoc_convert_1(tempdir):

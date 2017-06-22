@@ -482,7 +482,7 @@ class ASTPlugin(IPlugin):
             # Add a new line at the end.
             f.write('\n')
         # Save the resources.
-        if context and context.get('resources', {}):
+        if (context or {}).get('resources', {}):
             _save_resources(context.get('resources', {}), _get_resources_path(path))
 
     def loads(self, s):

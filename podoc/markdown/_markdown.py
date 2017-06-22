@@ -170,7 +170,7 @@ class MarkdownPlugin(IPlugin):
             path = op.realpath(f.name)
             f.write(text)
         # Save the resources.
-        if context and context.get('resources', {}):
+        if (context or {}).get('resources', {}):
             _save_resources(context.get('resources', {}), _get_resources_path(path))
 
     def read(self, contents, context=None):
