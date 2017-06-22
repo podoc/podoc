@@ -172,48 +172,6 @@ def _test_file_resources():
             if fn.endswith(file_exts)}
 
 
-def _are_dict_equal(t0, t1):
-    """Assert the equality of nested dicts, removing all private fields."""
-    if t0 is None:
-        return t1 is None
-    if isinstance(t0, list):
-        assert isinstance(t1, list)
-        return all(_are_dict_equal(c0, c1) for c0, c1 in zip(t0, t1))
-    elif isinstance(t0, (string_types, int)):
-        assert isinstance(t1, (string_types, int))
-        return t0 == t1
-    assert isinstance(t0, dict)
-    assert isinstance(t1, dict)
-    k0 = {k for k in t0.keys() if not k.startswith('_')}
-    k1 = {k for k in t1.keys() if not k.startswith('_')}
-    assert k0 == k1
-    return all(_are_dict_equal(t0[k], t1[k]) for k in k0)
-
-
-def _remove(d, to_remove=()):
-    to_remove = to_remove or ('_',)
-    if isinstance(d, dict):
-        return {k: _remove(v, to_remove)
-                for k, v in d.items()
-                if not k.startswith(to_remove)}
-    elif isinstance(d, list):
-        return [_remove(c, to_remove) for c in d]
-    return d
-
-
-def assert_equal(p0, p1, to_remove=()):
-    if isinstance(p0, string_types):
-        assert isinstance(p1, string_types)
-        assert p0.rstrip('\n') == p1.rstrip('\n')
-    elif isinstance(p0, dict):
-        assert isinstance(p1, dict)
-        p0 = _remove(p0, to_remove)
-        p1 = _remove(p1, to_remove)
-        assert p0 == p1
-    else:
-        assert p0 == p1
-
-
 def _merge_str(l):
     """Concatenate consecutive strings in a list of nodes."""
     out = []
