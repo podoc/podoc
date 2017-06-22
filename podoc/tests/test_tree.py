@@ -13,7 +13,7 @@ from six import u
 from pytest import fixture
 
 from ..utils import captured_output
-from ..tree import Node, TreeTransformer, show_tree, filter_tree, _remove_visit_meta
+from ..tree import Node, TreeTransformer, show_tree, filter_tree
 
 
 #------------------------------------------------------------------------------
