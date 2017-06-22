@@ -181,7 +181,7 @@ class NotebookReader(object):
             if not ast.children:
                 logger.debug("Skipping empty node.")
                 return
-            self.tree.children.append(ast)
+            self.tree.children.append(ast)  # pragma: no cover
 
     def read_code(self, cell, cell_index=None):
         node = ASTNode('CodeCell')
@@ -229,8 +229,6 @@ class NotebookReader(object):
 class CodeCellWrapper(object):
     def wrap(self, ast):
         self.ast = ast.copy()
-        if 'metadata' in ast:
-            assert 'metadata' in self.ast
         self.ast.children = []
         self._code_cell = None
         for i, node in enumerate(ast.children):
@@ -294,7 +292,7 @@ def replace_resource_paths(ast, context=None):
         path = (context or {}).get('path', None)
     if path:
         path = op.basename(_get_resources_path(path))
-    else:
+    else:  # pragma: no cover
         logger.debug("No output or path given, not replacing resource paths.")
         return ast
 
@@ -412,7 +410,7 @@ class NotebookWriter(object):
                     if op.exists(image_path):
                         with open(image_path, 'rb') as f:
                             data[mime_type] = _get_b64_resource(f.read())
-                    else:
+                    else:  # pragma: no cover
                         logger.debug("File `%s` doesn't exist.", image_path)
                 data['text/plain'] = caption
                 kwargs = dict(data=data)

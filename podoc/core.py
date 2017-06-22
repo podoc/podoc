@@ -263,7 +263,7 @@ class Podoc(object):
 
     def pre_filter(self, obj, source, target):
         fd = self._funcs.get((source, target), None)
-        if fd.pre_filter:
+        if fd and fd.pre_filter:
             return fd.pre_filter(obj)
         else:
             return obj

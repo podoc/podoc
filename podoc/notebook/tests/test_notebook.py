@@ -13,7 +13,8 @@ import re
 from podoc.markdown import MarkdownPlugin
 from podoc.utils import get_test_file_path, load_text
 from podoc.ast import ASTPlugin, ASTNode
-from .._notebook import (extract_output,
+from .._notebook import (_get_b64_resource,
+                         extract_output,
                          output_filename,
                          open_notebook,
                          NotebookReader,
@@ -25,6 +26,11 @@ from .._notebook import (extract_output,
 #------------------------------------------------------------------------------
 # Test Notebook utils
 #------------------------------------------------------------------------------
+
+def test_get_b64_resource():
+    assert not _get_b64_resource(None)
+    assert len(_get_b64_resource(b'abcdef')) >= 4
+
 
 def test_extract_output():
     # Open a test notebook with a code cell containing an image.

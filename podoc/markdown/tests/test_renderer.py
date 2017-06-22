@@ -28,6 +28,7 @@ def test_markdown_renderer():
     assert w.heading('First chapter', 1) == '# First chapter'
     assert w.quote('a\nb') == '> a\n> b'
     assert w.code('a\n') == '```\na\n```'
+    assert w.code('a\n', is_fenced=False) == '    a'
 
     assert w.link('label', 'link') == '[label](link)'
     assert w.image('label', 'image.png') == '![label](image.png)'
