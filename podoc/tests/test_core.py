@@ -8,6 +8,7 @@
 #------------------------------------------------------------------------------
 
 import logging
+import os
 import os.path as op
 
 from pytest import raises
@@ -174,8 +175,6 @@ def test_all_convert(tempdir, podoc, source_target, test_file):
 
     # Convert with podoc.
     converted = podoc.convert_file(source_path, target=target)
-    # print('****** CONVERTED ******')
-    # converted.show()
 
     expected = podoc.load(target_path)
     # Apply the eventual pre-filter on the target.
@@ -183,10 +182,22 @@ def test_all_convert(tempdir, podoc, source_target, test_file):
     # expected AST needs to be decorated with CodeCells before being
     # compared to the converted AST.
     expected = podoc.pre_filter(expected, target, source)
-    # print('****** EXPECTED ******')
-    # expected.show()
+
+    # Remove the trailing new lines.
     if isinstance(converted, string_types):
         converted = converted.rstrip()
     if isinstance(expected, string_types):
         expected = expected.rstrip()
     podoc.assert_equal(converted, expected, target)
+
+    # Test converting and saving the file to disk.
+    output = op.join(tempdir, 'output', target_filename)
+    _, context = podoc.convert_file(source_path, output=output, return_context=True)
+    files = os.listdir(op.join(tempdir, 'output'))
+    # Check that all files are there
+    assert target_filename in files
+    if context.get('resources', {}):
+        # Check that resources are there.
+        res_path = op.splitext(target_filename)[0] + '_files'
+        assert res_path in files
+        assert len(os.listdir(op.join(tempdir, 'output', res_path))) > 0

@@ -11,8 +11,7 @@ import json
 
 from pytest import fixture
 
-from .._ast import (ASTNode, ast_from_pandoc,
-                    _merge_str, _split_spaces)
+from .._ast import (ASTNode, ast_from_pandoc, _split_spaces)
 from podoc.core import Podoc
 from podoc.utils import (has_pandoc, pandoc,
                          PANDOC_MARKDOWN_FORMAT,

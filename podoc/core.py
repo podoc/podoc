@@ -11,6 +11,7 @@ from collections import defaultdict
 import glob
 import inspect
 import logging
+import os
 import os.path as op
 
 from .utils import Bunch, load_text, dump_text
@@ -167,6 +168,12 @@ class Podoc(object):
             source = lang_chain[0]
             target = lang_chain[-1]
 
+        # Use real paths.
+        if path is not None:
+            path = op.realpath(path)
+        if output is not None:
+            output = op.realpath(output)
+
         # NOTE: 'json' is an alias for 'ast', to match with pandoc's terminology.
         source = source if source != 'json' else 'ast'
         target = target if target != 'json' else 'ast'
@@ -217,7 +224,7 @@ class Podoc(object):
         return obj
 
     def _convert(self, obj_or_path, source=None, target=None, lang_chain=None, output=None,
-                 is_path=None):
+                 is_path=None, return_context=False):
         """Convert a file by passing it through a chain of conversion functions."""
         path = obj_or_path if is_path else None
         source, target, output, lang_chain = self._validate(path=path,
@@ -235,16 +242,24 @@ class Podoc(object):
         obj = self._make_conversion(obj, lang_chain, context=context)
         # Save the file.
         if output:
+            output_dir = op.dirname(output)
+            if not op.exists(output_dir):
+                logger.debug("Create directory `%s`.", output_dir)
+                os.makedirs(output_dir)
             self.dump(obj, output, lang=target, context=context)
+        if return_context:
+            return obj, context
         return obj
 
-    def convert_file(self, path, source=None, target=None, lang_chain=None, output=None):
+    def convert_file(self, path, source=None, target=None, lang_chain=None, output=None,
+                     return_context=False):
         return self._convert(path, source=source, target=target, lang_chain=lang_chain,
-                             output=output, is_path=True)
+                             output=output, is_path=True, return_context=return_context)
 
-    def convert_text(self, text, source=None, target=None, lang_chain=None, output=None):
+    def convert_text(self, text, source=None, target=None, lang_chain=None, output=None,
+                     return_context=False):
         return self._convert(text, source=source, target=target, lang_chain=lang_chain,
-                             output=output, is_path=False)
+                             output=output, is_path=False, return_context=return_context)
 
     def pre_filter(self, obj, source, target):
         fd = self._funcs.get((source, target), None)
