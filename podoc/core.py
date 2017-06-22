@@ -13,7 +13,7 @@ import inspect
 import logging
 import os.path as op
 
-from .utils import Bunch, load_text, dump_text, assert_equal
+from .utils import Bunch, load_text, dump_text
 from .plugin import get_plugins
 
 logger = logging.getLogger(__name__)
@@ -136,7 +136,7 @@ class Podoc(object):
     def register_lang(self, name, file_ext=None,
                       load_func=None, dump_func=None,
                       loads_func=None, dumps_func=None,
-                      assert_equal_func=None,
+                      eq_filter=None,
                       **kwargs):
         """Register a language with a file extension and load/dump
         functions."""
@@ -147,7 +147,6 @@ class Podoc(object):
             return
         logger.log(5, "Register language `%s`.", name)
         # Default parameters.
-        assert_equal_func = assert_equal_func or assert_equal
         load_func = load_func or load_text
         dump_func = dump_func or dump_text
         loads_func = loads_func or (lambda _: _)
@@ -157,7 +156,7 @@ class Podoc(object):
                                   dump_func=dump_func,
                                   loads_func=loads_func,
                                   dumps_func=dumps_func,
-                                  assert_equal_func=assert_equal_func,
+                                  eq_filter=eq_filter,
                                   **kwargs)
 
     def _validate(self, path=None, source=None, target=None, output=None, lang_chain=None):
@@ -338,5 +337,8 @@ class Podoc(object):
     def assert_equal(self, obj0, obj1, lang=None):
         """Assert that two objects are equal."""
         assert lang
-        # Dump the string using the function registered for the language.
-        return self._langs[lang].assert_equal_func(obj0, obj1)
+        f = self._langs[lang].eq_filter
+        if not f:
+            assert obj0 == obj1
+            return
+        assert f(obj0) == f(obj1)

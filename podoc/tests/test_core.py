@@ -11,6 +11,7 @@ import logging
 import os.path as op
 
 from pytest import raises
+from six import string_types
 
 from ..core import Podoc, _find_path, _get_annotation, _connected_component
 from ..utils import get_test_file_path, load_text
@@ -158,7 +159,7 @@ def test_all_load_dump(tempdir, podoc, lang, test_file):
 
     # Assert equality.
     podoc.assert_equal(contents, podoc.loads(load_text(path), lang), lang)
-    podoc.assert_equal(load_text(to_path), podoc.dumps(contents, lang), lang)
+    podoc.assert_equal(load_text(to_path).rstrip(), podoc.dumps(contents, lang).rstrip(), lang)
 
 
 def test_all_convert(tempdir, podoc, source_target, test_file):
@@ -184,4 +185,8 @@ def test_all_convert(tempdir, podoc, source_target, test_file):
     expected = podoc.pre_filter(expected, target, source)
     # print('****** EXPECTED ******')
     # expected.show()
+    if isinstance(converted, string_types):
+        converted = converted.rstrip()
+    if isinstance(expected, string_types):
+        expected = expected.rstrip()
     podoc.assert_equal(converted, expected, target)
