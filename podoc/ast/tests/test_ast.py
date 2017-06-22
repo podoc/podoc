@@ -87,10 +87,6 @@ def test_equal(ast):
     assert ast == ast_2
 
 
-def test_merge_str():
-    assert _merge_str(['a', 'b', None, 'c']) == ['ab', None, 'c']
-
-
 def test_split_spaces():
     assert _split_spaces('a  b') == ['a', '', 'b']
     assert _split_spaces('a b  \tc,d ') == ['a', '', 'b', '', 'c,d', '']
