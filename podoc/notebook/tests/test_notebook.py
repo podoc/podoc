@@ -11,7 +11,7 @@ import os.path as op
 import re
 
 from podoc.markdown import MarkdownPlugin
-from podoc.utils import get_test_file_path, load_text, assert_equal
+from podoc.utils import get_test_file_path, load_text
 from podoc.ast import ASTPlugin, ASTNode
 from .._notebook import (extract_output,
                          output_filename,
@@ -56,7 +56,7 @@ def test_wrap_code_cells_1():
     ast_expected = ASTNode('root')
     ast_expected.add_child(ASTNode('CodeCell', children=[ast.children[0]]))
 
-    assert_equal(ast_wrapped, ast_expected)
+    assert ast_wrapped == ast_expected
 
 
 def test_wrap_code_cells_2():
@@ -86,7 +86,7 @@ def test_wrap_code_cells_2():
     ast_expected.add_child(code_cell1)
     ast_expected.show()
 
-    assert_equal(ast_wrapped, ast_expected)
+    assert ast_wrapped == ast_expected
 
 
 #------------------------------------------------------------------------------
@@ -120,7 +120,9 @@ def test_notebook_reader_notebook():
     markdown_converted = MarkdownPlugin().write(ast)
     markdown_converted = re.sub(r'\{resource:([^\}]+)\}', r'notebook_files/\1',
                                 markdown_converted)
-    assert_equal(markdown_converted, markdown_expected)
+    # The test file has a trailing new line, but not the AST.
+    markdown_converted += '\n'
+    assert markdown_converted == markdown_expected
 
     assert 'output_4_1.png' in reader.resources
 
@@ -166,5 +168,5 @@ def test_notebook_writer_notebook():
     nb_expected = open_notebook(get_test_file_path('notebook',
                                                    'notebook.ipynb'))
     # Ignore some fields when comparing the notebooks.
-    # assert nb == nb_expected
-    NotebookPlugin().assert_equal(nb, nb_expected)
+    assert nb == nb_expected
+    # NotebookPlugin().assert_equal(nb, nb_expected)
