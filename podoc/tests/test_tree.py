@@ -33,6 +33,15 @@ def root():
     return root
 
 
+def test_copy(root):
+    """Make sure copy is recursive."""
+    root_2 = root.copy()
+    root_2.children[0].add_child('new')
+    assert 'new' in root_2.children[0].children
+    assert 'new' not in root.children[0].children
+    assert root_2 != root
+
+
 def test_show_tree_1():
     root = Node('root')
     root.add_child(Node('1'))

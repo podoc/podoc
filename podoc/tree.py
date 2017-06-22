@@ -130,6 +130,8 @@ class Node(Bunch):
     def copy(self):
         node = super(Node, self).copy()
         node = self.__class__(**node)
+        node.children = [child.copy() if hasattr(child, 'copy') else child
+                         for child in node.children]
         return node
 
     def show(self):
