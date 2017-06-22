@@ -8,16 +8,17 @@
 #------------------------------------------------------------------------------
 
 import os.path as op
+import re
 
 from podoc.markdown import MarkdownPlugin
-from podoc.utils import get_test_file_path, load_text, assert_equal
+from podoc.utils import get_test_file_path, load_text
 from podoc.ast import ASTPlugin, ASTNode
-from .._notebook import (extract_output,
+from .._notebook import (_get_b64_resource,
+                         extract_output,
                          output_filename,
                          open_notebook,
                          NotebookReader,
                          NotebookWriter,
-                         NotebookPlugin,
                          wrap_code_cells,
                          )
 
@@ -25,6 +26,11 @@ from .._notebook import (extract_output,
 #------------------------------------------------------------------------------
 # Test Notebook utils
 #------------------------------------------------------------------------------
+
+def test_get_b64_resource():
+    assert not _get_b64_resource(None)
+    assert len(_get_b64_resource(b'abcdef')) >= 4
+
 
 def test_extract_output():
     # Open a test notebook with a code cell containing an image.
@@ -36,7 +42,7 @@ def test_extract_output():
     assert filename == 'output_4_1.png'
 
     # Open the image file in the markdown directory.
-    image_path = get_test_file_path('markdown', filename)
+    image_path = get_test_file_path('markdown', 'notebook_files/' + filename)
     with open(image_path, 'rb') as f:
         data_expected = f.read()
 
@@ -55,7 +61,7 @@ def test_wrap_code_cells_1():
     ast_expected = ASTNode('root')
     ast_expected.add_child(ASTNode('CodeCell', children=[ast.children[0]]))
 
-    assert_equal(ast_wrapped, ast_expected)
+    assert ast_wrapped == ast_expected
 
 
 def test_wrap_code_cells_2():
@@ -85,7 +91,7 @@ def test_wrap_code_cells_2():
     ast_expected.add_child(code_cell1)
     ast_expected.show()
 
-    assert_equal(ast_wrapped, ast_expected)
+    assert ast_wrapped == ast_expected
 
 
 #------------------------------------------------------------------------------
@@ -115,8 +121,13 @@ def test_notebook_reader_notebook():
 
     # Compare with the markdown version.
     path = get_test_file_path('markdown', 'notebook.md')
-    markdown = load_text(path)
-    assert_equal(MarkdownPlugin().write(ast), markdown)
+    markdown_expected = load_text(path)
+    markdown_converted = MarkdownPlugin().write(ast)
+    markdown_converted = re.sub(r'\{resource:([^\}]+)\}', r'notebook_files/\1',
+                                markdown_converted)
+    # The test file has a trailing new line, but not the AST.
+    markdown_converted += '\n'
+    assert markdown_converted == markdown_expected
 
     assert 'output_4_1.png' in reader.resources
 
@@ -148,17 +159,18 @@ def test_notebook_writer_hello():
 def test_notebook_writer_notebook():
     path = get_test_file_path('ast', 'notebook.json')
     ast = ASTPlugin().load(path)
+    # TODO: save resource files in JSON serializer
 
     # Load the image.
-    fn = get_test_file_path('markdown', 'output_4_1.png')
+    fn = get_test_file_path('markdown', 'notebook_files/output_4_1.png')
     with open(fn, 'rb') as f:
         img = f.read()
-    resources = {op.basename(fn): img}
     # Convert the AST to a notebook.
-    nb = NotebookWriter().write(ast, resources=resources)
+    nb = NotebookWriter().write(ast, context={'resources': {op.basename(fn): img},
+                                              'path': path})
 
     # Compare the notebooks.
     nb_expected = open_notebook(get_test_file_path('notebook',
                                                    'notebook.ipynb'))
     # Ignore some fields when comparing the notebooks.
-    NotebookPlugin().assert_equal(nb, nb_expected)
+    assert nb == nb_expected

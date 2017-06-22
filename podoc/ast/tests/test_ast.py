@@ -11,8 +11,7 @@ import json
 
 from pytest import fixture
 
-from .._ast import (ASTNode, ast_from_pandoc,
-                    _merge_str, _split_spaces)
+from .._ast import (ASTNode, ast_from_pandoc, _split_spaces)
 from podoc.core import Podoc
 from podoc.utils import (has_pandoc, pandoc,
                          PANDOC_MARKDOWN_FORMAT,
@@ -73,12 +72,26 @@ def ast():
 #------------------------------------------------------------------------------
 
 def test_repr_ast():
-    assert str(ASTNode('Para')) == ('{"blocks":[],"meta":{},"pandoc-api-version":%s}' %
-                                    str(PANDOC_API_VERSION).replace(' ', ''))
+    d = json.dumps(ASTNode('Para').to_pandoc(), separators=(',', ':'), sort_keys=True)
+    assert d == ('{"blocks":[],"meta":{},"pandoc-api-version":%s}' %
+                 str(PANDOC_API_VERSION).replace(' ', ''))
 
 
-def test_merge_str():
-    assert _merge_str(['a', 'b', None, 'c']) == ['ab', None, 'c']
+def test_equal(ast):
+    ast_2 = ast.copy()
+    ast_2.add_child(ASTNode('new'))
+    assert ast != ast_2
+
+    ast.add_child(ASTNode('new'))
+    assert ast == ast_2
+
+
+def test_metadata():
+    m = {'hello': 'two *words*'}
+    ast = ASTNode('root', metadata=m)
+    pandoc_ast = ast.to_pandoc()
+    ast_2 = ast_from_pandoc(pandoc_ast)
+    assert ast_2.metadata == m
 
 
 def test_split_spaces():
@@ -113,10 +126,10 @@ def test_unknown_node():
 def test_pandoc_conv():
     podoc = Podoc()
     html = '<p><a href="b">a</a></p>'
-    assert podoc.convert(html,
-                         lang_list=['html', 'ast', 'markdown']) == '[a](b)'
-    assert podoc.convert('[a](b)',
-                         lang_list=['markdown', 'ast', 'rst']) == '`a <b>`__\n'
+    assert podoc.convert_text(html,
+                              lang_chain=['html', 'ast', 'markdown']) == '[a](b)'
+    assert podoc.convert_text('[a](b)',
+                              lang_chain=['markdown', 'ast', 'rst']) == '`a <b>`__\n'
 
 
 # We use strict Markdown, but we allow fancy lists.

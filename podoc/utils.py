@@ -73,6 +73,52 @@ def _shorten_string(s, lim=40):
 
 
 #------------------------------------------------------------------------------
+# Resources
+#------------------------------------------------------------------------------
+
+def _get_resources_path(doc_path):
+    assert doc_path
+    doc_path = op.realpath(doc_path)
+    fn = op.basename(doc_path)
+    fn = op.splitext(fn)[0]
+    return op.join(op.dirname(doc_path), '%s_files' % fn)
+
+
+def _save_resources(resources, res_path=None):
+    if not resources:
+        return
+    if not res_path:
+        logger.debug("No resource path given.")
+        return
+    if not op.exists(res_path):
+        logger.debug("Create directory `%s`.", res_path)
+        os.makedirs(res_path)
+    resources = resources or {}
+    for fn, data in resources.items():
+        path = op.join(res_path, fn)
+        with open(path, 'wb') as f:
+            logger.debug("Writing %d bytes to `%s`.", len(data), path)
+            f.write(data)
+
+
+def _load_resources(res_path):
+    if not res_path:
+        logger.debug("No resource path given.")
+        return {}
+    resources = {}
+    # List all files in the resources path.
+    if not op.exists(res_path) or not op.isdir(res_path):
+        return resources
+    for fn in os.listdir(res_path):
+        path = op.join(res_path, fn)
+        with open(path, 'rb') as f:
+            data = f.read()
+        logger.debug("Read %d bytes from `%s`.", len(data), path)
+        resources[fn] = data
+    return resources
+
+
+#------------------------------------------------------------------------------
 # Path
 #------------------------------------------------------------------------------
 
@@ -105,67 +151,6 @@ def get_test_file_path(lang, filename):
     path = op.join(dirname, 'test_files', filename)
     assert op.exists(path)
     return path
-
-
-def _read_binary(path):
-    # Load a resource.
-    with open(path, 'rb') as f:
-        return f.read()
-
-
-def _test_file_resources():
-    """Return a dictionary of all test resources, which are stored in
-    markdown/test_files."""
-    file_exts = ('.png', '.jpg')
-    curdir = op.realpath(op.dirname(__file__))
-    # Construct the directory name for the language and test filename.
-    dirname = op.realpath(op.join(curdir, 'markdown'))
-    path = op.join(dirname, 'test_files')
-    return {op.basename(fn): _read_binary(op.join(path, fn))
-            for fn in os.listdir(path)
-            if fn.endswith(file_exts)}
-
-
-def _are_dict_equal(t0, t1):
-    """Assert the equality of nested dicts, removing all private fields."""
-    if t0 is None:
-        return t1 is None
-    if isinstance(t0, list):
-        assert isinstance(t1, list)
-        return all(_are_dict_equal(c0, c1) for c0, c1 in zip(t0, t1))
-    elif isinstance(t0, (string_types, int)):
-        assert isinstance(t1, (string_types, int))
-        return t0 == t1
-    assert isinstance(t0, dict)
-    assert isinstance(t1, dict)
-    k0 = {k for k in t0.keys() if not k.startswith('_')}
-    k1 = {k for k in t1.keys() if not k.startswith('_')}
-    assert k0 == k1
-    return all(_are_dict_equal(t0[k], t1[k]) for k in k0)
-
-
-def _remove(d, to_remove=()):
-    to_remove = to_remove or ('_',)
-    if isinstance(d, dict):
-        return {k: _remove(v, to_remove)
-                for k, v in d.items()
-                if not k.startswith(to_remove)}
-    elif isinstance(d, list):
-        return [_remove(c, to_remove) for c in d]
-    return d
-
-
-def assert_equal(p0, p1, to_remove=()):
-    if isinstance(p0, string_types):
-        assert isinstance(p1, string_types)
-        assert p0.rstrip('\n') == p1.rstrip('\n')
-    elif isinstance(p0, dict):
-        assert isinstance(p1, dict)
-        p0 = _remove(p0, to_remove)
-        p1 = _remove(p1, to_remove)
-        assert p0 == p1
-    else:
-        assert p0 == p1
 
 
 def _merge_str(l):

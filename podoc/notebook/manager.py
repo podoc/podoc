@@ -122,11 +122,10 @@ class PodocContentsManager(FileContentsManager, Configurable):
                 else:
                     # TODO: static resources (images)
                     lang = self._podoc.get_lang_for_file_ext(file_ext)
-                    return self._podoc.convert(os_path,
-                                               source=lang,
-                                               target='notebook',
-                                               resources=None,  # TODO
-                                               )
+                    return self._podoc.convert_file(os_path,
+                                                    source=lang,
+                                                    target='notebook',
+                                                    )
 
             except Exception as e:  # pragma: no cover
                 logger.exception(e)
@@ -160,12 +159,11 @@ class PodocContentsManager(FileContentsManager, Configurable):
                 else:
                     p = self._podoc
                     lang = p.get_lang_for_file_ext(file_ext)
-                    p.convert(nb,
-                              source='notebook',
-                              target=lang,
-                              resources=None,  # TODO
-                              output=os_path,
-                              )
+                    p.convert_text(nb,
+                                   source='notebook',
+                                   target=lang,
+                                   output=os_path,
+                                   )
 
                 # One checkpoint should always exist for notebooks.
                 if not self.checkpoints.list_checkpoints(path):

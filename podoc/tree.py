@@ -12,7 +12,7 @@ import logging
 from six import string_types, u
 from six.moves import zip_longest
 
-from .utils import Bunch, _are_dict_equal, _shorten_string
+from .utils import Bunch, _shorten_string
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,8 @@ class TreeTransformer(object):
                 out.extend(transformed_children)
             else:
                 out.append(transformed_children)
-        return out
+        # Remove None children.
+        return [_ for _ in out if _ is not None]
 
     def transform_str(self, contents):
         return contents
@@ -91,6 +92,12 @@ class TreeTransformer(object):
 #------------------------------------------------------------------------------
 # Node
 #------------------------------------------------------------------------------
+
+def _remove_visit_meta(node):
+    if '_visit_meta' in node:
+        node._visit_meta = {}
+    return node
+
 
 class Node(Bunch):
     """Generic node type, represents a tree."""
@@ -117,16 +124,34 @@ class Node(Bunch):
     def __eq__(self, other):
         """Ensure that nxt and prv items are discarded when testing
         the equality of two trees."""
-        return _are_dict_equal(self, other)
+        self = filter_tree(self, _remove_visit_meta)
+        return super(Node, self).__eq__(filter_tree(other, _remove_visit_meta))
 
     def copy(self):
         node = super(Node, self).copy()
         node = self.__class__(**node)
+        node.children = [child.copy() if hasattr(child, 'copy') else child
+                         for child in node.children]
         return node
 
     def show(self):
         print(show_tree(self, lambda node: node.name,
                         lambda node: node.children))
+
+    def __repr__(self):
+        """Display the pandoc JSON representation of the tree."""
+        return show_tree(self, lambda node: node.name,
+                         lambda node: node.children)
+
+
+def filter_tree(tree, func):
+    class FilterTransformer(TreeTransformer):
+        def transform_Node(self, node):
+            node = func(node.copy())
+            if node:
+                node.children = self.transform_children(node)
+            return node
+    return FilterTransformer().transform(tree)
 
 
 #------------------------------------------------------------------------------

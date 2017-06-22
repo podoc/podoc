@@ -11,11 +11,10 @@ from collections import defaultdict
 import glob
 import inspect
 import logging
+import os
 import os.path as op
 
-from six import string_types
-
-from .utils import Bunch, load_text, dump_text, assert_equal
+from .utils import Bunch, load_text, dump_text
 from .plugin import get_plugins
 
 logger = logging.getLogger(__name__)
@@ -120,6 +119,7 @@ class Podoc(object):
             return lambda _: self.register_func(_, source=source,
                                                 target=target)
         assert func
+        assert 'context' in inspect.getargspec(func).args
         source = source or _get_annotation(func, 'source')
         target = target or _get_annotation(func, 'target')
         assert source
@@ -137,7 +137,7 @@ class Podoc(object):
     def register_lang(self, name, file_ext=None,
                       load_func=None, dump_func=None,
                       loads_func=None, dumps_func=None,
-                      assert_equal_func=None,
+                      eq_filter=None,
                       **kwargs):
         """Register a language with a file extension and load/dump
         functions."""
@@ -148,7 +148,6 @@ class Podoc(object):
             return
         logger.log(5, "Register language `%s`.", name)
         # Default parameters.
-        assert_equal_func = assert_equal_func or assert_equal
         load_func = load_func or load_text
         dump_func = dump_func or dump_text
         loads_func = loads_func or (lambda _: _)
@@ -158,75 +157,113 @@ class Podoc(object):
                                   dump_func=dump_func,
                                   loads_func=loads_func,
                                   dumps_func=dumps_func,
-                                  assert_equal_func=assert_equal_func,
+                                  eq_filter=eq_filter,
                                   **kwargs)
 
-    def convert(self, obj_or_path, source=None, target=None,
-                lang_list=None, output=None, resources=None):
-        """Convert an object by passing it through a chain of conversion
-        functions."""
-        resources = resources or {}
-        obj = obj_or_path
-        # NOTE: 'json' is an alias for 'ast', to match with pandoc's
-        # terminology.
+    def _validate(self, path=None, source=None, target=None, output=None, lang_chain=None):
+
+        # Infer source and target from lang_chain.
+        if lang_chain is not None:
+            assert len(lang_chain) >= 2
+            source = lang_chain[0]
+            target = lang_chain[-1]
+
+        # Use real paths.
+        if path is not None:
+            path = op.realpath(path)
+        if output is not None:
+            output = op.realpath(output)
+
+        # NOTE: 'json' is an alias for 'ast', to match with pandoc's terminology.
         source = source if source != 'json' else 'ast'
         target = target if target != 'json' else 'ast'
+
         # If the output is specified and not the target, infer the target
         # from the file extension.
         if target is None and output is not None:
             target = self.get_lang_for_file_ext(op.splitext(output)[1])
+        assert target
+
         # NOTE: decide whether the object is a path or contents string.
-        if (isinstance(obj_or_path, string_types) and
-                len(obj_or_path) <= 1024 and  # this is to avoid passing huge
-                                              # strings to op.exists(), which
-                                              # crashes sometimes.
-                op.exists(obj_or_path)):
-            # Convert a file to a target format.
-            path = obj_or_path
-            assert target
+        if path is not None:
+            if not op.exists(path):
+                raise ValueError("File %s does not exist.", path)
             # Get the source from the file extension
-            if source is None and lang_list is None:
+            if source is None and lang_chain is None:
                 source = self.get_lang_for_file_ext(op.splitext(path)[1])
-            assert source
-            # Load the object.
-            obj = self.load(path, source)
+        assert source
+
         # At this point, we should have a non-empty object.
-        if lang_list is None:
-            # Find the shortest path from source to target in the conversion
-            # graph.
+        if lang_chain is None:
+            # Find the shortest path from source to target in the conversion graph.
             assert source and target
-            lang_list = _find_path(self.conversion_pairs,
-                                   source, target)
-            if not lang_list:
+            lang_chain = _find_path(self.conversion_pairs,
+                                    source, target)
+            if not lang_chain:
                 raise ValueError("No path found from `{}` to `{}`.".format(
                                  source, target))
-        assert isinstance(lang_list, (tuple, list))
+        assert isinstance(lang_chain, (tuple, list))
+
+        return source, target, output, lang_chain
+
+    def _make_conversion(self, obj, lang_chain, context=None):
         # Iterate over all successive pairs.
-        for t0, t1 in zip(lang_list, lang_list[1:]):
+        for t0, t1 in zip(lang_chain, lang_chain[1:]):
             # Get the function registered for t0, t1.
             fd = self._funcs.get((t0, t1), None)
             if not fd:
                 raise ValueError("No function registered for `{}` => `{}`.".
                                  format(t0, t1))
-            kwargs = {}
             f = fd.func
             # Pre-filter.
-            obj = fd.pre_filter(obj) if fd.pre_filter else obj
-            # Add the resources dictionary if the conversion function accepts
-            # it.
-            if 'resources' in inspect.getargspec(f).args:
-                kwargs['resources'] = resources
+            obj = fd.pre_filter(obj, context=context) if fd.pre_filter else obj
             # Perform the conversion.
-            obj = f(obj, **kwargs)
+            obj = f(obj, context=context)
             # Post-filter.
-            obj = fd.post_filter(obj) if fd.post_filter else obj
-        if output:
-            self.dump(obj, output, lang=target)
+            obj = fd.post_filter(obj, context=context) if fd.post_filter else obj
         return obj
+
+    def _convert(self, obj_or_path, source=None, target=None, lang_chain=None, output=None,
+                 is_path=None, return_context=False):
+        """Convert a file by passing it through a chain of conversion functions."""
+        path = obj_or_path if is_path else None
+        source, target, output, lang_chain = self._validate(path=path,
+                                                            source=source,
+                                                            target=target,
+                                                            output=output,
+                                                            lang_chain=lang_chain,
+                                                            )
+        # Create the context object.
+        context = Bunch(path=path, source=source, target=target,
+                        lang_chain=lang_chain, output=output)
+        # Load the object from disk if necessary.
+        obj = self.load(obj_or_path, source, context=context) if is_path else obj_or_path
+        # Make the conversion in memory.
+        obj = self._make_conversion(obj, lang_chain, context=context)
+        # Save the file.
+        if output:
+            output_dir = op.dirname(output)
+            if not op.exists(output_dir):
+                logger.debug("Create directory `%s`.", output_dir)
+                os.makedirs(output_dir)
+            self.dump(obj, output, lang=target, context=context)
+        if return_context:
+            return obj, context
+        return obj
+
+    def convert_file(self, path, source=None, target=None, lang_chain=None, output=None,
+                     return_context=False):
+        return self._convert(path, source=source, target=target, lang_chain=lang_chain,
+                             output=output, is_path=True, return_context=return_context)
+
+    def convert_text(self, text, source=None, target=None, lang_chain=None, output=None,
+                     return_context=False):
+        return self._convert(text, source=source, target=target, lang_chain=lang_chain,
+                             output=output, is_path=False, return_context=return_context)
 
     def pre_filter(self, obj, source, target):
         fd = self._funcs.get((source, target), None)
-        if fd.pre_filter:
+        if fd and fd.pre_filter:
             return fd.pre_filter(obj)
         else:
             return obj
@@ -280,21 +317,25 @@ class Podoc(object):
         """Return the file extension registered for a given language."""
         return self._langs[lang].file_ext
 
-    def load(self, path, lang=None):
+    def load(self, path, lang=None, context=None):
         """Load a file which has a registered file extension."""
         # Find the language corresponding to the file's extension.
         file_ext = op.splitext(path)[1]
         lang = lang or self.get_lang_for_file_ext(file_ext)
+        func = self._langs[lang].load_func
+        kwargs = {'context': context} if 'context' in inspect.getargspec(func).args else {}
         # Load the file using the function registered for the language.
-        return self._langs[lang].load_func(path)
+        return func(path, **kwargs)
 
-    def dump(self, contents, path, lang=None):
+    def dump(self, contents, path, lang=None, context=None):
         """Dump an object to a file."""
         # Find the language corresponding to the file's extension.
         file_ext = op.splitext(path)[1]
         lang = lang or self.get_lang_for_file_ext(file_ext)
+        func = self._langs[lang].dump_func
+        kwargs = {'context': context} if 'context' in inspect.getargspec(func).args else {}
         # Dump the file using the function registered for the language.
-        return self._langs[lang].dump_func(contents, path)
+        return func(contents, path, **kwargs)
 
     def loads(self, s, lang=None):
         """Load an object from its string representation."""
@@ -311,5 +352,8 @@ class Podoc(object):
     def assert_equal(self, obj0, obj1, lang=None):
         """Assert that two objects are equal."""
         assert lang
-        # Dump the string using the function registered for the language.
-        return self._langs[lang].assert_equal_func(obj0, obj1)
+        f = self._langs[lang].eq_filter
+        if not f:
+            assert obj0 == obj1
+            return
+        assert f(obj0) == f(obj1)

@@ -8,12 +8,14 @@
 #------------------------------------------------------------------------------
 
 import logging
+import os
 import os.path as op
 
 from pytest import raises
+from six import string_types
 
 from ..core import Podoc, _find_path, _get_annotation, _connected_component
-from ..utils import get_test_file_path, load_text, _test_file_resources
+from ..utils import get_test_file_path, load_text
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +67,9 @@ def test_podoc_1():
 def test_podoc_fail():
     p = Podoc(with_pandoc=False)
     with raises(ValueError):
-        p.convert('hello', lang_list=['a', 'b'])
+        p.convert_text('hello', lang_chain=['a', 'b'])
+    with raises(ValueError):
+        p.convert_file('/does/not/exist', lang_chain=['a', 'b'])
 
 
 def test_podoc_convert_1(tempdir):
@@ -75,29 +79,29 @@ def test_podoc_convert_1(tempdir):
     p.register_lang('upper', file_ext='.up')
 
     @p.register_func(source='lower', target='upper')
-    def toupper(text):
+    def toupper(text, context=None):
         return text.upper()
 
     @p.register_func(source='upper', target='lower')
-    def tolower(text):
+    def tolower(text, context=None):
         return text.lower()
 
     # Conversion with explicit path.
     assert p.conversion_pairs == [('lower', 'upper'), ('upper', 'lower')]
-    assert p.convert('Hello', lang_list=['lower', 'upper', 'lower']) == 'hello'
+    assert p.convert_text('Hello', lang_chain=['lower', 'upper', 'lower']) == 'hello'
 
     # Conversion with shortest path between source and target.
-    assert p.convert('hello', source='lower', target='upper') == 'HELLO'
+    assert p.convert_text('hello', source='lower', target='upper') == 'HELLO'
 
     with raises(ValueError):
-        p.convert('hello', source='lower', target='unknown')
+        p.convert_text('hello', source='lower', target='unknown')
 
     # Convert a file.
     path = op.join(tempdir, 'test.up')
     path2 = op.join(tempdir, 'test.low')
     with open(path, 'w') as f:
         f.write('HELLO')
-    assert p.convert(path, output=path2) == 'hello'
+    assert p.convert_file(path, output=path2) == 'hello'
     with open(path2, 'r') as f:
         assert f.read() == 'hello'
 
@@ -158,7 +162,7 @@ def test_all_load_dump(tempdir, podoc, lang, test_file):
 
     # Assert equality.
     podoc.assert_equal(contents, podoc.loads(load_text(path), lang), lang)
-    podoc.assert_equal(load_text(to_path), podoc.dumps(contents, lang), lang)
+    podoc.assert_equal(load_text(to_path).rstrip(), podoc.dumps(contents, lang).rstrip(), lang)
 
 
 def test_all_convert(tempdir, podoc, source_target, test_file):
@@ -171,13 +175,8 @@ def test_all_convert(tempdir, podoc, source_target, test_file):
     source_path = get_test_file_path(source, source_filename)
     target_path = get_test_file_path(target, target_filename)
 
-    # Load the test file resources.
-    resources = _test_file_resources()
-
     # Convert with podoc.
-    converted = podoc.convert(source_path, target=target, resources=resources)
-    # print('****** CONVERTED ******')
-    # converted.show()
+    converted = podoc.convert_file(source_path, target=target)
 
     expected = podoc.load(target_path)
     # Apply the eventual pre-filter on the target.
@@ -185,6 +184,22 @@ def test_all_convert(tempdir, podoc, source_target, test_file):
     # expected AST needs to be decorated with CodeCells before being
     # compared to the converted AST.
     expected = podoc.pre_filter(expected, target, source)
-    # print('****** EXPECTED ******')
-    # expected.show()
+
+    # Remove the trailing new lines.
+    if isinstance(converted, string_types):
+        converted = converted.rstrip()
+    if isinstance(expected, string_types):
+        expected = expected.rstrip()
     podoc.assert_equal(converted, expected, target)
+
+    # Test converting and saving the file to disk.
+    output = op.join(tempdir, 'output', target_filename)
+    _, context = podoc.convert_file(source_path, output=output, return_context=True)
+    files = os.listdir(op.join(tempdir, 'output'))
+    # Check that all files are there
+    assert target_filename in files
+    if context.get('resources', {}):
+        # Check that resources are there.
+        res_path = op.splitext(target_filename)[0] + '_files'
+        assert res_path in files
+        assert len(os.listdir(op.join(tempdir, 'output', res_path))) > 0

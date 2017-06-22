@@ -11,11 +11,13 @@ import json
 import logging
 import os.path as op
 
-from pytest import mark, raises
+from pytest import mark
 
-from ..utils import (Bunch, Path, load_text, dump_text, _get_file,
-                     assert_equal,
-                     pandoc, has_pandoc, get_pandoc_formats)
+from ..utils import (Bunch, Path, load_text, dump_text, _get_file, _merge_str, _shorten_string,
+                     _get_resources_path, _save_resources, _load_resources,
+                     get_test_file_path,
+                     pandoc, has_pandoc, get_pandoc_formats,
+                     )
 
 logger = logging.getLogger(__name__)
 
@@ -41,15 +43,44 @@ def test_path():
     assert Path(__file__).exists()
 
 
-def test_assert_equal():
-    assert_equal([0], [0])
+def test_merge_str():
+    assert _merge_str(['a', 'b', None, 'c']) == ['ab', None, 'c']
 
-    assert_equal({'a': 1, 'b': [2, 3], '_c': 0},
-                 {'a': 1, 'b': [2, 3], '_c': 1})
 
-    with raises(AssertionError):
-        assert_equal({'a': 1, 'b': [2, 3], '_c': 0},
-                     {'a': 1, 'b': [2, 4], '_c': 0})
+def test_shorten_string():
+    s = _shorten_string('*' * 60)
+    assert s.startswith('*' * 10)
+    assert s.endswith('*' * 10)
+    assert '(...)' in s
+
+
+#------------------------------------------------------------------------------
+# Test resources
+#------------------------------------------------------------------------------
+
+def test_get_test_file_path():
+    path = get_test_file_path('markdown', 'hello.md')
+    assert op.exists(path)
+    assert op.basename(path) == 'hello.md'
+
+
+def test_get_resources_path():
+    res_path = _get_resources_path('/path/to/test.ext')
+    assert res_path == '/path/to/test_files'
+
+
+def test_save_load_resources(tempdir):
+    resources = {'test.ext': b'abc'}
+
+    # Should fail without raising exception.
+    _save_resources({})
+    _save_resources(resources)
+    assert not _load_resources(None)
+    assert not _load_resources('/does/not/exist')
+
+    _save_resources(resources, res_path=op.join(tempdir, 'res'))
+    resources_loaded = _load_resources(op.join(tempdir, 'res'))
+    assert resources_loaded == resources
 
 
 #------------------------------------------------------------------------------

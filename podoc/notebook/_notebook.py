@@ -38,6 +38,8 @@ This all could (and should) be improved...
 import base64
 import logging
 from mimetypes import guess_extension, guess_type
+import os.path as op
+import re
 import sys
 
 import nbformat
@@ -50,7 +52,8 @@ from nbformat.v4 import (new_notebook,
 from podoc.markdown import MarkdownPlugin
 from podoc.ast import ASTNode  # , TreeTransformer
 from podoc.plugin import IPlugin
-from podoc.utils import _get_file, assert_equal
+from podoc.tree import TreeTransformer
+from podoc.utils import _get_file, _get_resources_path
 
 logger = logging.getLogger(__name__)
 
@@ -129,8 +132,8 @@ class NotebookReader(object):
 
     def read(self, notebook):
         assert isinstance(notebook, nbformat.NotebookNode)
-        self.tree = ASTNode('root')
         self.resources = {}  # Dictionary {filename: data}.
+        self.tree = ASTNode('root')
         # Language of the notebook.
         m = notebook.metadata
         # NOTE: if no language is available in the metadata, use Python
@@ -144,6 +147,7 @@ class NotebookReader(object):
 
         for cell_index, cell in enumerate(notebook.cells):
             getattr(self, 'read_{}'.format(cell.cell_type))(cell, cell_index)
+
         return self.tree
 
     def _read_all_markdown(self, cells):
@@ -177,7 +181,7 @@ class NotebookReader(object):
             if not ast.children:
                 logger.debug("Skipping empty node.")
                 return
-            self.tree.children.append(ast)
+            self.tree.children.append(ast)  # pragma: no cover
 
     def read_code(self, cell, cell_index=None):
         node = ASTNode('CodeCell')
@@ -212,7 +216,7 @@ class NotebookReader(object):
                                          )
                     self.resources[fn] = data
                     # Wrap the Image node in a Para.
-                    img_child = ASTNode('Image', url=fn, children=[text])
+                    img_child = ASTNode('Image', url='{resource:%s}' % fn, children=[text])
                     child = ASTNode('Para', children=[img_child])
             node.add_child(child)
         self.tree.children.append(node)
@@ -274,23 +278,68 @@ class CodeCellWrapper(object):
         self.ast.add_child(node)
 
 
-def wrap_code_cells(ast):
+def wrap_code_cells(ast, context=None):
     """Take an AST and wrap top-level CodeBlocks within CodeCells."""
     return CodeCellWrapper().wrap(ast)
+
+
+def replace_resource_paths(ast, context=None):
+    """Replace {resource:...} image paths to actual relative paths."""
+
+    # Get the relative path of the directory with the resources.
+    path = (context or {}).get('output', None)
+    if not path:
+        path = (context or {}).get('path', None)
+    if path:
+        path = op.basename(_get_resources_path(path))
+    else:  # pragma: no cover
+        logger.debug("No output or path given, not replacing resource paths.")
+        return ast
+
+    class ResourceTransformer(TreeTransformer):
+        def transform_Image(self, node):
+            url = node.url
+            if url.startswith('{resource:'):
+                node.url = re.sub(r'\{resource:([^\}]+)\}', r'%s/\1' % path, url)
+                logger.debug("Replace %s by %s.", url, node.url)
+            return node
+
+        def transform_Node(self, node):
+            node.children = self.transform_children(node)
+            return node
+
+    return ResourceTransformer().transform(ast)
 
 
 def _append_newlines(s):
     return '\n'.join(s.rstrip().split('\n')) + '\n'
 
 
+def _get_b64_resource(data):
+    if not data:
+        return ''
+    """Return the base64 of a binary buffer."""
+    out = base64.b64encode(data).decode('utf8')
+    # NOTE: split the output in multiple lines of 76 characters,
+    # to make easier the comparison with actual Jupyter Notebook files.
+    N = 76
+    out = '\n'.join([out[i:i + N] for i in range(0, len(out), N)]) + '\n'
+    return out
+
+
 class NotebookWriter(object):
-    def write(self, ast, resources=None):
-        # Mapping {filename: data}.
-        self.resources = resources or {}
+    def write(self, ast, context=None):
         self.execution_count = 1
         self._md = MarkdownPlugin()
         # Add code cells in the AST.
         ast = wrap_code_cells(ast)
+        # Find the directory containing the notebook file.
+        doc_path = (context or {}).get('path', None)
+        if doc_path:
+            self._dir_path = op.dirname(op.realpath(doc_path))
+        else:
+            logger.warn("No input path, unable to resolve the image relative paths.")
+            self._dir_path = None
         # Create the notebook.
         # new_output, new_code_cell, new_markdown_cell
         nb = new_notebook()
@@ -310,24 +359,6 @@ class NotebookWriter(object):
 
     def new_markdown_cell(self, node, index=None):
         return new_markdown_cell(self._md.write(node))
-
-    def _get_b64_resource(self, fn):
-        """Return the base64 of a resource from its filename.
-
-        The mapping `resources={fn: data}` needs to be passed to the `write()`
-        method.
-
-        """
-        data = self.resources.get(fn, None)
-        if not data:  # pragma: no cover
-            logger.warn("Resource `%s` couldn't be found.", fn)
-            return ''
-        out = base64.b64encode(data).decode('utf8')
-        # NOTE: split the output in multiple lines of 76 characters,
-        # to make easier the comparison with actual Jupyter Notebook files.
-        N = 76
-        out = '\n'.join([out[i:i + N] for i in range(0, len(out), N)]) + '\n'
-        return out
 
     def new_code_cell(self, node, index=None):
         # Get the code cell input: the first child of the CodeCell block.
@@ -373,8 +404,14 @@ class NotebookWriter(object):
                 # extension.
                 mime_type = guess_type(fn)[0]
                 assert mime_type  # unknown extension: this shouldn't happen!
-                data[mime_type] = self._get_b64_resource(fn)
-                # assert data[mime_type]  # TODO
+                # Get the resource data.
+                if self._dir_path:
+                    image_path = op.join(self._dir_path, fn)
+                    if op.exists(image_path):
+                        with open(image_path, 'rb') as f:
+                            data[mime_type] = _get_b64_resource(f.read())
+                    else:  # pragma: no cover
+                        logger.debug("File `%s` doesn't exist.", image_path)
                 data['text/plain'] = caption
                 kwargs = dict(data=data)
             assert not output_type.startswith('{output')
@@ -396,10 +433,11 @@ class NotebookPlugin(IPlugin):
                             dump_func=self.dump,
                             loads_func=self.loads,
                             dumps_func=self.dumps,
-                            assert_equal_func=self.assert_equal,
+                            eq_filter=self.eq_filter,
                             )
         podoc.register_func(source='notebook', target='ast',
                             func=self.read,
+                            post_filter=replace_resource_paths,
                             )
         podoc.register_func(source='ast', target='notebook',
                             func=self.write,
@@ -408,7 +446,8 @@ class NotebookPlugin(IPlugin):
 
     def load(self, file_or_path):
         with _get_file(file_or_path, 'r') as f:
-            return nbformat.read(f, _NBFORMAT_VERSION)
+            nb = nbformat.read(f, _NBFORMAT_VERSION)
+        return nb
 
     def dump(self, nb, file_or_path):
         with _get_file(file_or_path, 'w') as f:
@@ -420,12 +459,20 @@ class NotebookPlugin(IPlugin):
     def dumps(self, nb):
         return nbformat.writes(nb, _NBFORMAT_VERSION)
 
-    def assert_equal(self, nb0, nb1):
-        return assert_equal(nb0, nb1,
-                            to_remove=('metadata', 'kernel_spec'))
+    def eq_filter(self, nb):
+        if not isinstance(nb, dict):
+            return nb
+        for k in ('metadata', 'kernel_spec'):
+            if k in nb:
+                nb[k] = {}
+        return nb
 
-    def read(self, nb):
-        return NotebookReader().read(nb)
+    def read(self, nb, context=None):
+        nr = NotebookReader()
+        ast = nr.read(nb)
+        if context:
+            context.resources = nr.resources
+        return ast
 
-    def write(self, ast, resources=None):
-        return NotebookWriter().write(ast, resources=resources)
+    def write(self, ast, context=None):
+        return NotebookWriter().write(ast, context=context)

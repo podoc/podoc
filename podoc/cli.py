@@ -98,13 +98,13 @@ def podoc(files=None,
                      _shorten_string(contents_s),
                      read, write, output,
                      )
-        out = podoc.convert(contents, source=read, target=write,
-                            output=output)
+        out = podoc.convert_text(contents, source=read, target=write,
+                                 output=output)
     else:
         # TODO: multiple files
         logger.debug("Converting file `%s` from %s to %s in %s.",
                      files, read, write, output)
-        out = podoc.convert(files, source=read, target=write, output=output)
+        out = podoc.convert_file(files, source=read, target=write, output=output)
     if output is None:
         click.echo(podoc.dumps(out, write))
         return

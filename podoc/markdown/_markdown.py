@@ -8,15 +8,19 @@
 #------------------------------------------------------------------------------
 
 import logging
-import pypandoc
+import os.path as op
 
+import pypandoc
 from six import string_types
 
 from podoc.ast import ASTNode, ASTPlugin
 from podoc.markdown.renderer import MarkdownRenderer
 from podoc.plugin import IPlugin
 from podoc.tree import TreeTransformer
-from podoc.utils import PANDOC_MARKDOWN_FORMAT
+from podoc.utils import (PANDOC_MARKDOWN_FORMAT,
+                         _get_file,
+                         _get_resources_path, _save_resources,
+                         )
 
 logger = logging.getLogger(__name__)
 
@@ -147,17 +151,35 @@ class ASTToMarkdown(TreeTransformer):
 
 class MarkdownPlugin(IPlugin):
     def attach(self, podoc):
-        podoc.register_lang('markdown', file_ext='.md')
+        podoc.register_lang('markdown', file_ext='.md',
+                            load_func=self.load, dump_func=self.dump,)
         podoc.register_func(source='markdown', target='ast',
                             func=self.read)
         podoc.register_func(source='ast', target='markdown',
                             func=self.write)
 
-    def read(self, contents):
+    def load(self, file_or_path):
+        """Load a Markdown file and return a string."""
+        with _get_file(file_or_path, 'r') as f:
+            text = f.read()
+        return text
+
+    def dump(self, text, file_or_path, context=None):
+        """Dump string to a Markdown file."""
+        with _get_file(file_or_path, 'w') as f:
+            path = op.realpath(f.name)
+            f.write(text)
+        # Save the resources.
+        if (context or {}).get('resources', {}):
+            _save_resources(context.get('resources', {}), _get_resources_path(path))
+
+    def read(self, contents, context=None):
         assert isinstance(contents, string_types)
         js = pypandoc.convert_text(contents, 'json', format=PANDOC_MARKDOWN_FORMAT)
-        return ASTPlugin().loads(js)
+        ast = ASTPlugin().loads(js)
+        return ast
 
-    def write(self, ast):
+    def write(self, ast, context=None):
         assert isinstance(ast, (ASTNode, string_types))
-        return ASTToMarkdown().transform(ast)
+        text = ASTToMarkdown().transform(ast)
+        return text
