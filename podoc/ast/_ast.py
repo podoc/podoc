@@ -59,6 +59,7 @@ DEFAULT_BULLET_SYMBOL = '*'
 PANDOC_OUTPUT_FILE_REQUIRED = ('odt', 'docx', 'epub', 'epub3', 'pdf')
 
 
+# TODO: support multiple file extensions per language
 PANDOC_FILE_EXTENSIONS = {
     'latex': '.latex',
     'latex': '.ltx',
