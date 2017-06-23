@@ -37,9 +37,8 @@ def _podoc(cmd=None, stdin=None):
 
 def test_cli_1():
     """From markdown to AST to markdown again, using stdin."""
-    assert 'hello' in _podoc('--no-pandoc', stdin='hello')
-
-    ast_s = _podoc('--no-pandoc', stdin='hello world')
+    ast_s = _podoc('--no-pandoc -f markdown -t ast', stdin='hello world')
+    assert 'hello' in ast_s
     md = _podoc('--no-pandoc -f ast -t markdown', stdin=ast_s)
     assert md == 'hello world\n'
 
