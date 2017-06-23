@@ -72,8 +72,6 @@ PODOC_HELP = get_podoc_docstring()
               help='Target format.')
 @click.option('-o', '--output',
               help='Output path.')
-@click.option('--data-dir',
-              help='Output directory.')
 @click.option('--no-pandoc', default=False, is_flag=True,
               help='Disable pandoc formats.')
 @click.version_option(__version__)
@@ -82,7 +80,6 @@ def podoc(files=None,
           read=None,
           write=None,
           output=None,
-          data_dir=None,
           no_pandoc=False,
           ):
     """Convert a file or a string from one format to another."""
