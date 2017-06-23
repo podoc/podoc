@@ -3,9 +3,9 @@
 """Markdown renderer."""
 
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Markdown renderer
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 class MarkdownRenderer(object):
     """A class for rendering Markdown documents."""
@@ -13,7 +13,7 @@ class MarkdownRenderer(object):
         self._list_number = 0
 
     # New line methods
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------------------
 
     def newline(self):
         self._list_number = 0
@@ -23,7 +23,7 @@ class MarkdownRenderer(object):
         return self.text('\n')
 
     # Block methods
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------------------
 
     def heading(self, text, level=None):
         assert level >= 1
@@ -37,8 +37,7 @@ class MarkdownRenderer(object):
         if is_fenced:
             return self.text('```{}\n{}\n```'.format(lang, code))
         else:
-            return self.text('\n'.join((' ' * 4) + line
-                                       for line in code.splitlines()))
+            return self.text('\n'.join((' ' * 4) + line for line in code.splitlines()))
 
     def quote(self, text):
         # Add quote '>' at the beginning of each line when quote is activated.
@@ -48,7 +47,7 @@ class MarkdownRenderer(object):
         return self.text('$${0}$$'.format(contents))
 
     # Inline methods
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------------------
 
     def link(self, text, url):
         return self.text('[{0}]({1})'.format(text, url))

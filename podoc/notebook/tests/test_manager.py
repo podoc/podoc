@@ -6,9 +6,9 @@ Taken from https://github.com/jupyter/notebook/blob/master/notebook/services/con
 
 """
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Imports
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 from itertools import combinations
 from tempfile import TemporaryDirectory
@@ -22,9 +22,9 @@ from ..manager import PodocContentsManager
 tm.FileContentsManager = PodocContentsManager
 
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Tests
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 class TestPodocFileContentsManager(tm.TestFileContentsManager):
     pass
@@ -87,9 +87,7 @@ class TestPodocContentsManager(tm.TestContentsManager):
         self.assertIn('path', model2)
         self.assertIn('content', model2)
         self.assertEqual(model2['name'], 'Untitled.md')
-        self.assertEqual(
-            model2['path'],
-            '{0}/{1}'.format(sub_dir.strip('/'), model['name']))
+        self.assertEqual(model2['path'], '{0}/{1}'.format(sub_dir.strip('/'), model['name']))
 
     def test_update_md(self):
         cm = self.contents_manager

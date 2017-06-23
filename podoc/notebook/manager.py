@@ -2,9 +2,9 @@
 
 """Notebook contents manager."""
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Imports
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 import logging
 import os
@@ -22,9 +22,9 @@ from ._notebook import new_notebook
 logger = logging.getLogger(__name__)
 
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # MarkdownContentsManager
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 def _file_extension(os_path):
     return op.splitext(os_path)[1]
@@ -96,7 +96,8 @@ class PodocContentsManager(FileContentsManager, Configurable):
 
         if os.path.isdir(os_path):
             if type not in (None, 'directory'):
-                raise web.HTTPError(400, u'%s is a directory, not a %s' % (path, type), reason='bad type')  # noqa
+                raise web.HTTPError(400, u'%s is a directory, not a %s' % (path, type),
+                                    reason='bad type')  # noqa
             logger.debug("%s is a directory.", os_path)
             model = self._dir_model(path, content=content)
         elif (type == 'notebook' or (type is None and use_podoc)):
@@ -104,8 +105,7 @@ class PodocContentsManager(FileContentsManager, Configurable):
             model = self._notebook_model(path, content=content)
         else:
             if type == 'directory':  # pragma: no cover
-                raise web.HTTPError(400, u'%s is not a directory',
-                                    reason='bad type')
+                raise web.HTTPError(400, u'%s is not a directory', reason='bad type')
             logger.debug("%s is a static file.", os_path)
             model = self._file_model(path, content=content, format=format)
         return model

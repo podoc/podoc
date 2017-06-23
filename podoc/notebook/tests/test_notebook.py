@@ -3,9 +3,9 @@
 """Test Notebook plugin."""
 
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Imports
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 import os.path as op
 import re
@@ -23,9 +23,9 @@ from .._notebook import (_get_b64_resource,
                          )
 
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Test Notebook utils
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 def test_get_b64_resource():
     assert not _get_b64_resource(None)
@@ -94,9 +94,9 @@ def test_wrap_code_cells_2():
     assert ast_wrapped == ast_expected
 
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Test NotebookReader
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 def test_notebook_reader_hello():
     # Open a test notebook with just 1 Markdown cell.
@@ -132,9 +132,9 @@ def test_notebook_reader_notebook():
     assert 'output_4_1.png' in reader.resources
 
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Test NotebookWriter
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 def test_notebook_empty():
     ast = ASTNode('root')
@@ -166,11 +166,9 @@ def test_notebook_writer_notebook():
     with open(fn, 'rb') as f:
         img = f.read()
     # Convert the AST to a notebook.
-    nb = NotebookWriter().write(ast, context={'resources': {op.basename(fn): img},
-                                              'path': path})
+    nb = NotebookWriter().write(ast, context={'resources': {op.basename(fn): img}, 'path': path})
 
     # Compare the notebooks.
-    nb_expected = open_notebook(get_test_file_path('notebook',
-                                                   'simplenb.ipynb'))
+    nb_expected = open_notebook(get_test_file_path('notebook', 'simplenb.ipynb'))
     # Ignore some fields when comparing the notebooks.
     assert nb == nb_expected

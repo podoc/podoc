@@ -2,9 +2,9 @@
 
 """py.test utilities."""
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Imports
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 import logging
 from itertools import product
@@ -15,9 +15,9 @@ from pytest import fixture, yield_fixture
 from podoc import add_default_handler, Podoc  # noqa
 
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Common fixtures
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 logging.getLogger().setLevel(logging.DEBUG)
 add_default_handler('DEBUG')
@@ -55,5 +55,4 @@ def pytest_generate_tests(metafunc):
         target = [lang for _, lang in cp if _ == 'ast']
         cp.extend([(a, b) for (a, b) in product(sources, target) if a != b])
         print(cp)
-        metafunc.parametrize('source_target', cp,
-                             ids=(lambda pair: '-to-'.join(pair)))
+        metafunc.parametrize('source_target', cp, ids=(lambda pair: '-to-'.join(pair)))

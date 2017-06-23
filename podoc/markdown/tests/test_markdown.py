@@ -3,9 +3,9 @@
 """Test Markdown plugin."""
 
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Imports
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 from pytest import fixture
 
@@ -13,9 +13,9 @@ from podoc.ast import ASTNode
 from .._markdown import MarkdownPlugin
 
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Fixtures
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 @fixture
 def ast():
@@ -37,9 +37,9 @@ def markdown():
     return 'hello *world*'
 
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Test Markdown plugin
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 def test_markdown_read(ast, markdown):
     assert MarkdownPlugin().read(markdown) == ast
@@ -49,10 +49,10 @@ def test_markdown_write(ast, markdown):
     assert MarkdownPlugin().write(ast) == markdown
 
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
 # Test Markdown renderer inline
 # Check safe round-tripping on CommonMark -> AST -> CommonMark
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
 
 def _tree_contains_nodes(ast, names):
     if isinstance(ast, str):
@@ -92,9 +92,9 @@ def test_markdown_renderer_codeinline():
     _test_renderer('hello `world`', 'Code')
 
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
 # Test Markdown renderer block
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
 
 def test_markdown_renderer_header():
     _test_renderer('# Hello', 'Header')
@@ -124,9 +124,9 @@ def test_markdown_renderer_ordered_list():
     _test_renderer('2. Item 1\n3. Item 2')
 
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
 # Test Markdown renderer multiple blocks
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
 
 def test_markdown_renderer_paras():
     _test_renderer('hello\nworld')
@@ -144,14 +144,10 @@ def test_markdown_renderer_codeblocks():
 
 
 def test_markdown_renderer_ordered_bullet():
-    _test_renderer('1. Item 1\n\n* Bullet',
-                   'BulletList', 'OrderedList')
-    _test_renderer('* Bullet\n\n1. Item 1',
-                   'BulletList', 'OrderedList')
-    _test_renderer('1. Item 1\n2. Item 2\n\n* Bullet',
-                   'BulletList', 'OrderedList')
-    _test_renderer('1. Item 1\n2. Item 2\n\n* Bullet\n\n3. Item 3',
-                   'BulletList', 'OrderedList')
+    _test_renderer('1. Item 1\n\n* Bullet', 'BulletList', 'OrderedList')
+    _test_renderer('* Bullet\n\n1. Item 1', 'BulletList', 'OrderedList')
+    _test_renderer('1. Item 1\n2. Item 2\n\n* Bullet', 'BulletList', 'OrderedList')
+    _test_renderer('1. Item 1\n2. Item 2\n\n* Bullet\n\n3. Item 3', 'BulletList', 'OrderedList')
 
 
 def test_markdown_math_inline():
@@ -160,5 +156,4 @@ def test_markdown_math_inline():
 
 def test_markdown_math_block():
     _test_renderer(r'$$\int_a^b f_0(x) dx$$', 'MathBlock')
-    _test_renderer(r'$$\begin{eqnarray}\nx &= y\n\end{eqnarray}$$',
-                   'MathBlock')
+    _test_renderer(r'$$\begin{eqnarray}\nx &= y\n\end{eqnarray}$$', 'MathBlock')

@@ -3,9 +3,9 @@
 """Markdown plugin."""
 
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Imports
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 import logging
 import os.path as op
@@ -24,9 +24,9 @@ from podoc.utils import (PANDOC_MARKDOWN_FORMAT,
 logger = logging.getLogger(__name__)
 
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Markdown renderer
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 class ASTToMarkdown(TreeTransformer):
     """Read an AST and render a Markdown string."""
@@ -45,8 +45,7 @@ class ASTToMarkdown(TreeTransformer):
             child = node.children[0]
             # TODO: improve this.
             if (isinstance(child, ASTNode) and
-                (child.is_block() or
-                 child.get('_visit_meta', {}).get('is_block', None))):
+                    (child.is_block() or child.get('_visit_meta', {}).get('is_block', None))):
                 delim = '\n\n'
         return delim.join(self.transform_children(node))
 
@@ -57,7 +56,7 @@ class ASTToMarkdown(TreeTransformer):
         return self.get_inner_contents(node)
 
     # Block nodes
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------------------
 
     def transform_Plain(self, node):
         return self.renderer.text(self.get_inner_contents(node))
@@ -97,8 +96,7 @@ class ASTToMarkdown(TreeTransformer):
         for item in items:
             # We indent all lines in the item.
             item_lines = item.splitlines()
-            item = '\n'.join((('  ' if i else '') + line)
-                             for i, line in enumerate(item_lines))
+            item = '\n'.join((('  ' if i else '') + line) for i, line in enumerate(item_lines))
             # We add the bullet and suffix to the first line in the item.
             out.append(str(bullet) + suffix + item)
             # We increase the current ordered list number.
@@ -117,7 +115,7 @@ class ASTToMarkdown(TreeTransformer):
         return out
 
     # Inline nodes
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------------------
 
     def transform_Emph(self, node):
         return self.renderer.emph(self.get_inner_contents(node))
@@ -136,26 +134,21 @@ class ASTToMarkdown(TreeTransformer):
         return self.renderer.math(self.get_inner_contents(node))
 
     def transform_Link(self, node):
-        return self.renderer.link(self.get_inner_contents(node),
-                                  node.url)
+        return self.renderer.link(self.get_inner_contents(node), node.url)
 
     def transform_Image(self, node):
-        return self.renderer.image(self.get_inner_contents(node),
-                                   node.url)
+        return self.renderer.image(self.get_inner_contents(node), node.url)
 
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 # Markdown plugin
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------
 
 class MarkdownPlugin(IPlugin):
     def attach(self, podoc):
-        podoc.register_lang('markdown', file_ext='.md',
-                            load_func=self.load, dump_func=self.dump,)
-        podoc.register_func(source='markdown', target='ast',
-                            func=self.read)
-        podoc.register_func(source='ast', target='markdown',
-                            func=self.write)
+        podoc.register_lang('markdown', file_ext='.md', load_func=self.load, dump_func=self.dump,)
+        podoc.register_func(source='markdown', target='ast', func=self.read)
+        podoc.register_func(source='ast', target='markdown', func=self.write)
 
     def load(self, file_or_path):
         """Load a Markdown file and return a string."""
