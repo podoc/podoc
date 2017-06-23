@@ -35,7 +35,7 @@ def podoc():
 
 
 # List of test files to test.
-@fixture(params=['hello', 'notebook'])
+@fixture(params=['hello', 'simplenb'])
 def test_file(request):
     name = request.param
     return name

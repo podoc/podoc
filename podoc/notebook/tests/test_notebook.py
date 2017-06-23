@@ -34,7 +34,7 @@ def test_get_b64_resource():
 
 def test_extract_output():
     # Open a test notebook with a code cell containing an image.
-    path = get_test_file_path('notebook', 'notebook.ipynb')
+    path = get_test_file_path('notebook', 'simplenb.ipynb')
     notebook = open_notebook(path)
     cell = notebook.cells[4]
     mime_type, data = list(extract_output(cell.outputs[1]))
@@ -42,7 +42,7 @@ def test_extract_output():
     assert filename == 'output_4_1.png'
 
     # Open the image file in the markdown directory.
-    image_path = get_test_file_path('markdown', 'notebook_files/' + filename)
+    image_path = get_test_file_path('markdown', 'simplenb_files/' + filename)
     with open(image_path, 'rb') as f:
         data_expected = f.read()
 
@@ -112,7 +112,7 @@ def test_notebook_reader_hello():
 
 def test_notebook_reader_notebook():
     # Open a test notebook with a code cell.
-    path = get_test_file_path('notebook', 'notebook.ipynb')
+    path = get_test_file_path('notebook', 'simplenb.ipynb')
     notebook = open_notebook(path)
     # Convert it to an AST.
     reader = NotebookReader()
@@ -120,10 +120,10 @@ def test_notebook_reader_notebook():
     ast.show()
 
     # Compare with the markdown version.
-    path = get_test_file_path('markdown', 'notebook.md')
+    path = get_test_file_path('markdown', 'simplenb.md')
     markdown_expected = load_text(path)
     markdown_converted = MarkdownPlugin().write(ast)
-    markdown_converted = re.sub(r'\{resource:([^\}]+)\}', r'notebook_files/\1',
+    markdown_converted = re.sub(r'\{resource:([^\}]+)\}', r'simplenb_files/\1',
                                 markdown_converted)
     # The test file has a trailing new line, but not the AST.
     markdown_converted += '\n'
@@ -157,12 +157,12 @@ def test_notebook_writer_hello():
 
 
 def test_notebook_writer_notebook():
-    path = get_test_file_path('ast', 'notebook.json')
+    path = get_test_file_path('ast', 'simplenb.json')
     ast = ASTPlugin().load(path)
     # TODO: save resource files in JSON serializer
 
     # Load the image.
-    fn = get_test_file_path('markdown', 'notebook_files/output_4_1.png')
+    fn = get_test_file_path('markdown', 'simplenb_files/output_4_1.png')
     with open(fn, 'rb') as f:
         img = f.read()
     # Convert the AST to a notebook.
@@ -171,6 +171,6 @@ def test_notebook_writer_notebook():
 
     # Compare the notebooks.
     nb_expected = open_notebook(get_test_file_path('notebook',
-                                                   'notebook.ipynb'))
+                                                   'simplenb.ipynb'))
     # Ignore some fields when comparing the notebooks.
     assert nb == nb_expected

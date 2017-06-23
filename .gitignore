@@ -5,6 +5,7 @@ wiki
 .eggs
 .cache
 __pycache__
+_experimental
 
 *.py[cod]
 .coverage
