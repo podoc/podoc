@@ -10,6 +10,9 @@ import os
 import os.path as op
 import sys
 
+import pypandoc
+
+pandoc = pypandoc.convert
 logger = logging.getLogger(__name__)
 
 
@@ -171,12 +174,6 @@ PANDOC_MARKDOWN_FORMAT = ('markdown_strict'
                           'hard_line_breaks+'
                           'tex_math_dollars'
                           )
-
-
-def pandoc(obj, to, **kwargs):
-    """Convert a string or a file with pandoc."""
-    import pypandoc
-    return pypandoc.convert(obj, to, **kwargs)
 
 
 def get_pandoc_formats():

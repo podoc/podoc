@@ -131,6 +131,15 @@ def test_podoc_2(tempdir):
     assert md == 'hello world'
 
 
+def test_podoc_pandoc(tempdir):
+    p = Podoc()
+    with raises(ValueError):
+        p.convert_text('hello world', source='markdown', target='docx')
+    path = op.join(tempdir, 'test.docx')
+    p.convert_text('hello world', source='markdown', target='docx', output=path)
+    assert 'test.docx' in os.listdir(tempdir)
+
+
 def test_podoc_file(tempdir):
     p = Podoc(plugins=[], with_pandoc=False)
 

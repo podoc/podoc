@@ -243,8 +243,8 @@ class Podoc(object):
         obj = self.load(obj_or_path, source, context=context) if is_path else obj_or_path
         # Make the conversion in memory.
         obj = self._make_conversion(obj, lang_chain, context=context)
-        # Save the file.
-        if output:
+        # Save the file, unless the conversion function did it (output_file_required).
+        if output and not context.get('output_file_required', None):
             output_dir = op.dirname(output)
             if not op.exists(output_dir):
                 logger.debug("Create directory `%s`.", output_dir)

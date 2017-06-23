@@ -56,6 +56,9 @@ BLOCK_NAMES = (
 DEFAULT_BULLET_SYMBOL = '*'
 
 
+PANDOC_OUTPUT_FILE_REQUIRED = ('odt', 'docx', 'epub', 'epub3', 'pdf')
+
+
 # List of allowed inline names.
 INLINE_NAMES = (
     # The following are pandoc inline names:
@@ -422,11 +425,20 @@ class PandocPlugin(IPlugin):
 
         # From AST to pandoc target formats.
         def _make_target_func(lang):
+            output_file_required = lang in PANDOC_OUTPUT_FILE_REQUIRED
+
             def conv(ast, context=None):
-                """Convert a document from the podoc AST to `lang`, via
-                pandoc."""
+                """Convert a document from the podoc AST to `lang`, via pandoc."""
                 d = json.dumps(ast.to_pandoc())
-                out = pandoc(d, lang, format='json')
+                context = context or {}
+                kwargs = {}
+                if output_file_required:
+                    output = context.get('output', None)
+                    if not output:
+                        raise ValueError("The target language %s requires an output file.", lang)
+                    kwargs = {'outputfile': output}
+                    context['output_file_required'] = True
+                out = pandoc(d, lang, format='json', **kwargs)
                 return out
             return conv
 
