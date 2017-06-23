@@ -11,11 +11,11 @@ Taken from https://github.com/jupyter/notebook/blob/master/notebook/services/con
 #------------------------------------------------------------------------------
 
 from itertools import combinations
+from tempfile import TemporaryDirectory
 
 from tornado.web import HTTPError
 import notebook.services.contents.tests.test_manager as tm
 
-from podoc.tempdir import TemporaryDirectory
 from ..manager import PodocContentsManager
 
 # Monkey patch Jupyter's FileContentsManager with podoc's class.

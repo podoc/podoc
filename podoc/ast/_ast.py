@@ -13,8 +13,6 @@ import logging
 import os.path as op
 import re
 
-from six import string_types
-
 from podoc.tree import Node, TreeTransformer, filter_tree
 from podoc.plugin import IPlugin
 from podoc.utils import (has_pandoc, pandoc, get_pandoc_formats,
@@ -298,12 +296,12 @@ class PandocToPodoc(TreeTransformer):
         pass
 
     def transform(self, d):
-        if isinstance(d, string_types):
+        if isinstance(d, str):
             return d
         c = self.get_node_children(d)
         node = ASTNode(self.get_node_name(d))
         children = self.get_transform_func(d)(c, node)
-        if isinstance(children, string_types):
+        if isinstance(children, str):
             return children
         children = children or []
         assert isinstance(children, list)
@@ -364,7 +362,7 @@ class PandocToPodoc(TreeTransformer):
 
     def transform_Code(self, c, node):
         code = c[1]
-        assert isinstance(code, string_types)
+        assert isinstance(code, str)
         # NOTE: code has one child: a string with the code.
         return [code]
 

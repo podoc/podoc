@@ -12,7 +12,6 @@ import os
 import os.path as op
 
 from pytest import raises
-from six import string_types
 
 from ..core import Podoc, _find_path, _get_annotation, _connected_component
 from ..utils import get_test_file_path, load_text, dump_text
@@ -212,9 +211,9 @@ def test_all_convert(tempdir, podoc, source_target, test_file):
     expected = podoc.pre_filter(expected, target, source)
 
     # Remove the trailing new lines.
-    if isinstance(converted, string_types):
+    if isinstance(converted, str):
         converted = converted.rstrip()
-    if isinstance(expected, string_types):
+    if isinstance(expected, str):
         expected = expected.rstrip()
     podoc.assert_equal(converted, expected, target)
 

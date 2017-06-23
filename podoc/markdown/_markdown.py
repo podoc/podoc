@@ -11,7 +11,6 @@ import logging
 import os.path as op
 
 import pypandoc
-from six import string_types
 
 from podoc.ast import ASTNode, ASTPlugin
 from podoc.markdown.renderer import MarkdownRenderer
@@ -174,12 +173,12 @@ class MarkdownPlugin(IPlugin):
             _save_resources(context.get('resources', {}), _get_resources_path(path))
 
     def read(self, contents, context=None):
-        assert isinstance(contents, string_types)
+        assert isinstance(contents, str)
         js = pypandoc.convert_text(contents, 'json', format=PANDOC_MARKDOWN_FORMAT)
         ast = ASTPlugin().loads(js)
         return ast
 
     def write(self, ast, context=None):
-        assert isinstance(ast, (ASTNode, string_types))
+        assert isinstance(ast, (ASTNode, str))
         text = ASTToMarkdown().transform(ast)
         return text

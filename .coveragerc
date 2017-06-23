@@ -4,5 +4,3 @@
 exclude_lines =
     pragma: no cover
     pass
-omit =
-    podoc/tempdir.py

@@ -8,10 +8,10 @@
 
 import logging
 from itertools import product
+from tempfile import TemporaryDirectory
 
 from pytest import fixture, yield_fixture
 
-from .tempdir import TemporaryDirectory
 from podoc import add_default_handler, Podoc  # noqa
 
 

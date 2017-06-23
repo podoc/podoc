@@ -8,7 +8,6 @@
 #------------------------------------------------------------------------------
 
 from pytest import fixture
-from six import string_types
 
 from podoc.ast import ASTNode
 from .._markdown import MarkdownPlugin
@@ -56,7 +55,7 @@ def test_markdown_write(ast, markdown):
 # -----------------------------------------------------------------------------
 
 def _tree_contains_nodes(ast, names):
-    if isinstance(ast, string_types):
+    if isinstance(ast, str):
         return False
     if ast.name in names:
         return True

@@ -7,10 +7,8 @@
 # Imports
 #------------------------------------------------------------------------------
 
+from itertools import zip_longest
 import logging
-
-from six import string_types, u
-from six.moves import zip_longest
 
 from .utils import Bunch, _shorten_string
 
@@ -50,9 +48,9 @@ class TreeTransformer(object):
 
     def set_next_child(self, child, next_child):
         """To be overriden. Set the next and previous children."""
-        if child is not None and not isinstance(child, string_types):
+        if child is not None and not isinstance(child, str):
             child._visit_meta['nxt'] = next_child
-        if next_child is not None and not isinstance(next_child, string_types):
+        if next_child is not None and not isinstance(next_child, str):
             next_child._visit_meta['prv'] = child
 
     # Transformation methods
@@ -80,7 +78,7 @@ class TreeTransformer(object):
 
     def get_transform_func(self, node):
         assert node is not None
-        name = ('str' if isinstance(node, string_types)
+        name = ('str' if isinstance(node, str)
                 else self.get_node_name(node))
         return getattr(self, 'transform_' + name, self.transform_Node)
 
@@ -106,14 +104,14 @@ class Node(Bunch):
         self._visit_meta = {}
         # Empty names are forbidden.
         assert name
-        assert isinstance(name, string_types)
+        assert isinstance(name, str)
         self.name = name
         self.children = children or []
         assert isinstance(self.children, list)
 
     def add_child(self, child):
         """A child is either a Node or a string."""
-        assert isinstance(child, (Node, string_types))
+        assert isinstance(child, (Node, str))
         self.children.append(child)
         return child
 
@@ -159,9 +157,9 @@ def filter_tree(tree, func):
 #------------------------------------------------------------------------------
 
 class TreePrinter(TreeTransformer):
-    prefix_t = u('├─ ')
-    prefix_l = u('└─ ')
-    prefix_d = u('│  ')
+    prefix_t = '├─ '
+    prefix_l = '└─ '
+    prefix_d = '│  '
 
     def __init__(self, get_node_name=None, get_node_children=None):
         self._get_node_name = get_node_name or (lambda n: n.name)

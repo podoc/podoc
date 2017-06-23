@@ -3,21 +3,14 @@
 """Utility functions."""
 
 from contextlib import contextmanager
+from io import StringIO
 import json
 import logging
 import os
 import os.path as op
 import sys
 
-from six import string_types, StringIO, PY2
-
 logger = logging.getLogger(__name__)
-
-
-if PY2:
-    # This exception is only defined in Python 3.
-    class FileNotFoundError(OSError):  # pragma: no cover
-        pass
 
 
 #------------------------------------------------------------------------------
@@ -51,7 +44,7 @@ def dump_text(contents, path):
 
 
 def _get_file(file_or_path, mode=None):
-    if isinstance(file_or_path, string_types):
+    if isinstance(file_or_path, str):
         return open(file_or_path, mode)
     else:
         return file_or_path
@@ -123,7 +116,7 @@ def _load_resources(res_path):
 #------------------------------------------------------------------------------
 
 def _normalize_path(path):
-    assert isinstance(path, string_types)
+    assert isinstance(path, str)
     assert path
     path = op.realpath(op.expanduser(path))
     return path
@@ -157,8 +150,8 @@ def _merge_str(l):
     """Concatenate consecutive strings in a list of nodes."""
     out = []
     for node in l:
-        if (out and isinstance(out[-1], string_types) and
-                isinstance(node, string_types)):
+        if (out and isinstance(out[-1], str) and
+                isinstance(node, str)):
             out[-1] += node
         else:
             out.append(node)

@@ -7,7 +7,7 @@
 
 * Every file `file.py` must be tested in `tests/test_file.py`.
 * Every format is implemented in a `podoc/formatname/` subdirectory.
-* Every format provides test files in `podoc/formatname/test_files/examplename.ext`. Static files (images) are all saved in `markdown/test_files/`.
+* Every format provides test files in `podoc/formatname/test_files/examplename.ext`.
 
 ## Code quality
 
