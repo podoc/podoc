@@ -15,7 +15,7 @@ from pytest import raises
 from six import string_types
 
 from ..core import Podoc, _find_path, _get_annotation, _connected_component
-from ..utils import get_test_file_path, load_text
+from ..utils import get_test_file_path, load_text, dump_text
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +104,32 @@ def test_podoc_convert_1(tempdir):
     assert p.convert_file(path, output=path2) == 'hello'
     with open(path2, 'r') as f:
         assert f.read() == 'hello'
+
+
+def test_podoc_2(tempdir):
+    p = Podoc(with_pandoc=False)
+
+    assert p.get_file_ext('markdown') == '.md'
+    assert p.get_file_ext('notebook') == '.ipynb'
+    assert p.get_lang_for_file_ext('.md') == 'markdown'
+    assert p.get_lang_for_file_ext('.ipynb') == 'notebook'
+
+    md_path = op.join(tempdir, 'test.md')
+    ipynb_path = op.join(tempdir, 'test.ipynb')
+
+    dump_text('hello world', md_path)
+
+    _, context = p.convert_file(md_path, output=ipynb_path, return_context=True)
+
+    assert context.source == 'markdown'
+    assert context.target == 'notebook'
+    assert context.lang_chain == ['markdown', 'ast', 'notebook']
+
+    assert '"cell_type": "markdown"' in load_text(ipynb_path)
+
+    md_path2 = op.join(tempdir, 'test2.md')
+    md, context = p.convert_file(ipynb_path, output=md_path2, return_context=True)
+    assert md == 'hello world'
 
 
 def test_podoc_file(tempdir):
