@@ -236,6 +236,9 @@ class Podoc(object):
         # Create the context object.
         context = Bunch(path=path, source=source, target=target,
                         lang_chain=lang_chain, output=output)
+        if path:
+            logger.debug("Converting `%s` from %s to %s, output `%s`.",
+                         path, source, target, output)
         # Load the object from disk if necessary.
         obj = self.load(obj_or_path, source, context=context) if is_path else obj_or_path
         # Make the conversion in memory.

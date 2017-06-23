@@ -15,7 +15,7 @@ from click.testing import CliRunner
 
 from ..cli import podoc
 from ..core import Podoc
-from ..utils import dump_text
+from ..utils import dump_text, load_text
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,15 @@ def test_cli_2(tempdir):
     _podoc('--no-pandoc {} -o {}'.format(path, path_o))
     md = _podoc('--no-pandoc -f json -t markdown {}'.format(path_o))
     assert md == 'hello world\n'
+
+
+def test_cli_3(tempdir):
+    """From notebook to markdown."""
+    path = op.join(tempdir, 'hello.md')
+    path_o = op.join(tempdir, 'hello.ipynb')
+    dump_text('hello world', path)
+    _podoc('{} -o {}'.format(path, path_o))
+    assert '"cell_type": "markdown"' in load_text(path_o)
 
 
 def test_cli_md_nb():

@@ -66,9 +66,9 @@ PODOC_HELP = get_podoc_docstring()
                 required=False,
                 type=click.Path(exists=True, file_okay=True,
                                 dir_okay=True, resolve_path=True))
-@click.option('-f', '-r', '--from', '--read', default='markdown',
+@click.option('-f', '-r', '--from', '--read',
               help='Source format.')
-@click.option('-t', '-w', '--to', '--write', default='ast',
+@click.option('-t', '-w', '--to', '--write',
               help='Target format.')
 @click.option('-o', '--output',
               help='Output path.')
@@ -99,8 +99,6 @@ def podoc(files=None,
                                  output=output)
     else:
         # TODO: multiple files
-        logger.debug("Converting file `%s` from %s to %s in %s.",
-                     files, read, write, output)
         out = podoc.convert_file(files, source=read, target=write, output=output)
     if output is None:
         click.echo(podoc.dumps(out, write))
