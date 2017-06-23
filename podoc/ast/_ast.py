@@ -59,6 +59,42 @@ DEFAULT_BULLET_SYMBOL = '*'
 PANDOC_OUTPUT_FILE_REQUIRED = ('odt', 'docx', 'epub', 'epub3', 'pdf')
 
 
+PANDOC_FILE_EXTENSIONS = {
+    'latex': '.latex',
+    'latex': '.ltx',
+    'latex': '.tex',
+    'context': '.context',
+    'context': '.ctx',
+    'rtf': '.rtf',
+    'rst': '.rst',
+    's5': '.s5',
+    'native': '.native',
+    'json': '.json',
+    'markdown': '.txt',
+    'markdown': '.text',
+    'markdown': '.markdown',
+    'markdown': '.md',
+    'textile': '.textile',
+    'markdown+lhs': '.lhs',
+    'texinfo': '.texi',
+    'texinfo': '.texinfo',
+    'docbook': '.db',
+    'odt': '.odt',
+    'docx': '.docx',
+    'epub': '.epub',
+    'org': '.org',
+    'asciidoc': '.asciidoc',
+    'asciidoc': '.adoc',
+    'latex': '.pdf',
+    'fb2': '.fb2',
+    'opml': '.opml',
+    'icml': '.icml',
+    'tei': '.tei.xml',
+    'tei': '.tei',
+    'ms': '.roff',
+    'ms': '.ms',
+}
+
 # List of allowed inline names.
 INLINE_NAMES = (
     # The following are pandoc inline names:
@@ -420,7 +456,9 @@ class PandocPlugin(IPlugin):
             # if source in podoc_langs:
             #     continue
             func = _make_source_func(source)
-            podoc.register_lang(source, pandoc=True)
+            podoc.register_lang(source, pandoc=True,
+                                file_ext=PANDOC_FILE_EXTENSIONS.get(source, None),
+                                )
             podoc.register_func(source=source, target='ast', func=func)
 
         # From AST to pandoc target formats.
@@ -447,7 +485,9 @@ class PandocPlugin(IPlugin):
             # if target in podoc_langs:
             #     continue
             func = _make_target_func(target)
-            podoc.register_lang(target, pandoc=True)
+            podoc.register_lang(target, pandoc=True,
+                                file_ext=PANDOC_FILE_EXTENSIONS.get(source, None),
+                                )
             podoc.register_func(source='ast', target=target, func=func)
 
 
