@@ -168,6 +168,7 @@ class MarkdownPlugin(IPlugin):
         with _get_file(file_or_path, 'w') as f:
             path = op.realpath(f.name)
             f.write(text)
+            f.write('\n')
         # Save the resources.
         if (context or {}).get('resources', {}):
             _save_resources(context.get('resources', {}), _get_resources_path(path))
