@@ -102,11 +102,16 @@ def extract_output(output):
             # data is b64-encoded as text (str, unicode)
             # decodestring only accepts bytes
 
+            # from IPython.utils import py3compat
             # data = py3compat.cast_bytes(data)
             if not isinstance(data, bytes):
                 data = data.encode('UTF-8', 'replace')
 
-            data = base64.decodestring(data)
+            try:
+                data = base64.decodestring(data)
+            except Exception as e:
+                logger.warn("Unable to decode: %s.", str(e))
+                data = b''
         elif sys.platform == 'win32':  # pragma: no cover
             data = data.replace('\n', '\r\n').encode('UTF-8')
         else:  # pragma: no cover
@@ -167,7 +172,7 @@ class NotebookReader(object):
         for child in ast.children:
             curtree.children.append(child)
             # Create a new tree at every cell delimiter.
-            if child.children[0] == self._NEW_CELL_DELIMITER:
+            if child.children and child.children[0] == self._NEW_CELL_DELIMITER:
                 # Remove the delimiter node.
                 curtree.children.pop()
                 # Append the current cell tree and create the next one.
@@ -204,6 +209,10 @@ class NotebookReader(object):
                 child = ASTNode('CodeBlock',
                                 lang='{output:' + output.name + '}',  # stdout/stderr
                                 children=[output.text.rstrip()])
+            elif output.output_type == 'error':
+                child = ASTNode('CodeBlock',
+                                lang='{output:error}',
+                                children=['\n'.join(output.traceback)])
             elif output.output_type in ('display_data', 'execute_result'):
                 # Output text node.
                 text = output.data.get('text/plain', 'Output')
@@ -224,10 +233,12 @@ class NotebookReader(object):
                     # Wrap the Image node in a Para.
                     img_child = ASTNode('Image', url='{resource:%s}' % fn, children=[text])
                     child = ASTNode('Para', children=[img_child])
+            else:  # pragma: no cover
+                raise ValueError("Unknown output type `%s`." % output.output_type)
             node.add_child(child)
         self.tree.children.append(node)
 
-    def read_raw(self, cell):
+    def read_raw(self, cell, cell_index=None):
         # TODO
         pass
 

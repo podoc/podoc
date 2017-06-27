@@ -10,9 +10,9 @@
 import os.path as op
 import re
 
+from podoc.ast import ASTPlugin, ASTNode
 from podoc.markdown import MarkdownPlugin
 from podoc.utils import get_test_file_path, load_text
-from podoc.ast import ASTPlugin, ASTNode
 from .._notebook import (_get_b64_resource,
                          extract_output,
                          output_filename,
