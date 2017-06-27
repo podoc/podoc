@@ -15,7 +15,7 @@ from pytest import mark
 
 from ..utils import (Bunch, Path, load_text, dump_text, _get_file, _merge_str, _shorten_string,
                      _get_resources_path, _save_resources, _load_resources,
-                     get_test_file_path,
+                     get_test_file_path, _create_dir_if_not_exists,
                      pandoc, has_pandoc, get_pandoc_formats,
                      )
 
@@ -52,6 +52,12 @@ def test_shorten_string():
     assert s.startswith('*' * 10)
     assert s.endswith('*' * 10)
     assert '(...)' in s
+
+
+def test_create_dir_if_not_exists(tempdir):
+    assert not _create_dir_if_not_exists(tempdir)
+    assert _create_dir_if_not_exists(op.join(tempdir, 'test'))
+    assert op.exists(op.join(tempdir, 'test'))
 
 
 #-------------------------------------------------------------------------------------------------
