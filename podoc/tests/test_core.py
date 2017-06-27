@@ -11,7 +11,7 @@ import logging
 import os
 import os.path as op
 
-from pytest import raises
+from pytest import fixture, raises
 
 from ..core import Podoc, _find_path, _get_annotation, _connected_component
 from ..utils import get_test_file_path, load_text, dump_text
@@ -53,6 +53,24 @@ def test_connected_component():
 # Tests podoc
 #-------------------------------------------------------------------------------------------------
 
+@fixture
+def podoc_fixture():
+    p = Podoc(plugins=[], with_pandoc=False)
+
+    p.register_lang('lower', file_ext='.low')
+    p.register_lang('upper', file_ext='.up')
+
+    @p.register_func(source='lower', target='upper')
+    def toupper(text, context=None):
+        return text.upper()
+
+    @p.register_func(source='upper', target='lower')
+    def tolower(text, context=None):
+        return text.lower()
+
+    return p
+
+
 def test_podoc_1():
     podoc = Podoc(with_pandoc=False)
     assert 'ast' in podoc.languages
@@ -71,19 +89,8 @@ def test_podoc_fail():
         p.convert_file('/does/not/exist', lang_chain=['a', 'b'])
 
 
-def test_podoc_convert_1(tempdir):
-    p = Podoc(plugins=[], with_pandoc=False)
-
-    p.register_lang('lower', file_ext='.low')
-    p.register_lang('upper', file_ext='.up')
-
-    @p.register_func(source='lower', target='upper')
-    def toupper(text, context=None):
-        return text.upper()
-
-    @p.register_func(source='upper', target='lower')
-    def tolower(text, context=None):
-        return text.lower()
+def test_podoc_convert_1(tempdir, podoc_fixture):
+    p = podoc_fixture
 
     # Conversion with explicit path.
     assert p.conversion_pairs == [('lower', 'upper'), ('upper', 'lower')]
@@ -98,11 +105,35 @@ def test_podoc_convert_1(tempdir):
     # Convert a file.
     path = op.join(tempdir, 'test.up')
     path2 = op.join(tempdir, 'test.low')
-    with open(path, 'w') as f:
-        f.write('HELLO')
+    dump_text('HELLO', path)
     assert p.convert_file(path, output=path2) == 'hello'
-    with open(path2, 'r') as f:
-        assert f.read() == 'hello'
+    assert load_text(path2) == 'hello'
+
+    assert p.convert_file(path, target='lower') == 'hello'
+
+
+def test_podoc_convert_2(tempdir, podoc_fixture):
+    p = podoc_fixture
+
+    paths = (op.join(tempdir, 'test1.up'),
+             op.join(tempdir, 'test2.up'),
+             )
+    dump_text('TEST1', paths[0])
+    dump_text('TEST2', paths[1])
+
+    # Convert input files to the same directory.
+    p.convert_files(paths, target='lower', output_dir=tempdir)
+    assert load_text(op.join(tempdir, 'test1.low')) == 'test1'
+    assert load_text(op.join(tempdir, 'test2.low')) == 'test2'
+
+    # Concatenate text in the same output file.
+    p.convert_files(paths, output=op.join(tempdir, 'out.low'))
+    assert load_text(op.join(tempdir, 'out.low')) == 'test1test2'
+
+    # Convert input files to the same directory.
+    p.convert_files(paths, target='lower', output_dir=op.join(tempdir, 'out/'))
+    assert load_text(op.join(tempdir, 'out', 'test1.low')) == 'test1'
+    assert load_text(op.join(tempdir, 'out', 'test2.low')) == 'test2'
 
 
 def test_podoc_2(tempdir):

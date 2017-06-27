@@ -62,7 +62,7 @@ PODOC_HELP = get_podoc_docstring()
 
 @click.command(help=PODOC_HELP)
 @click.argument('files',
-                # TODO: nargs=-1 for multiple files concat
+                nargs=-1,
                 required=False,
                 type=click.Path(exists=True, file_okay=True,
                                 dir_okay=True, resolve_path=True))
@@ -71,7 +71,13 @@ PODOC_HELP = get_podoc_docstring()
 @click.option('-t', '-w', '--to', '--write',
               help='Target format.')
 @click.option('-o', '--output',
+              type=click.Path(exists=False, file_okay=True,
+                              dir_okay=False, resolve_path=True),
               help='Output path.')
+@click.option('-d', '--output-dir',
+              type=click.Path(exists=False, file_okay=False,
+                              dir_okay=True, resolve_path=True),
+              help='Output directory.')
 @click.option('--no-pandoc', default=False, is_flag=True,
               help='Disable pandoc formats.')
 @click.version_option(__version__)
@@ -80,6 +86,7 @@ def podoc(files=None,
           read=None,
           write=None,
           output=None,
+          output_dir=None,
           no_pandoc=False,
           ):
     """Convert a file or a string from one format to another."""
@@ -98,8 +105,8 @@ def podoc(files=None,
         out = podoc.convert_text(contents, source=read, target=write,
                                  output=output)
     else:
-        # TODO: multiple files
-        out = podoc.convert_file(files, source=read, target=write, output=output)
+        out = podoc.convert_files(files, source=read, target=write,
+                                  output=output, output_dir=output_dir)
     if output is None:
         click.echo(podoc.dumps(out, write))
         return

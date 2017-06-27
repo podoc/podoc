@@ -120,7 +120,6 @@ class PodocContentsManager(FileContentsManager, Configurable):
                 if file_ext == '.ipynb':
                     return nbformat.read(f, as_version=as_version)
                 else:
-                    # TODO: static resources (images)
                     lang = self._podoc.get_lang_for_file_ext(file_ext)
                     return self._podoc.convert_file(os_path,
                                                     source=lang,
