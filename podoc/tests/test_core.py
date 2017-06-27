@@ -167,7 +167,9 @@ def test_podoc_pandoc(tempdir):
     with raises(ValueError):
         p.convert_text('hello world', source='markdown', target='docx')
     path = op.join(tempdir, 'test.docx')
-    p.convert_text('hello world', source='markdown', target='docx', output=path)
+    obj, context = p.convert_text('hello world', source='markdown', target='docx', output=path,
+                                  return_context=True)
+    assert context.output == path
     assert 'test.docx' in os.listdir(tempdir)
 
 

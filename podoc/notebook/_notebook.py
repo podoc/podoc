@@ -109,7 +109,7 @@ def extract_output(output):
 
             try:
                 data = base64.decodestring(data)
-            except Exception as e:
+            except Exception as e:  # pragma: no cover
                 logger.warn("Unable to decode: %s.", str(e))
                 data = b''
         elif sys.platform == 'win32':  # pragma: no cover
@@ -209,7 +209,7 @@ class NotebookReader(object):
                 child = ASTNode('CodeBlock',
                                 lang='{output:' + output.name + '}',  # stdout/stderr
                                 children=[output.text.rstrip()])
-            elif output.output_type == 'error':
+            elif output.output_type == 'error':  # pragma: no cover
                 child = ASTNode('CodeBlock',
                                 lang='{output:error}',
                                 children=['\n'.join(output.traceback)])
