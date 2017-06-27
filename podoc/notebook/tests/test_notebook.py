@@ -42,7 +42,7 @@ def test_extract_output():
     assert filename == 'output_4_1.png'
 
     # Open the image file in the markdown directory.
-    image_path = get_test_file_path('markdown', 'simplenb_files/' + filename)
+    image_path = get_test_file_path('markdown', 'simplenb_files/simplenb_4_1.png')
     with open(image_path, 'rb') as f:
         data_expected = f.read()
 
@@ -127,6 +127,8 @@ def test_notebook_reader_notebook():
                                 markdown_converted)
     # The test file has a trailing new line, but not the AST.
     markdown_converted += '\n'
+    # Replace the image filename because the conversion is done without output path.
+    markdown_expected = markdown_expected.replace('simplenb_4_1.png', 'output_4_1.png')
     assert markdown_converted == markdown_expected
 
     assert 'output_4_1.png' in reader.resources
@@ -162,7 +164,7 @@ def test_notebook_writer_notebook():
     # TODO: save resource files in JSON serializer
 
     # Load the image.
-    fn = get_test_file_path('markdown', 'simplenb_files/output_4_1.png')
+    fn = get_test_file_path('markdown', 'simplenb_files/simplenb_4_1.png')
     with open(fn, 'rb') as f:
         img = f.read()
     # Convert the AST to a notebook.

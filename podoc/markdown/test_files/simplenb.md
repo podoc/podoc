@@ -34,7 +34,7 @@ Package: mkl
 Message: trial mode expires in 30 days
 ```
 
-![<matplotlib.figure.Figure at 0x7f205474bf98>](simplenb_files/output_4_1.png)
+![<matplotlib.figure.Figure at 0x7f205474bf98>](simplenb_files/simplenb_4_1.png)
 
 ```javascript
 "This is not part of the previous code cell's output, since it's not Python."

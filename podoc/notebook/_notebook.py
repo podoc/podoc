@@ -130,9 +130,15 @@ def open_notebook(path):
 class NotebookReader(object):
     _NEW_CELL_DELIMITER = '@@@@@ PODOC-NEW-CELL @@@@@'
 
-    def read(self, notebook):
+    def read(self, notebook, context=None):
         assert isinstance(notebook, nbformat.NotebookNode)
         self.resources = {}  # Dictionary {filename: data}.
+        context = context or {}
+        # Get the unique key for image names: basename of the output file, if it exists.
+        self._unique_key = op.basename(context.get('output', None) or '')
+        self._unique_key = self._unique_key or op.basename(context.get('path', None) or '')
+        self._unique_key = op.splitext(self._unique_key)[0] or None
+        # Create the output tree.
         self.tree = ASTNode('root')
         # Language of the notebook.
         m = notebook.metadata
@@ -212,7 +218,7 @@ class NotebookReader(object):
                     fn = output_filename(mime_type=mime_type,
                                          cell_index=cell_index,
                                          output_index=output_index,
-                                         unique_key=None,  # TODO
+                                         unique_key=self._unique_key,
                                          )
                     self.resources[fn] = data
                     # Wrap the Image node in a Para.
@@ -469,7 +475,7 @@ class NotebookPlugin(IPlugin):
 
     def read(self, nb, context=None):
         nr = NotebookReader()
-        ast = nr.read(nb)
+        ast = nr.read(nb, context=context)
         if context:
             context.resources = nr.resources
         return ast
