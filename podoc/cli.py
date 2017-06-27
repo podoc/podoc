@@ -107,9 +107,8 @@ def podoc(files=None,
     else:
         out = podoc.convert_files(files, source=read, target=write,
                                   output=output, output_dir=output_dir)
-    if output is None:
+    if output is None and output_dir is None:
         click.echo(podoc.dumps(out, write))
-        return
 
 
 if __name__ == '__main__':  # pragma: no cover
