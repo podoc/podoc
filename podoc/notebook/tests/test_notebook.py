@@ -14,7 +14,7 @@ from podoc.ast import ASTPlugin, ASTNode
 from podoc.markdown import MarkdownPlugin
 from podoc.utils import get_test_file_path, load_text
 from .._notebook import (_get_b64_resource,
-                         extract_output,
+                         extract_image,
                          output_filename,
                          open_notebook,
                          NotebookReader,
@@ -32,12 +32,12 @@ def test_get_b64_resource():
     assert len(_get_b64_resource(b'abcdef')) >= 4
 
 
-def test_extract_output():
+def test_extract_image():
     # Open a test notebook with a code cell containing an image.
     path = get_test_file_path('notebook', 'simplenb.ipynb')
     notebook = open_notebook(path)
     cell = notebook.cells[4]
-    mime_type, data = list(extract_output(cell.outputs[1]))
+    mime_type, data = list(extract_image(cell.outputs[1]))
     filename = output_filename(mime_type, cell_index=4, output_index=1)
     assert filename == 'output_4_1.png'
 

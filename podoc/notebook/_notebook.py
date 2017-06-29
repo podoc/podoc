@@ -40,7 +40,6 @@ import logging
 from mimetypes import guess_extension, guess_type
 import os.path as op
 import re
-import sys
 
 import nbformat
 from nbformat.v4 import (new_notebook,
@@ -54,6 +53,7 @@ from podoc.ast import ASTNode  # , TreeTransformer
 from podoc.plugin import IPlugin
 from podoc.tree import TreeTransformer
 from podoc.utils import _get_file, _get_resources_path
+from ._utils import extract_image, extract_table
 
 logger = logging.getLogger(__name__)
 
@@ -63,10 +63,6 @@ logger = logging.getLogger(__name__)
 #-------------------------------------------------------------------------------------------------
 
 _OUTPUT_FILENAME_TEMPLATE = "{unique_key}_{cell_index}_{index}{extension}"
-_EXTRACT_OUTPUT_TYPES = ('image/png',
-                         'image/jpeg',
-                         'image/svg+xml',
-                         'application/pdf')
 
 
 def output_filename(mime_type=None, unique_key=None,
@@ -80,44 +76,6 @@ def output_filename(mime_type=None, unique_key=None,
                 extension=ext,
                 )
     return _OUTPUT_FILENAME_TEMPLATE.format(**args)
-
-
-def extract_output(output):
-    """Return the output mime type and data for the first found mime type.
-
-    https://github.com/jupyter/nbconvert/blob/master/nbconvert/preprocessors/extractoutput.py
-
-    Copyright (c) IPython Development Team.
-    Distributed under the terms of the Modified BSD License.
-
-    """
-    # Get the output in data formats that the template needs extracted.
-    for mime_type in _EXTRACT_OUTPUT_TYPES:
-        if mime_type not in output.data:
-            continue
-        data = output.data[mime_type]
-
-        # Binary files are base64-encoded, SVG is already XML.
-        if mime_type in {'image/png', 'image/jpeg', 'application/pdf'}:
-            # data is b64-encoded as text (str, unicode)
-            # decodestring only accepts bytes
-
-            # from IPython.utils import py3compat
-            # data = py3compat.cast_bytes(data)
-            if not isinstance(data, bytes):
-                data = data.encode('UTF-8', 'replace')
-
-            try:
-                data = base64.decodestring(data)
-            except Exception as e:  # pragma: no cover
-                logger.warn("Unable to decode: %s.", str(e))
-                data = b''
-        elif sys.platform == 'win32':  # pragma: no cover
-            data = data.replace('\n', '\r\n').encode('UTF-8')
-        else:  # pragma: no cover
-            data = data.encode('UTF-8')
-
-        return mime_type, data
 
 
 #-------------------------------------------------------------------------------------------------
@@ -217,7 +175,9 @@ class NotebookReader(object):
                 # Output text node.
                 text = output.data.get('text/plain', 'Output')
                 # Extract image output, if any.
-                out = extract_output(output)
+                out = extract_image(output)
+                if out is None:
+                    out = extract_table(output)
                 if out is None:
                     child = ASTNode('CodeBlock',
                                     lang='{output:result}',
@@ -231,7 +191,8 @@ class NotebookReader(object):
                                          )
                     self.resources[fn] = data
                     # Wrap the Image node in a Para.
-                    img_child = ASTNode('Image', url='{resource:%s}' % fn, children=[text])
+                    img_child = ASTNode('Image', url='{resource:%s}' % fn,
+                                        children=['Output image'])
                     child = ASTNode('Para', children=[img_child])
             else:  # pragma: no cover
                 raise ValueError("Unknown output type `%s`." % output.output_type)
