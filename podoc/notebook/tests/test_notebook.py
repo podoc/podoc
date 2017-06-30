@@ -15,8 +15,6 @@ from podoc.ast import ASTPlugin, ASTNode
 from podoc.markdown import MarkdownPlugin
 from podoc.utils import get_test_file_path, load_text
 from .._notebook import (_get_b64_resource,
-                         extract_image,
-                         output_filename,
                          open_notebook,
                          NotebookReader,
                          NotebookWriter,
