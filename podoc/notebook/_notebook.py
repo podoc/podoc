@@ -390,7 +390,7 @@ class NotebookWriter(object):
                 # The image path could be absolute.
                 elif op.isabs(fn):
                     image_path = fn
-                else:
+                else:  # pragma: no cover
                     image_path = None
                 # If the image path exists, open it.
                 if image_path and op.exists(image_path):

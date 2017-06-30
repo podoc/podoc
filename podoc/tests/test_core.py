@@ -169,7 +169,7 @@ def test_podoc_pandoc(tempdir):
     path = op.join(tempdir, 'test.docx')
     obj, context = p.convert_text('hello world', source='markdown', target='docx', output=path,
                                   return_context=True)
-    assert context.output == path
+    assert context.output.replace('/private', '') == path  # FIX on MacOS
     assert 'test.docx' in os.listdir(tempdir)
 
 
