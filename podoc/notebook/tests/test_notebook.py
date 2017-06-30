@@ -9,6 +9,7 @@
 
 import os.path as op
 import re
+from textwrap import dedent
 
 from podoc.ast import ASTPlugin, ASTNode
 from podoc.markdown import MarkdownPlugin
@@ -132,6 +133,22 @@ def test_notebook_reader_notebook():
     assert markdown_converted == markdown_expected
 
     assert 'output_4_1.png' in reader.resources
+
+
+def test_output_text(podoc):
+    img_path = get_test_file_path('markdown', 'simplenb_files/simplenb_4_1.png')
+    markdown = dedent('''
+    ```python
+    print("hello")
+    ```
+
+    ![Some text](%s)
+
+    ''' % img_path)
+    print(markdown)
+    nb = podoc.convert_text(markdown, source='markdown', target='notebook')
+    md = podoc.convert_text(nb, source='notebook', target='markdown')
+    print(md)
 
 
 #-------------------------------------------------------------------------------------------------

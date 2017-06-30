@@ -385,11 +385,17 @@ class NotebookWriter(object):
                 # Get the resource data.
                 if self._dir_path:
                     image_path = op.join(self._dir_path, fn)
-                    if op.exists(image_path):
-                        with open(image_path, 'rb') as f:
-                            data[mime_type] = _get_b64_resource(f.read())
-                    else:  # pragma: no cover
-                        logger.debug("File `%s` doesn't exist.", image_path)
+                # The image path could be absolute.
+                elif op.isabs(fn):
+                    image_path = fn
+                else:
+                    image_path = None
+                # If the image path exists, open it.
+                if image_path and op.exists(image_path):
+                    with open(image_path, 'rb') as f:
+                        data[mime_type] = _get_b64_resource(f.read())
+                else:  # pragma: no cover
+                    logger.debug("File `%s` doesn't exist.", image_path)
                 data['text/plain'] = caption
                 kwargs = dict(data=data)
             assert not output_type.startswith('{output')
