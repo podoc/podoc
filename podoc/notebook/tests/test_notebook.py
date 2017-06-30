@@ -145,10 +145,11 @@ def test_output_text(podoc):
     ![Some text](%s)
 
     ''' % img_path)
-    print(markdown)
     nb = podoc.convert_text(markdown, source='markdown', target='notebook')
+    nb.cells[0].outputs[0].data['text/plain'] = 'Replaced text'
     md = podoc.convert_text(nb, source='notebook', target='markdown')
-    print(md)
+    assert 'Replaced' not in md
+    assert 'Some text' in md
 
 
 #-------------------------------------------------------------------------------------------------

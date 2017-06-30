@@ -173,7 +173,9 @@ class NotebookReader(object):
                                 children=['\n'.join(output.traceback)])
             elif output.output_type in ('display_data', 'execute_result'):
                 # Output text node.
-                text = output.data.get('text/plain', 'Output')
+                # Take it from cell metadata first, otherwise from the cell's output text.
+                text = cell.metadata.get('podoc', {}).get('output_text', None)
+                text = text or output.data.get('text/plain', 'Output')
                 # Extract image output, if any.
                 out = extract_image(output)
                 if out is None:
@@ -192,7 +194,7 @@ class NotebookReader(object):
                     self.resources[fn] = data
                     # Wrap the Image node in a Para.
                     img_child = ASTNode('Image', url='{resource:%s}' % fn,
-                                        children=['Output image'])
+                                        children=[text])
                     child = ASTNode('Para', children=[img_child])
             else:  # pragma: no cover
                 raise ValueError("Unknown output type `%s`." % output.output_type)
@@ -396,7 +398,13 @@ class NotebookWriter(object):
                         data[mime_type] = _get_b64_resource(f.read())
                 else:  # pragma: no cover
                     logger.debug("File `%s` doesn't exist.", image_path)
+                # Save the caption in the output text.
                 data['text/plain'] = caption
+                # Save the caption in the cell metadata too, so that it is not lost when
+                # executing the notebook.
+                if 'podoc' not in cell.metadata:
+                    cell.metadata['podoc'] = {}
+                cell.metadata['podoc'].update({'output_text': caption})
                 kwargs = dict(data=data)
             assert not output_type.startswith('{output')
             output = new_output(output_type, **kwargs)
