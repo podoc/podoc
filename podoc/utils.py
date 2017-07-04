@@ -174,7 +174,8 @@ def _merge_str(l):
 #-------------------------------------------------------------------------------------------------
 
 # TODO: commonmark instead
-PANDOC_MARKDOWN_FORMAT = ('markdown_strict'
+PANDOC_MARKDOWN_FORMAT = ('markdown'
+                          '-auto_identifiers'
                           '-raw_html+'
                           'fancy_lists+'
                           'startnum+'

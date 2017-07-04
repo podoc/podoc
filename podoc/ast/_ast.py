@@ -278,7 +278,7 @@ class PodocToPandoc(TreeTransformer):
     def transform_Image(self, node):
         children = [['', [], []],
                     self.transform_children(node),
-                    [node.url, '']]
+                    [node.url, 'fig:']]
         return _node_dict(node, children)
 
     def transform_Code(self, node):
