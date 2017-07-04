@@ -40,12 +40,12 @@ BLOCK_NAMES = (
     'BlockQuote',
     'BulletList',
     'OrderedList',
+    'RawBlock',
 
     # Special podoc names:
     'MathBlock',
 
     # The following pandoc block names are not supported yet in podoc:
-    # 'RawBlock',
     # 'DefinitionList',
     # 'HorizontalRule',
     # 'Table',
@@ -248,6 +248,11 @@ class PodocToPandoc(TreeTransformer):
         contents = node.children[0]
         return {'t': 'Math', 'c': [{'t': 'DisplayMath'}, contents]}
 
+    def transform_RawBlock(self, node):
+        raw_type = node.raw_type
+        contents = node.children[0]
+        return {'t': 'RawBlock', 'c': [raw_type, contents]}
+
     def transform_CodeBlock(self, node):
         # NOTE: node.children contains a single element, which is the code.
         code = node.children[0]
@@ -367,6 +372,11 @@ class PandocToPodoc(TreeTransformer):
         # NOTE: code has one child: a string with the code.
         code = c[1]
         return [code]
+
+    def transform_RawBlock(self, c, node):
+        node.raw_type = c[0]
+        contents = c[1]
+        return [contents]
 
     def transform_OrderedList(self, c, node):
         (node.start, style, delimiter), children = c

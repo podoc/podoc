@@ -133,12 +133,7 @@ def test_pandoc_conv():
 # We use strict Markdown, but we allow fancy lists.
 
 def _test_pandoc_ast(s):
-    """Check the compatibility of the podoc AST with pandoc.
-
-    * Perform Markdown -> pandoc AST dict -> podoc AST -> podoc AST dict
-    * Check that pandoc AST dict = podoc AST dict
-
-    """
+    """Check pandoc -> podoc AST -> pandoc round-trip."""
     if not has_pandoc():  # pragma: no cover
         raise ImportError("pypandoc is not available")
     ast_dict = json.loads(pandoc(s, 'json', format=PANDOC_MARKDOWN_FORMAT))
@@ -195,3 +190,7 @@ def test_pandoc_math():
     _test_pandoc_ast('$x=y$')
     _test_pandoc_ast('$$x=y$$')
     _test_pandoc_ast(r'$$\begin{eqnarray}\nx &= y\n\end{eqnarray}$$')
+
+
+def test_pandoc_raw():
+    _test_pandoc_ast(r'\begin{align*}\nx &= y\n\end{align*}')
