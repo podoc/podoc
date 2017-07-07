@@ -192,6 +192,9 @@ class NotebookReader(object):
                                          unique_key=self._unique_key,
                                          )
                     self.resources[fn] = data
+                    # Prevent multi-line image legend.
+                    if '\n' in text:  # pragma: no cover
+                        text = 'Output'
                     # Wrap the Image node in a Para.
                     img_child = ASTNode('Image', url='{resource:%s}' % fn,
                                         children=[text])
