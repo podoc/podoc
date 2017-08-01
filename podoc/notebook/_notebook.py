@@ -78,6 +78,10 @@ def output_filename(mime_type=None, unique_key=None,
     return _OUTPUT_FILENAME_TEMPLATE.format(**args)
 
 
+def _remove_ansi(text):
+    return re.sub(r'\x1b[^m]*m', '', text)
+
+
 #-------------------------------------------------------------------------------------------------
 # Notebook reader
 #-------------------------------------------------------------------------------------------------
@@ -166,16 +170,18 @@ class NotebookReader(object):
             if output.output_type == 'stream':
                 child = ASTNode('CodeBlock',
                                 lang='{output:' + output.name + '}',  # stdout/stderr
-                                children=[output.text.rstrip()])
+                                children=[_remove_ansi(output.text.rstrip())])
             elif output.output_type == 'error':  # pragma: no cover
                 child = ASTNode('CodeBlock',
                                 lang='{output:error}',
-                                children=['\n'.join(output.traceback)])
+                                children=[_remove_ansi('\n'.join(output.traceback))])
             elif output.output_type in ('display_data', 'execute_result'):
                 # Output text node.
                 # Take it from cell metadata first, otherwise from the cell's output text.
                 text = cell.metadata.get('podoc', {}).get('output_text', None)
                 text = text or output.data.get('text/plain', 'Output')
+                # Remove color codes.
+                text = _remove_ansi(text)
                 # Extract image output, if any.
                 out = extract_image(output)
                 if out is None:
