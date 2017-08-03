@@ -36,6 +36,7 @@ This all could (and should) be improved...
 #-------------------------------------------------------------------------------------------------
 
 import base64
+from collections import Counter
 import logging
 from mimetypes import guess_extension, guess_type
 import os.path as op
@@ -215,11 +216,27 @@ class NotebookReader(object):
         pass
 
 
+def _get_cell_lang(node):
+    if node.name == 'CodeBlock':
+        return node.lang
+    if node.name == 'CodeCell':
+        return _get_cell_lang(node.children[0])
+
+
 class CodeCellWrapper(object):
+    def infer_language(self, ast):
+        """Return the most common CodeBlock language: it is supposed to be the
+        notebook's language."""
+        mc = Counter([_get_cell_lang(node) for node in ast.children
+                      if node.name in ('CodeBlock', 'CodeCell')]).most_common(1)
+        return mc[0][0] if mc else 'python'
+
     def wrap(self, ast):
         self.ast = ast.copy()
         self.ast.children = []
         self._code_cell = None
+        # Infer the notebook's language.
+        self.language = self.infer_language(ast)
         for i, node in enumerate(ast.children):
             if self._code_cell:
                 if self.is_output(node) or self.is_image(node):
@@ -247,8 +264,7 @@ class CodeCellWrapper(object):
                 (children[0].name == 'Image'))
 
     def is_source(self, node):
-        # TODO: customizable lang
-        return node.name == 'CodeBlock' and node.lang == 'python'
+        return node.name == 'CodeBlock' and node.lang == self.language
 
     def start_code_cell(self, node):
         self._code_cell = ASTNode('CodeCell')
@@ -321,7 +337,8 @@ class NotebookWriter(object):
         self.execution_count = 1
         self._md = MarkdownPlugin()
         # Add code cells in the AST.
-        ast = wrap_code_cells(ast)
+        ccw = CodeCellWrapper()
+        ast = ccw.wrap(ast)
         # Find the directory containing the notebook file.
         doc_path = (context or {}).get('path', None)
         if doc_path:
@@ -331,6 +348,7 @@ class NotebookWriter(object):
             self._dir_path = None
         # Create the notebook.
         # new_output, new_code_cell, new_markdown_cell
+        # TODO: kernelspect
         nb = new_notebook()
         # Go through all top-level blocks.
         for index, node in enumerate(ast.children):
