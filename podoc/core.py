@@ -261,7 +261,7 @@ class Podoc(object):
     def convert_files(self, paths, source=None, target=None, lang_chain=None,
                       output=None, output_dir=None):
         """Convert a file by passing it through a chain of conversion functions."""
-        contexts = []
+        objs = []
         for i, path in enumerate(paths):
             # Create the context object.
             context = self._create_context(path=path, source=source, target=target,
@@ -270,9 +270,10 @@ class Podoc(object):
                                            )
             logger.debug("Converting `%s` from %s to %s.", op.basename(context.path),
                          context.source, context.target)
-            self._convert_from_context(context.path, context, is_path=True, do_append=i >= 1)
-            contexts.append(context)
-        return contexts
+            obj = self._convert_from_context(context.path, context,
+                                             is_path=True, do_append=i >= 1)
+            objs.append(obj)
+        return objs[0] if objs and len(objs) else objs
 
     def convert_file(self, path, source=None, target=None, lang_chain=None,
                      output=None, output_dir=None, return_context=False):
