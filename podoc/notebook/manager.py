@@ -14,6 +14,8 @@ from tornado import web
 import nbformat
 from traitlets import Unicode, Bool
 from traitlets.config import Configurable
+# BUG FIX: see https://github.com/jupyter/notebook/issues/3056
+from notebook import transutils  # noqa
 from notebook.services.contents.filemanager import FileContentsManager
 
 from podoc.core import Podoc
