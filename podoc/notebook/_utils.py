@@ -11,8 +11,11 @@ import base64
 import logging
 import os
 import os.path as op
+import subprocess
 import sys
 import tempfile
+
+from IPython.lib.latextools import genelatex
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +70,36 @@ tbody tr:nth-child(odd) {
 '''
 
 
+def latex_to_png_base64(latex):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpfile = os.path.join(tmpdir, "tmp.tex")
+        dvifile = os.path.join(tmpdir, "tmp.dvi")
+        pngfile = os.path.join(tmpdir, "tmp.png")
+
+        contents = list(genelatex(latex, False))
+        with open(tmpfile, "w") as f:
+            f.writelines(contents)
+
+        with open(os.devnull, 'w') as devnull:
+            try:
+                subprocess.check_call(
+                    ["latex", "-halt-on-error", tmpfile], cwd=tmpdir,
+                    stdout=devnull, stderr=devnull)
+            except Exception as e:
+                print("************")
+                print(len(contents))
+                print('\n'.join(contents))
+                raise(e)
+
+            subprocess.check_call(
+                ["dvipng", "-T", "tight", "-x", "6000", "-z", "9",
+                 "-bg", "transparent", "-o", pngfile, dvifile], cwd=tmpdir,
+                stdout=devnull, stderr=devnull)
+
+        with open(pngfile, 'rb') as f:
+            return base64.b64encode(f.read())
+
+
 def extract_image(output):
     """Return the output mime type and data for the first found mime type.
 
@@ -76,6 +109,14 @@ def extract_image(output):
     Distributed under the terms of the Modified BSD License.
 
     """
+
+    # HACK: SymPy PNG output is low resolution but it comes with LaTeX source.
+    # We override the low PNG with a high-resolution one.
+    if 'image/png' in output.data and 'text/latex' in output.data:
+        latex = ''.join(output.data['text/latex'])
+        b64 = latex_to_png_base64(latex)
+        output.data['image/png'] = b64
+
     # Get the output in data formats that the template needs extracted.
     for mime_type in _EXTRACT_OUTPUT_TYPES:
         if mime_type not in output.data:
