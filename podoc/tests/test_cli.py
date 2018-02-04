@@ -49,8 +49,8 @@ def test_cli_2(tempdir):
     path_o = op.join(tempdir, 'hello.json')
     dump_text('hello world', path)
     _podoc('--no-pandoc {} -o {}'.format(path, path_o))
-    md = _podoc('--no-pandoc -f json -t markdown {}'.format(path_o))
-    assert md == 'hello world\n'
+    _podoc('--no-pandoc -f json -t markdown {} --output-dir={}'.format(path_o, tempdir))
+    assert load_text(path) == 'hello world\n'
 
 
 def test_cli_3(tempdir):

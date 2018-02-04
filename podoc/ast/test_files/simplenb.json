@@ -139,21 +139,14 @@
             ],
             [
               {
-                "c": "<matplotlib.figure.Figure",
+                "c": "Output",
                 "t": "Str"
               },
               {
                 "t": "Space"
               },
               {
-                "c": "at",
-                "t": "Str"
-              },
-              {
-                "t": "Space"
-              },
-              {
-                "c": "0x7f205474bf98>",
+                "c": "image",
                 "t": "Str"
               }
             ],

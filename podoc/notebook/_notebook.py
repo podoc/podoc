@@ -36,11 +36,11 @@ This all could (and should) be improved...
 #-------------------------------------------------------------------------------------------------
 
 import base64
+from collections import Counter
 import logging
 from mimetypes import guess_extension, guess_type
 import os.path as op
 import re
-import sys
 
 import nbformat
 from nbformat.v4 import (new_notebook,
@@ -54,6 +54,7 @@ from podoc.ast import ASTNode  # , TreeTransformer
 from podoc.plugin import IPlugin
 from podoc.tree import TreeTransformer
 from podoc.utils import _get_file, _get_resources_path
+from ._utils import extract_image, extract_table
 
 logger = logging.getLogger(__name__)
 
@@ -63,10 +64,6 @@ logger = logging.getLogger(__name__)
 #-------------------------------------------------------------------------------------------------
 
 _OUTPUT_FILENAME_TEMPLATE = "{unique_key}_{cell_index}_{index}{extension}"
-_EXTRACT_OUTPUT_TYPES = ('image/png',
-                         'image/jpeg',
-                         'image/svg+xml',
-                         'application/pdf')
 
 
 def output_filename(mime_type=None, unique_key=None,
@@ -82,37 +79,8 @@ def output_filename(mime_type=None, unique_key=None,
     return _OUTPUT_FILENAME_TEMPLATE.format(**args)
 
 
-def extract_output(output):
-    """Return the output mime type and data for the first found mime type.
-
-    https://github.com/jupyter/nbconvert/blob/master/nbconvert/preprocessors/extractoutput.py
-
-    Copyright (c) IPython Development Team.
-    Distributed under the terms of the Modified BSD License.
-
-    """
-    # Get the output in data formats that the template needs extracted.
-    for mime_type in _EXTRACT_OUTPUT_TYPES:
-        if mime_type not in output.data:
-            continue
-        data = output.data[mime_type]
-
-        # Binary files are base64-encoded, SVG is already XML.
-        if mime_type in {'image/png', 'image/jpeg', 'application/pdf'}:
-            # data is b64-encoded as text (str, unicode)
-            # decodestring only accepts bytes
-
-            # data = py3compat.cast_bytes(data)
-            if not isinstance(data, bytes):
-                data = data.encode('UTF-8', 'replace')
-
-            data = base64.decodestring(data)
-        elif sys.platform == 'win32':  # pragma: no cover
-            data = data.replace('\n', '\r\n').encode('UTF-8')
-        else:  # pragma: no cover
-            data = data.encode('UTF-8')
-
-        return mime_type, data
+def _remove_ansi(text):
+    return re.sub(r'\x1b[^m]*m', '', text)
 
 
 #-------------------------------------------------------------------------------------------------
@@ -167,7 +135,7 @@ class NotebookReader(object):
         for child in ast.children:
             curtree.children.append(child)
             # Create a new tree at every cell delimiter.
-            if child.children[0] == self._NEW_CELL_DELIMITER:
+            if child.children and child.children[0] == self._NEW_CELL_DELIMITER:
                 # Remove the delimiter node.
                 curtree.children.pop()
                 # Append the current cell tree and create the next one.
@@ -203,12 +171,22 @@ class NotebookReader(object):
             if output.output_type == 'stream':
                 child = ASTNode('CodeBlock',
                                 lang='{output:' + output.name + '}',  # stdout/stderr
-                                children=[output.text.rstrip()])
+                                children=[_remove_ansi(output.text.rstrip())])
+            elif output.output_type == 'error':  # pragma: no cover
+                child = ASTNode('CodeBlock',
+                                lang='{output:error}',
+                                children=[_remove_ansi('\n'.join(output.traceback))])
             elif output.output_type in ('display_data', 'execute_result'):
                 # Output text node.
-                text = output.data.get('text/plain', 'Output')
+                # Take it from cell metadata first, otherwise from the cell's output text.
+                text = cell.metadata.get('podoc', {}).get('output_text', None)
+                text = text or output.data.get('text/plain', 'Output')
+                # Remove color codes.
+                text = _remove_ansi(text)
                 # Extract image output, if any.
-                out = extract_output(output)
+                out = extract_image(output)
+                if out is None:
+                    out = extract_table(output)
                 if out is None:
                     child = ASTNode('CodeBlock',
                                     lang='{output:result}',
@@ -221,22 +199,44 @@ class NotebookReader(object):
                                          unique_key=self._unique_key,
                                          )
                     self.resources[fn] = data
+                    # Prevent multi-line image legend.
+                    if '\n' in text:  # pragma: no cover
+                        text = 'Output'
                     # Wrap the Image node in a Para.
-                    img_child = ASTNode('Image', url='{resource:%s}' % fn, children=[text])
+                    img_child = ASTNode('Image', url='{resource:%s}' % fn,
+                                        children=[text])
                     child = ASTNode('Para', children=[img_child])
+            else:  # pragma: no cover
+                raise ValueError("Unknown output type `%s`." % output.output_type)
             node.add_child(child)
         self.tree.children.append(node)
 
-    def read_raw(self, cell):
+    def read_raw(self, cell, cell_index=None):
         # TODO
         pass
 
 
+def _get_cell_lang(node):
+    if node.name == 'CodeBlock':
+        return node.lang
+    if node.name == 'CodeCell':
+        return _get_cell_lang(node.children[0])
+
+
 class CodeCellWrapper(object):
+    def infer_language(self, ast):
+        """Return the most common CodeBlock language: it is supposed to be the
+        notebook's language."""
+        mc = Counter([_get_cell_lang(node) for node in ast.children
+                      if node.name in ('CodeBlock', 'CodeCell')]).most_common(1)
+        return mc[0][0] if mc else 'python'
+
     def wrap(self, ast):
         self.ast = ast.copy()
         self.ast.children = []
         self._code_cell = None
+        # Infer the notebook's language.
+        self.language = self.infer_language(ast)
         for i, node in enumerate(ast.children):
             if self._code_cell:
                 if self.is_output(node) or self.is_image(node):
@@ -264,8 +264,7 @@ class CodeCellWrapper(object):
                 (children[0].name == 'Image'))
 
     def is_source(self, node):
-        # TODO: customizable lang
-        return node.name == 'CodeBlock' and node.lang == 'python'
+        return node.name == 'CodeBlock' and node.lang == self.language
 
     def start_code_cell(self, node):
         self._code_cell = ASTNode('CodeCell')
@@ -338,7 +337,8 @@ class NotebookWriter(object):
         self.execution_count = 1
         self._md = MarkdownPlugin()
         # Add code cells in the AST.
-        ast = wrap_code_cells(ast)
+        ccw = CodeCellWrapper()
+        ast = ccw.wrap(ast)
         # Find the directory containing the notebook file.
         doc_path = (context or {}).get('path', None)
         if doc_path:
@@ -348,6 +348,7 @@ class NotebookWriter(object):
             self._dir_path = None
         # Create the notebook.
         # new_output, new_code_cell, new_markdown_cell
+        # TODO: kernelspect
         nb = new_notebook()
         # Go through all top-level blocks.
         for index, node in enumerate(ast.children):
@@ -413,12 +414,24 @@ class NotebookWriter(object):
                 # Get the resource data.
                 if self._dir_path:
                     image_path = op.join(self._dir_path, fn)
-                    if op.exists(image_path):
-                        with open(image_path, 'rb') as f:
-                            data[mime_type] = _get_b64_resource(f.read())
-                    else:  # pragma: no cover
-                        logger.debug("File `%s` doesn't exist.", image_path)
+                # The image path could be absolute.
+                elif op.isabs(fn):
+                    image_path = fn
+                else:  # pragma: no cover
+                    image_path = None
+                # If the image path exists, open it.
+                if image_path and op.exists(image_path):
+                    with open(image_path, 'rb') as f:
+                        data[mime_type] = _get_b64_resource(f.read())
+                else:  # pragma: no cover
+                    logger.debug("File `%s` doesn't exist.", image_path)
+                # Save the caption in the output text.
                 data['text/plain'] = caption
+                # Save the caption in the cell metadata too, so that it is not lost when
+                # executing the notebook.
+                if 'podoc' not in cell.metadata:
+                    cell.metadata['podoc'] = {}
+                cell.metadata['podoc'].update({'output_text': caption})
                 kwargs = dict(data=data)
             assert not output_type.startswith('{output')
             output = new_output(output_type, **kwargs)

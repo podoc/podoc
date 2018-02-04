@@ -14,6 +14,11 @@ from tornado import web
 import nbformat
 from traitlets import Unicode, Bool
 from traitlets.config import Configurable
+# BUG FIX: see https://github.com/jupyter/notebook/issues/3056
+try:
+    from notebook import transutils  # noqa
+except ImportError:
+    pass
 from notebook.services.contents.filemanager import FileContentsManager
 
 from podoc.core import Podoc
@@ -120,7 +125,6 @@ class PodocContentsManager(FileContentsManager, Configurable):
                 if file_ext == '.ipynb':
                     return nbformat.read(f, as_version=as_version)
                 else:
-                    # TODO: static resources (images)
                     lang = self._podoc.get_lang_for_file_ext(file_ext)
                     return self._podoc.convert_file(os_path,
                                                     source=lang,

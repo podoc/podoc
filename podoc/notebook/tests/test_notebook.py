@@ -9,13 +9,12 @@
 
 import os.path as op
 import re
+from textwrap import dedent
 
+from podoc.ast import ASTPlugin, ASTNode
 from podoc.markdown import MarkdownPlugin
 from podoc.utils import get_test_file_path, load_text
-from podoc.ast import ASTPlugin, ASTNode
 from .._notebook import (_get_b64_resource,
-                         extract_output,
-                         output_filename,
                          open_notebook,
                          NotebookReader,
                          NotebookWriter,
@@ -30,24 +29,6 @@ from .._notebook import (_get_b64_resource,
 def test_get_b64_resource():
     assert not _get_b64_resource(None)
     assert len(_get_b64_resource(b'abcdef')) >= 4
-
-
-def test_extract_output():
-    # Open a test notebook with a code cell containing an image.
-    path = get_test_file_path('notebook', 'simplenb.ipynb')
-    notebook = open_notebook(path)
-    cell = notebook.cells[4]
-    mime_type, data = list(extract_output(cell.outputs[1]))
-    filename = output_filename(mime_type, cell_index=4, output_index=1)
-    assert filename == 'output_4_1.png'
-
-    # Open the image file in the markdown directory.
-    image_path = get_test_file_path('markdown', 'simplenb_files/simplenb_4_1.png')
-    with open(image_path, 'rb') as f:
-        data_expected = f.read()
-
-    # The two image contents should be identical.
-    assert data == data_expected
 
 
 def test_wrap_code_cells_1():
@@ -132,6 +113,23 @@ def test_notebook_reader_notebook():
     assert markdown_converted == markdown_expected
 
     assert 'output_4_1.png' in reader.resources
+
+
+def test_output_text(podoc):
+    img_path = get_test_file_path('markdown', 'simplenb_files/simplenb_4_1.png')
+    markdown = dedent('''
+    ```python
+    print("hello")
+    ```
+
+    ![Some text](%s)
+
+    ''' % img_path)
+    nb = podoc.convert_text(markdown, source='markdown', target='notebook')
+    nb.cells[0].outputs[0].data['text/plain'] = 'Replaced text'
+    md = podoc.convert_text(nb, source='notebook', target='markdown')
+    assert 'Replaced' not in md
+    assert 'Some text' in md
 
 
 #-------------------------------------------------------------------------------------------------

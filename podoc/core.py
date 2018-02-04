@@ -11,10 +11,9 @@ from collections import defaultdict
 import glob
 import inspect
 import logging
-import os
 import os.path as op
 
-from .utils import Bunch, load_text, dump_text
+from .utils import Bunch, load_text, dump_text, _create_dir_if_not_exists
 from .plugin import get_plugins
 
 logger = logging.getLogger(__name__)
@@ -160,7 +159,9 @@ class Podoc(object):
                                   eq_filter=eq_filter,
                                   **kwargs)
 
-    def _validate(self, path=None, source=None, target=None, output=None, lang_chain=None):
+    def _create_context(self, path=None, source=None, target=None, lang_chain=None,
+                        output=None, output_dir=None,
+                        ):
 
         # Infer source and target from lang_chain.
         if lang_chain is not None:
@@ -173,6 +174,8 @@ class Podoc(object):
             path = op.realpath(path)
         if output is not None:
             output = op.realpath(output)
+        if output_dir is not None:
+            output_dir = op.realpath(output_dir)
 
         # NOTE: 'json' is an alias for 'ast', to match with pandoc's terminology.
         source = source if source != 'json' else 'ast'
@@ -204,11 +207,19 @@ class Podoc(object):
                                  source, target))
         assert isinstance(lang_chain, (tuple, list))
 
-        return source, target, output, lang_chain
+        # Process output_dir.
+        if path and output_dir:
+            _create_dir_if_not_exists(output_dir)
+            extension = self.get_file_ext(target)
+            # Construct the output filename.
+            output = op.join(output_dir, op.splitext(op.basename(path))[0] + extension)
 
-    def _make_conversion(self, obj, lang_chain, context=None):
+        return Bunch(path=path, source=source, target=target,
+                     lang_chain=lang_chain, output=output)
+
+    def _make_conversion(self, obj, context):
         # Iterate over all successive pairs.
-        for t0, t1 in zip(lang_chain, lang_chain[1:]):
+        for t0, t1 in zip(context.lang_chain, context.lang_chain[1:]):
             # Get the function registered for t0, t1.
             fd = self._funcs.get((t0, t1), None)
             if not fd:
@@ -223,46 +234,60 @@ class Podoc(object):
             obj = fd.post_filter(obj, context=context) if fd.post_filter else obj
         return obj
 
-    def _convert(self, obj_or_path, source=None, target=None, lang_chain=None, output=None,
-                 is_path=None, return_context=False):
-        """Convert a file by passing it through a chain of conversion functions."""
-        path = obj_or_path if is_path else None
-        source, target, output, lang_chain = self._validate(path=path,
-                                                            source=source,
-                                                            target=target,
-                                                            output=output,
-                                                            lang_chain=lang_chain,
-                                                            )
-        # Create the context object.
-        context = Bunch(path=path, source=source, target=target,
-                        lang_chain=lang_chain, output=output)
-        if path:
-            logger.debug("Converting `%s` from %s to %s, output `%s`.",
-                         path, source, target, output)
+    def _convert_from_context(self, obj_or_path, context, is_path=None, do_append=None):
         # Load the object from disk if necessary.
-        obj = self.load(obj_or_path, source, context=context) if is_path else obj_or_path
+        obj = self.load(obj_or_path, context.source, context=context) if is_path else obj_or_path
         # Make the conversion in memory.
-        obj = self._make_conversion(obj, lang_chain, context=context)
+        obj = self._make_conversion(obj, context)
         # Save the file, unless the conversion function did it (output_file_required).
-        if output and not context.get('output_file_required', None):
-            output_dir = op.dirname(output)
-            if not op.exists(output_dir):
-                logger.debug("Create directory `%s`.", output_dir)
-                os.makedirs(output_dir)
-            self.dump(obj, output, lang=target, context=context)
+        if context.output and not context.get('output_file_required', None):
+            output_dir = op.dirname(context.output)
+            _create_dir_if_not_exists(output_dir)
+            self.dump(obj, context.output, lang=context.target,
+                      context=context, do_append=do_append)
+        return obj
+
+    def convert_text(self, text, source=None, target=None, lang_chain=None,
+                     output=None, output_dir=None,
+                     return_context=False):
+        # Create the context object.
+        context = self._create_context(source=source, target=target, lang_chain=lang_chain,
+                                       output=output, output_dir=output_dir,)
+        obj = self._convert_from_context(text, context, is_path=False)
         if return_context:
             return obj, context
         return obj
 
-    def convert_file(self, path, source=None, target=None, lang_chain=None, output=None,
-                     return_context=False):
-        return self._convert(path, source=source, target=target, lang_chain=lang_chain,
-                             output=output, is_path=True, return_context=return_context)
+    def convert_files(self, paths, source=None, target=None, lang_chain=None,
+                      output=None, output_dir=None):
+        """Convert a file by passing it through a chain of conversion functions."""
+        objs = []
+        for i, path in enumerate(paths):
+            # Create the context object.
+            context = self._create_context(path=path, source=source, target=target,
+                                           lang_chain=lang_chain,
+                                           output=output, output_dir=output_dir,
+                                           )
+            logger.debug("Converting `%s` from %s to %s.", op.basename(context.path),
+                         context.source, context.target)
+            obj = self._convert_from_context(context.path, context,
+                                             is_path=True, do_append=i >= 1)
+            objs.append(obj)
+        return objs[0] if objs and len(objs) else objs
 
-    def convert_text(self, text, source=None, target=None, lang_chain=None, output=None,
-                     return_context=False):
-        return self._convert(text, source=source, target=target, lang_chain=lang_chain,
-                             output=output, is_path=False, return_context=return_context)
+    def convert_file(self, path, source=None, target=None, lang_chain=None,
+                     output=None, output_dir=None, return_context=False):
+        # Create the context object.
+        context = self._create_context(path=path, source=source, target=target,
+                                       lang_chain=lang_chain,
+                                       output=output, output_dir=output_dir,
+                                       )
+        logger.debug("Converting `%s` from %s to %s.", op.basename(context.path),
+                     context.source, context.target)
+        obj = self._convert_from_context(context.path, context, is_path=True)
+        if return_context:
+            return obj, context
+        return obj
 
     def pre_filter(self, obj, source, target):
         fd = self._funcs.get((source, target), None)
@@ -330,13 +355,15 @@ class Podoc(object):
         # Load the file using the function registered for the language.
         return func(path, **kwargs)
 
-    def dump(self, contents, path, lang=None, context=None):
+    def dump(self, contents, path, lang=None, context=None, do_append=None):
         """Dump an object to a file."""
         # Find the language corresponding to the file's extension.
         file_ext = op.splitext(path)[1]
         lang = lang or self.get_lang_for_file_ext(file_ext)
         func = self._langs[lang].dump_func
         kwargs = {'context': context} if 'context' in inspect.getargspec(func).args else {}
+        if 'do_append' in inspect.getargspec(func).args:
+            kwargs.update({'do_append': do_append})
         # Dump the file using the function registered for the language.
         return func(contents, path, **kwargs)
 

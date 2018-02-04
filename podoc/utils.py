@@ -41,9 +41,9 @@ def load_text(path):
     return out
 
 
-def dump_text(contents, path):
-    with open(path, 'w') as f:
-        return f.write(contents)
+def dump_text(contents, path, do_append=None):
+    with open(path, 'a' if do_append else 'w') as f:
+        f.write(contents)
 
 
 def _get_file(file_or_path, mode=None):
@@ -51,6 +51,14 @@ def _get_file(file_or_path, mode=None):
         return open(file_or_path, mode)
     else:
         return file_or_path
+
+
+def _create_dir_if_not_exists(path):
+    if not op.exists(path):
+        logger.debug("Create directory `%s`.", path)
+        os.makedirs(path)
+        return True
+    return False
 
 
 @contextmanager
@@ -166,7 +174,8 @@ def _merge_str(l):
 #-------------------------------------------------------------------------------------------------
 
 # TODO: commonmark instead
-PANDOC_MARKDOWN_FORMAT = ('markdown_strict'
+PANDOC_MARKDOWN_FORMAT = ('markdown'
+                          '-auto_identifiers'
                           '-raw_html+'
                           'fancy_lists+'
                           'startnum+'
