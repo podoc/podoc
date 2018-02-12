@@ -5,6 +5,7 @@ services:
 python:
   - "3.6"
 before_install:
+  - sudo apt-get install xvfb libfontconfig wkhtmltopdf imagemagick -y
   - pip install --upgrade pip
   - pip install codecov
   - sudo bash latest_pandoc.sh  # install latest pandoc release

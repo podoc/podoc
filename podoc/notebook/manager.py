@@ -17,7 +17,7 @@ from traitlets.config import Configurable
 # BUG FIX: see https://github.com/jupyter/notebook/issues/3056
 try:
     from notebook import transutils  # noqa
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 from notebook.services.contents.filemanager import FileContentsManager
 

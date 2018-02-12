@@ -8,7 +8,7 @@
 #-------------------------------------------------------------------------------------------------
 
 from podoc.utils import get_test_file_path, Bunch
-from .._utils import extract_image, extract_table
+from .._utils import extract_image, extract_table, latex_to_png_base64
 
 from .._notebook import (output_filename,
                          open_notebook,
@@ -18,6 +18,10 @@ from .._notebook import (output_filename,
 #-------------------------------------------------------------------------------------------------
 # Test Notebook utils
 #-------------------------------------------------------------------------------------------------
+
+def test_latex_to_png_base64():
+    assert latex_to_png_base64(r'$\pi$')
+
 
 def test_extract_image():
     # Open a test notebook with a code cell containing an image.

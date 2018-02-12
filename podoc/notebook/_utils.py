@@ -85,7 +85,7 @@ def latex_to_png_base64(latex):
                 subprocess.check_call(
                     ["latex", "-halt-on-error", tmpfile], cwd=tmpdir,
                     stdout=devnull, stderr=devnull)
-            except Exception as e:
+            except Exception as e:  # pragma: no cover
                 print("************")
                 print(len(contents))
                 print('\n'.join(contents))
@@ -112,7 +112,7 @@ def extract_image(output):
 
     # HACK: SymPy PNG output is low resolution but it comes with LaTeX source.
     # We override the low PNG with a high-resolution one.
-    if 'image/png' in output.data and 'text/latex' in output.data:
+    if 'image/png' in output.data and 'text/latex' in output.data:  # pragma: no cover
         latex = ''.join(output.data['text/latex'])
         b64 = latex_to_png_base64(latex)
         output.data['image/png'] = b64
