@@ -1,6 +1,5 @@
 # podoc
 
-**THIS IS AN EXPERIMENTAL PROJECT AT THE MOMENT -- DO NOT USE**
 
 [![Build Status](https://img.shields.io/travis/podoc/podoc.svg)](https://travis-ci.org/podoc/podoc)
 [![codecov.io](https://img.shields.io/codecov/c/github/podoc/podoc.svg)](http://codecov.io/github/podoc/podoc?branch=master)
@@ -9,15 +8,15 @@
 [![GitHub release](https://img.shields.io/github/release/podoc/podoc.svg)](https://github.com/podoc/podoc/releases/latest)
 [![Join the chat at https://gitter.im/podoc/podoc](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/podoc/podoc?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**podoc** is a document conversion library in Python (still a work in progress). Natively, it supports Markdown and Jupyter Notebook. More formats will be added later.
+**Experimental project: use at your own risks**
+
+**podoc** is a document conversion library in Python. Natively, it supports Markdown and Jupyter Notebook. More formats will be added later.
 
 podoc also allows you to convert documents on the fly in the Jupyter Notebook, so you can use the Notebook directly on documents in Markdown and many other formats. This feature was previously implemented in [**ipymd**](https://github.com/rossant/ipymd).
 
 ## Relations with pandoc
 
-podoc has strong relations with [**pandoc**](http://pandoc.org/), a universal document converted in Haskell. Both libraries use the same intermediate representation (JSON-serializable Abstract Syntax Tree, or AST), so you can combine them seamlessly.
-
-**You don't need pandoc to install and use podoc**, and you can convert between Markdown and Jupyter Notebook *without* pandoc. However, you'll have many more conversion options if pandoc is installed. Note that we systematically test the compatibility of podoc with the [latest release of pandoc](https://github.com/jgm/pandoc/releases/latest). If you want to use pandoc with podoc, make sure that you have the latest version installed.
+podoc is based on [**pandoc**](http://pandoc.org/), a universal document converted in Haskell. Both libraries use the same intermediate representation (JSON-serializable Abstract Syntax Tree, or AST), so you can combine them seamlessly. We systematically test the compatibility of podoc with the [latest release of pandoc](https://github.com/jgm/pandoc/releases/latest). If you want to use pandoc with podoc, make sure that you have the latest version installed.
 
 The compatibility with pandoc enables many interesting use-cases.
 
@@ -95,7 +94,7 @@ The main requirements are:
 * CommonMark
 * nbformat
 * click
-* pandoc and pypandoc (required for the test suite)
+* pandoc and pypandoc
 
 To install the package:
 
